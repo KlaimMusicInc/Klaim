@@ -1,0 +1,912 @@
+from django.shortcuts import render, redirect
+from django.contrib.auth import login, logout
+from django.contrib.auth import authenticate, login  # Asegúrate de importar authenticate y login
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.db import connection  # Conexión a la base de datos para consultas directas
+from django.middleware.csrf import get_token  # Para generar el token CSRF
+from .models import LegacyUser, Obras, Artistas, MatchingToolTituloAutor,MatchingToolISRC, CodigosISRC, ArtistasUnicos, Catalogos, SubidasPlataforma, ConflictosPlataforma, ObrasLiberadas, MovimientoUsuario, ObrasAutores, AutoresUnicos
+from django.db import connections
+from django.core.paginator import Paginator
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+from datetime import datetime, timezone, date, timedelta
+from django.conf import settings
+from django.core.mail import send_mail
+from django.db import models
+from django.db import transaction
+from django.db.models import Prefetch, Exists, OuterRef, Value, Q, F, Count, Subquery, OuterRef, Exists
+from django.db.models.functions import Concat
+from django.core.cache import cache
+from django.shortcuts import redirect
+# Vista de login
+def login_view(request):
+    if request.method == 'POST':
+        username = request.POST['username']
+        password = request.POST['password']
+
+        # Autenticar al usuario usando el sistema de autenticación de Django
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            login(request, user)  # Inicia sesión en Django
+            return redirect('index')  # Redirige al index después del login exitoso
+        else:
+            messages.error(request, 'Usuario o contraseña incorrectos.')
+
+    return render(request, 'login.html')
+
+@login_required(login_url='login')
+def index_view(request):
+    # Obtener parámetros de búsqueda
+    titulo = request.GET.get('titulo', '').strip()
+    codigo_sgs = request.GET.get('codigo_sgs', '').strip()
+    codigo_iswc = request.GET.get('codigo_iswc', '').strip()
+    id_catalogo = request.GET.get('id_catalogo', '').strip()
+    codigo_klaim = request.GET.get('codigo_klaim', '').strip()
+    autor = request.GET.get('autor', '').strip()  # Obtener parámetro 'autor'
+    incluir_liberadas = request.GET.get('incluir_liberadas', '') == 'on'
+
+    # Filtros dinámicos
+    filtros = Q()
+    if titulo:
+        filtros &= Q(titulo__icontains=titulo)
+    if codigo_sgs:
+        filtros &= Q(codigo_sgs__icontains=codigo_sgs)
+    if codigo_iswc:
+        filtros &= Q(codigo_iswc__icontains=codigo_iswc)
+    if id_catalogo:
+        filtros &= Q(catalogo__id_catalogo=id_catalogo)
+    if codigo_klaim:
+        filtros &= Q(cod_klaim=codigo_klaim)
+    if autor:
+        filtros &= Q(obrasautores__autor__nombre_autor__icontains=autor)  # Filtrar por autor
+    if not incluir_liberadas:
+        filtros &= ~Q(subidasplataforma__estado_MLC='LIBERADA')
+
+    # Configurar relaciones prefetch
+    prefetch_autores = Prefetch(
+        'obrasautores_set',
+        queryset=ObrasAutores.objects.select_related('autor'),
+        to_attr='autores_prefetched'
+    )
+
+    prefetch_artistas = Prefetch(
+        'artistas_set',
+        queryset=Artistas.objects.select_related('artista_unico'),
+        to_attr='artistas_prefetched'
+    )
+
+    # Query principal
+    obras = (
+        Obras.objects.filter(filtros)
+        .select_related('catalogo', 'catalogo__cliente')
+        .prefetch_related(
+            prefetch_autores,
+            prefetch_artistas,
+            'subidasplataforma_set'
+        )
+        .distinct()
+    )
+
+    # Paginación
+    paginator = Paginator(obras, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Contexto para la plantilla
+    context = {
+        'page_obj': page_obj,
+        'obras': page_obj.object_list,
+        'incluir_liberadas': incluir_liberadas,
+    }
+    return render(request, 'index.html', context)
+
+@csrf_exempt
+def update_estado(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        obra_id = data.get('obra_id')
+        campo = data.get('campo')
+        estado = data.get('estado')
+
+        try:
+            # Obtener la obra correspondiente
+            obra = Obras.objects.using('default').get(cod_klaim=obra_id)
+            
+            # Verificar si se intenta modificar el estado de una obra que está "LIBERADA"
+            subida = SubidasPlataforma.objects.using('default').filter(obra=obra).first()
+            if subida and (subida.estado_MLC == 'LIBERADA' or subida.estado_ADREV == 'LIBERADA'):
+                # Comprobar si existe un registro en ObrasLiberadas
+                if ObrasLiberadas.objects.using('default').filter(cod_klaim=obra).exists():
+                    return JsonResponse({
+                        'success': False,
+                        'error': "Actualmente existe un registro de liberacion de la obra asociada, si está seguro de que desea modificar este estado, por favor comuníquese con ADMINISTRADOR."
+                    })
+
+            # Buscar o crear la fila en SubidasPlataforma
+            subida, created = SubidasPlataforma.objects.using('default').get_or_create(
+                obra=obra,
+                defaults={
+                    'estado_MLC': None,
+                    'estado_ADREV': None
+                }
+            )
+
+            # Actualizar ambos campos si el estado es "LIBERADA"
+            tipo_movimiento = "LIBERADA" if estado == "LIBERADA" else f"Estado {campo} actualizado" 
+            if estado == 'LIBERADA':
+                subida.estado_MLC = 'LIBERADA'
+                subida.estado_ADREV = 'LIBERADA'
+
+                # Crear el registro en `ObrasLiberadas`
+                autores_relacionados = obra.obrasautores_set.all()
+                for relacion in autores_relacionados:
+                    autor = relacion.autor
+                    ObrasLiberadas.objects.using('default').create(
+                        cod_klaim=obra,
+                        titulo=obra.titulo,
+                        codigo_sgs=obra.codigo_sgs,
+                        codigo_iswc=obra.codigo_iswc,
+                        id_cliente=obra.catalogo.cliente,
+                        nombre_autor=autor.nombre_autor,
+                        porcentaje_autor=relacion.porcentaje_autor,
+                        fecha_creacion=date.today()
+                    )
+            else:
+                # Actualizar el campo correspondiente (estado_MLC o estado_ADREV)
+                if campo == 'estado_MLC':
+                    subida.estado_MLC = estado
+                elif campo == 'estado_ADREV':
+                    subida.estado_ADREV = estado
+
+            # Guardar cambios en la base de datos
+            subida.save()
+
+            MovimientoUsuario.objects.create(
+                usuario=request.user,
+                obra=obra,
+                tipo_movimiento=estado  # Guarda el estado seleccionado ("LIBERADA", "OK", "NO CARGADA", "CONFLICTO")
+            )
+
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+    return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+
+@login_required(login_url='login')
+def conflictos_view(request):
+    # Obtener las obras que tienen estado 'Conflicto' en MLC o ADREV en la tabla subidas_plataforma
+    conflictos_mlc = Obras.objects.using('default').filter(
+        subidasplataforma__estado_MLC='Conflicto'
+    ).select_related('catalogo__cliente').prefetch_related(
+        'obrasautores_set__autor', 
+        'subidasplataforma_set',
+        'conflictos'  # Usar el related_name para acceder a los conflictos
+    )
+
+    conflictos_adrev = Obras.objects.using('default').filter(
+        subidasplataforma__estado_ADREV='Conflicto'
+    ).select_related('catalogo__cliente').prefetch_related(
+        'obrasautores_set__autor', 
+        'subidasplataforma_set',
+        'conflictos'  # Usar el related_name para acceder a los conflictos
+    )
+
+    context = {
+        'conflictos_mlc': conflictos_mlc,
+        'conflictos_adrev': conflictos_adrev
+    }
+
+    return render(request, 'conflictos.html', context)
+
+
+
+@csrf_exempt
+def actualizar_conflicto(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            obras_ids = data.get('obras')
+            nombre_contraparte = data.get('nombre_contraparte')
+            porcentaje_contraparte = data.get('porcentaje_contraparte')
+            informacion_adicional = data.get('informacion_adicional')
+            plataforma = data.get('plataforma')
+            enviar_correo = data.get('enviar_correo', False)  # Nuevo parámetro para decidir si se envía el correo
+
+            if not obras_ids:
+                return JsonResponse({'success': False, 'error': 'No se seleccionaron obras.'})
+
+            for obra_id in obras_ids:
+                obra = Obras.objects.using('default').get(cod_klaim=obra_id)
+                cliente = obra.catalogo.cliente
+
+                conflicto_vigente = ConflictosPlataforma.objects.using('default').filter(
+                    obra=obra, plataforma=plataforma, estado_conflicto='vigente'
+                ).exists()
+
+                if conflicto_vigente:
+                    return JsonResponse({'success': False, 'error': f'Ya existe un conflicto vigente para la obra "{obra.titulo}" en la plataforma "{plataforma}". Debe finalizar el conflicto vigente antes de crear uno nuevo.'})
+
+                nuevo_conflicto = ConflictosPlataforma.objects.using('default').create(
+                    obra=obra,
+                    nombre_contraparte=nombre_contraparte if nombre_contraparte else None,
+                    porcentaje_contraparte=porcentaje_contraparte if porcentaje_contraparte else None,
+                    informacion_adicional=informacion_adicional if informacion_adicional else None,
+                    fecha_conflicto=datetime.now(),
+                    plataforma=plataforma,
+                    estado_conflicto='vigente'
+                )
+
+                MovimientoUsuario.objects.create(
+                    usuario=request.user,
+                    obra=obra,
+                    tipo_movimiento="CONFLICTO CREADO"
+                )
+
+                if enviar_correo:
+                    destinatarios = [email_obj.email for email_obj in cliente.emails.all()]
+
+                    if not destinatarios:
+                        return JsonResponse({'success': False, 'error': f'El cliente "{cliente.nombre_cliente}" no tiene correos registrados.'})
+
+                    codigo_sgs = obra.codigo_sgs
+                    asunto = "OBRA EN CONFLICTO"
+                    mensaje = f"""
+Estimado equipo {cliente.nombre_cliente},
+
+Se ha registrado un nuevo conflicto en la plataforma {plataforma}.
+
+Detalles del Conflicto:
+- Código SGS: {codigo_sgs}
+- Nombre de la Contraparte: {nombre_contraparte or "N/A"}
+- Porcentaje de la Contraparte: {porcentaje_contraparte or "N/A"}%
+- Información Adicional: {informacion_adicional or "N/A"}
+- Fecha de Conflicto: {nuevo_conflicto.fecha_conflicto.strftime('%Y-%m-%d')}
+- Estado del Conflicto: {nuevo_conflicto.estado_conflicto}
+                    """
+
+                    send_mail(
+                        asunto,
+                        mensaje,
+                        settings.EMAIL_HOST_USER,
+                        destinatarios,
+                        fail_silently=False
+                    )
+
+            return JsonResponse({'success': True})
+        except Exception as e:
+            print(f"Error al actualizar conflicto: {e}")
+            return JsonResponse({'success': False, 'error': str(e)})
+
+    return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+@csrf_exempt
+def insertar_informacion_conflicto(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            obras_ids = data.get('obras')
+            informacion_adicional = data.get('informacion_adicional')
+
+            # Verificar que se recibieron obras
+            if not obras_ids:
+                return JsonResponse({'success': False, 'error': 'No se seleccionaron obras.'})
+
+            # Recorrer cada obra seleccionada
+            for obra_id in obras_ids:
+                # Obtener el conflicto correspondiente
+                conflicto = ConflictosPlataforma.objects.using('default').filter(obra__cod_klaim=obra_id).first()
+
+                if conflicto:
+                    # Agregar nueva información a la existente
+                    if conflicto.informacion_adicional:
+                        conflicto.informacion_adicional += f' | {informacion_adicional}'  # Concatenar con el separador
+                    else:
+                        conflicto.informacion_adicional = informacion_adicional  # Si está vacío, solo asignar
+                    
+                    conflicto.save()  # Guardar los cambios
+
+                    # Registrar el movimiento del usuario
+                    MovimientoUsuario.objects.create(
+                        usuario=request.user,
+                        obra=conflicto.obra,
+                        tipo_movimiento="INSERTÓ ACCIONES"
+                    )
+
+            return JsonResponse({'success': True})
+        except Exception as e:
+            print(f"Error al insertar información en conflicto: {e}")
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+
+@csrf_exempt
+def eliminar_conflicto(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            obras_ids = data.get('obras')
+
+            if not obras_ids:
+                return JsonResponse({'success': False, 'error': 'No se seleccionaron obras.'})
+
+            for obra_id in obras_ids:
+                # Filtrar conflictos activos
+                conflictos = ConflictosPlataforma.objects.using('default').filter(
+                    obra__cod_klaim=obra_id, estado_conflicto='vigente'
+                )
+
+                for conflicto in conflictos:
+                    conflicto.estado_conflicto = 'finalizado'
+                    conflicto.save()
+
+            return JsonResponse({'success': True})
+        except Exception as e:
+            print(f"Error al actualizar estado de conflicto: {e}")
+            return JsonResponse({'success': False, 'error': str(e)})
+
+    return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+
+@csrf_exempt
+def actualizar_estado_obra(request):
+    if request.method == 'POST':
+        try:
+            print("Entró a la función `actualizar_estado_obra`")  # Confirmar entrada a la función
+            
+            # Obtener los datos enviados desde el frontend
+            data = json.loads(request.body)
+            obra_id = data.get('obra_id')
+            estado = data.get('estado')
+            plataforma = data.get('plataforma')  # Plataforma: MLC o ADREV
+            informacion_adicional = data.get('informacion_adicional')  # Mensaje adicional
+
+            print(f"Datos recibidos: obra_id={obra_id}, estado={estado}, plataforma={plataforma}, informacion_adicional={informacion_adicional}")
+
+            # Validar los datos
+            if not obra_id or not estado or not plataforma or not informacion_adicional:
+                print("Error: Datos incompletos.")
+                return JsonResponse({'success': False, 'error': 'Datos incompletos.'})
+
+            # Obtener la obra
+            obra = Obras.objects.using('default').filter(cod_klaim=obra_id).first()
+            if not obra:
+                print(f"Error: No se encontró la obra con ID {obra_id}.")
+                return JsonResponse({'success': False, 'error': 'No se encontró la obra.'})
+
+            print(f"Obra encontrada: {obra.titulo}")
+
+            # Obtener la plataforma asociada y actualizar su estado
+            if plataforma == 'MLC':
+                subidas_plataforma = obra.subidasplataforma_set.filter(estado_MLC='Conflicto').first()
+                if subidas_plataforma:
+                    subidas_plataforma.estado_MLC = estado
+                    subidas_plataforma.save()
+                    print(f"Estado de la plataforma MLC actualizado a: {estado}")
+                else:
+                    print(f"No se encontró registro de estado_MLC en conflicto para la obra {obra.titulo}.")
+                    return JsonResponse({'success': False, 'error': 'No se encontró un registro de MLC en conflicto.'})
+            elif plataforma == 'ADREV':
+                subidas_plataforma = obra.subidasplataforma_set.filter(estado_ADREV='Conflicto').first()
+                if subidas_plataforma:
+                    subidas_plataforma.estado_ADREV = estado
+                    subidas_plataforma.save()
+                    print(f"Estado de la plataforma ADREV actualizado a: {estado}")
+                else:
+                    print(f"No se encontró registro de estado_ADREV en conflicto para la obra {obra.titulo}.")
+                    return JsonResponse({'success': False, 'error': 'No se encontró un registro de ADREV en conflicto.'})
+            else:
+                print(f"Plataforma {plataforma} no válida.")
+                return JsonResponse({'success': False, 'error': 'Plataforma no válida.'})
+
+            # Actualizar la información adicional en el último conflicto con estado "finalizado"
+            conflicto = ConflictosPlataforma.objects.using('default').filter(
+                obra=obra, estado_conflicto='finalizado'
+            ).order_by('-fecha_conflicto').first()  # Obtener el último conflicto por fecha
+
+            if conflicto:
+                print(f"Último conflicto encontrado: {conflicto.id_conflicto}")
+                if conflicto.informacion_adicional:
+                    conflicto.informacion_adicional += f" | {informacion_adicional}"  # Concatenar mensaje
+                else:
+                    conflicto.informacion_adicional = informacion_adicional
+                conflicto.save()
+                print(f"Información adicional actualizada: {conflicto.informacion_adicional}")
+            else:
+                print("No se encontró un conflicto finalizado asociado.")
+
+            return JsonResponse({'success': True})
+        except Exception as e:
+            print(f"Error en `actualizar_estado_obra`: {e}")
+            return JsonResponse({'success': False, 'error': str(e)})
+
+    print("Método no permitido.")
+    return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+
+@login_required(login_url='login')
+def liberadas_view(request):
+    # Obtener los parámetros de búsqueda de la URL
+    titulo = request.GET.get('titulo', '')
+    codigo_iswc = request.GET.get('codigo_iswc', '')
+    nombre_autor = request.GET.get('nombre_autor', '')
+    id_cliente = request.GET.get('id_cliente', '')
+
+    # Iniciar la consulta base para la tabla ObrasLiberadas
+    liberadas_list = ObrasLiberadas.objects.using('default').filter(estado_liberacion='vigente')
+
+    # Aplicar filtros
+    if titulo:
+        liberadas_list = liberadas_list.filter(titulo__icontains=titulo)
+    if codigo_iswc:
+        liberadas_list = liberadas_list.filter(codigo_iswc=codigo_iswc)
+    if nombre_autor:
+        liberadas_list = liberadas_list.filter(nombre_autor__icontains=nombre_autor)
+    if id_cliente:
+        liberadas_list = liberadas_list.filter(id_cliente__nombre_cliente__icontains=id_cliente)
+
+    # Paginación
+    paginator = Paginator(liberadas_list, 10)  # Muestra 10 resultados por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'liberadas': page_obj.object_list,
+    }
+
+    return render(request, 'liberadas.html', context)
+
+@csrf_exempt
+def eliminar_liberaciones(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            obras_ids = data.get('obras')
+
+            if not obras_ids:
+                return JsonResponse({'success': False, 'error': 'No se seleccionaron obras.'})
+
+            # Cambiar el estado de liberación a "finalizado" en lugar de eliminar
+            ObrasLiberadas.objects.using('default').filter(id_liberada__in=obras_ids).update(estado_liberacion='finalizado')
+
+            # Obtener los cod_klaim correspondientes a los registros seleccionados
+            obras = ObrasLiberadas.objects.using('default').filter(id_liberada__in=obras_ids).values_list('cod_klaim', flat=True)
+
+            # Actualizar el estado_MLC y estado_ADREV a "OK" en la tabla SubidasPlataforma
+            SubidasPlataforma.objects.using('default').filter(obra_id__in=obras).update(estado_MLC='OK', estado_ADREV='OK')
+
+            # Registrar el movimiento del usuario para cada obra reingresada
+            usuario = request.user  # Obtener el usuario actual
+            for obra_id in obras:
+                MovimientoUsuario.objects.using('default').create(
+                    usuario=usuario,
+                    obra_id=obra_id,
+                    tipo_movimiento="REINGRESO DE OBRA"
+                )
+
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+    return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+@login_required(login_url='login')
+def matching_tool_view(request):
+    import time
+    start_time = time.time()
+
+    # Parámetros de paginación
+    page = int(request.GET.get('page', 1))
+    per_page = 10
+
+    # Subconsulta para verificar si existen códigos ISRC asociados
+    isrc_exists = CodigosISRC.objects.filter(obra_id=OuterRef('obra_id'))
+
+    # Consulta optimizada con filtro para excluir obras con ISRC
+    subidas = (
+        SubidasPlataforma.objects
+        .filter(codigo_MLC__isnull=False)
+        .exclude(codigo_MLC__exact='')
+        .exclude(Exists(isrc_exists))  # Excluir registros con ISRC asociados
+        .select_related('obra')
+        .only('codigo_MLC', 'obra__titulo', 'obra__cod_klaim', 'matching_tool')  # Incluye la nueva columna
+        .prefetch_related(
+            Prefetch(
+                'obra__obrasautores_set',
+                queryset=ObrasAutores.objects.select_related('autor').only('autor__id_autor', 'autor__nombre_autor'),
+                to_attr='prefetched_autores'
+            ),
+            Prefetch(
+                'obra__artistas_set',
+                queryset=Artistas.objects.only('id_artista', 'nombre_artista'),
+                to_attr='prefetched_artistas'
+            )
+        )
+    )
+
+    paginator = Paginator(subidas, per_page)
+    page_obj = paginator.get_page(page)
+
+    # Expandir subidas con autores, artistas y el nuevo campo matching_tool
+    expanded_subidas = []
+    for subida in page_obj.object_list:
+        obra = subida.obra
+        autores = [autor.autor.nombre_autor for autor in obra.prefetched_autores]
+        
+        artistas = [
+            {
+                'nombre_artista': artista.nombre_artista,
+                'id_artista_unico': getattr(artista.artista_unico, 'id_artista_unico', None)
+            }
+            for artista in Artistas.objects.filter(obra_id=obra.cod_klaim).select_related('artista_unico')
+        ]
+        
+        if not artistas:  # Si no hay artistas asociados
+            artistas_nombres = "No artistas"
+            artistas_ids = ""
+        else:
+            artistas_nombres = ', '.join([artista['nombre_artista'] for artista in artistas])
+            artistas_ids = ','.join([str(artista['id_artista_unico']) for artista in artistas if artista['id_artista_unico']])
+
+        expanded_subidas.append({
+            'obra': obra.titulo,
+            'obra_id': obra.cod_klaim,
+            'codigo_MLC': subida.codigo_MLC,  # Código alfanumérico
+            'id_subida': subida.id_subida,  # ID entero
+            'autor': ', '.join(autores) if autores else "No autores",
+            'autor_id': obra.prefetched_autores[0].autor.id_autor if obra.prefetched_autores else None,
+            'artistas': artistas_nombres,
+            'artistas_ids': artistas_ids,
+            'matching_tool': subida.matching_tool,  # Añadido
+        })
+
+    context = {
+        'subidas': expanded_subidas,
+        'page_obj': page_obj,
+    }
+
+    print(f"Tiempo total para procesar: {time.time() - start_time}s")
+    return render(request, 'matching_tool.html', context)
+
+@csrf_exempt
+def guardar_match(request):
+    if request.method == 'POST':
+        try:
+            # Parsear los datos recibidos
+            data = json.loads(request.body)
+            obra_id = data.get('obra_id')
+            autor_id = data.get('autor_id')
+            codigo_mlc_id = data.get('codigo_mlc_id')
+            artista_ids = data.get('artista_ids', [])  # Puede estar vacío
+            usos = data.get('usos')
+
+            # Validar que los datos requeridos existen
+            if not (obra_id and autor_id and codigo_mlc_id and usos is not None):
+                return JsonResponse({'error': 'Datos incompletos'}, status=400)
+
+            # Actualizar la base de datos dentro de una transacción
+            with transaction.atomic():
+                # Si no hay artistas, insertar registro con artista_id como NULL
+                if not artista_ids:
+                    MatchingToolTituloAutor.objects.create(
+                        obra_id=obra_id,
+                        autor_id=autor_id,
+                        codigo_mlc_id=codigo_mlc_id,
+                        artista_id=None,  # Campo nulo
+                        usos=usos,
+                        estado='Enviado',  # Valor por defecto
+                    )
+                else:
+                    # Crear un registro para cada artista
+                    for artista_id in artista_ids:
+                        MatchingToolTituloAutor.objects.create(
+                            obra_id=obra_id,
+                            autor_id=autor_id,
+                            codigo_mlc_id=codigo_mlc_id,
+                            artista_id=artista_id,
+                            usos=usos,
+                            estado='Enviado',  # Valor por defecto
+                        )
+
+                # Actualizar el valor de `matching_tool` en la tabla `subidas_plataforma`
+                SubidasPlataforma.objects.filter(id_subida=codigo_mlc_id).update(matching_tool=True)
+
+            return JsonResponse({'message': 'Registro guardado exitosamente'}, status=201)
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+@csrf_exempt
+def insertar_isrc_view(request):
+    if request.method == 'POST':
+        try:
+            # Parsear los datos recibidos
+            data = json.loads(request.body)
+            isrc = data.get('isrc')  # Código ISRC ingresado por el usuario
+            artista = data.get('artista')  # Nombre del artista ingresado
+            cod_klaim = data.get('cod_klaim')  # Código de la obra (cod_klaim)
+
+            if not (isrc and artista and cod_klaim):
+                return JsonResponse({'error': 'Datos incompletos'}, status=400)
+
+            # Verificar si el artista ya existe en artistas_unicos
+            artista_unico, created_unico = ArtistasUnicos.objects.get_or_create(nombre_artista=artista)
+
+            # Verificar si el artista ya está asociado a la obra
+            artista_asociado = Artistas.objects.filter(obra_id=cod_klaim, artista_unico_id=artista_unico.id_artista_unico).exists()
+
+            if not artista_asociado:
+                # Si el artista no está asociado a la obra, asociarlo
+                Artistas.objects.create(
+                    nombre_artista=artista,
+                    obra_id=cod_klaim,
+                    artista_unico_id=artista_unico.id_artista_unico  # Updated field
+                )
+
+            # Insertar el ISRC en la tabla codigos_isrc
+            CodigosISRC.objects.create(
+                codigo_isrc=isrc,
+                obra_id=cod_klaim,
+                id_artista_unico=artista_unico,  # Se pasa la instancia en lugar del ID
+                name_artista_alternativo=artista
+            )
+            return JsonResponse({'message': 'ISRC registrado exitosamente'}, status=201)
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+@csrf_exempt
+def guardar_match_isrc(request):
+    if request.method == "POST":
+        try:
+            # Parsear los datos enviados desde el frontend
+            data = json.loads(request.body)
+            id_isrc = data.get("id_isrc")
+            usos = data.get("usos")
+            id_subida = data.get("id_subida")  # Nuevo dato recibido
+
+            # Validar los datos
+            if not id_isrc or usos is None or not id_subida:
+                return JsonResponse({"message": "Datos inválidos."}, status=400)
+
+            # Validar que el registro exista
+            try:
+                codigo_isrc = CodigosISRC.objects.get(id_isrc=id_isrc)
+            except CodigosISRC.DoesNotExist:
+                return JsonResponse({"message": "Código ISRC no encontrado."}, status=404)
+
+            # Validar que el `id_subida` esté asociado correctamente
+            try:
+                subida = SubidasPlataforma.objects.get(id_subida=id_subida, obra_id=codigo_isrc.obra_id)
+            except SubidasPlataforma.DoesNotExist:
+                return JsonResponse({"message": "Subida no encontrada o no asociada a esta obra."}, status=404)
+
+            # Crear el registro en MatchingToolISRC
+            MatchingToolISRC.objects.create(
+                obra=codigo_isrc.obra,
+                codigo_mlc=subida,
+                id_isrc=codigo_isrc,
+                usos=usos
+            )
+
+            # Actualizar el valor de matching_tool_isrc de 0 a 1
+            codigo_isrc.matching_tool_isrc = 1
+            codigo_isrc.save()
+
+            return JsonResponse({"message": "Match guardado correctamente."}, status=200)
+
+        except Exception as e:
+            return JsonResponse({"message": f"Error: {str(e)}"}, status=500)
+
+    return JsonResponse({"message": "Método no permitido."}, status=405)
+
+
+
+
+
+@login_required(login_url='login')
+def redirect_to_matching_tool(request):
+    return redirect('matching_tool')
+
+
+@login_required(login_url='login')
+def codigos_isrc_list(request):
+    #Subconsulta para obtener el `codigo_MLC` y el `id_subida` desde `SubidasPlataforma`
+    subquery_id_subida = SubidasPlataforma.objects.filter(
+        obra_id=OuterRef('obra_id')
+    ).values('id_subida')[:1]  # Obtener el id_subida
+
+    subquery_codigo_mlc = SubidasPlataforma.objects.filter(
+        obra_id=OuterRef('obra_id')
+    ).values('codigo_MLC')[:1]  # Obtener el codigo_MLC
+
+    # Prefetch para evitar múltiples consultas
+    autores_prefetch = Prefetch(
+        'obra__obrasautores_set',
+        queryset=ObrasAutores.objects.select_related('autor'),
+        to_attr='autores_prefetched'  # Guarda los autores prefetchados en un atributo
+    )
+
+    #Query principal con subconsultas y prefetch
+    codigos_isrc = CodigosISRC.objects.filter(
+        obra__subidasplataforma__codigo_MLC__isnull=False
+    ).exclude(
+        obra__subidasplataforma__codigo_MLC=''
+    ).exclude(  # Excluir registros donde matching_tool_isrc = 1
+        matching_tool_isrc=1
+    ).select_related(
+        'obra', 'id_artista_unico'
+    ).prefetch_related(
+        autores_prefetch
+    ).annotate(
+        codigo_mlc_id=Subquery(subquery_id_subida),  # Anotación para el id_subida
+        codigo_mlc=Subquery(subquery_codigo_mlc)    # Anotación para el codigo_MLC
+    ).distinct()
+
+    #Procesar los datos para agrupar autores por obra
+    for codigo in codigos_isrc:
+        # Concatenar los nombres de los autores relacionados con la obra
+        codigo.autores_concatenados = ', '.join(
+            [autor.autor.nombre_autor for autor in codigo.obra.autores_prefetched]
+        )
+
+    # Implementar la paginación
+    paginator = Paginator(codigos_isrc, 10)  # Mostrar 10 registros por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Pasar los datos al template
+    context = {
+        'page_obj': page_obj,
+    }
+    
+    return render(request, 'codigos_isrc_list.html', context)
+
+
+@login_required(login_url='login')
+def matching_tool_list(request):
+    # Datos para la tabla de Títulos y Autores
+    titulo_autor_records = MatchingToolTituloAutor.objects.all()
+    titulo_autor_paginator = Paginator(titulo_autor_records, 10)
+    titulo_autor_page_number = request.GET.get('page_titulo_autor')
+    titulo_autor_page_obj = titulo_autor_paginator.get_page(titulo_autor_page_number)
+
+    # Datos para la tabla de ISRC
+    isrc_records = MatchingToolISRC.objects.all()
+    isrc_paginator = Paginator(isrc_records, 10)
+    isrc_page_number = request.GET.get('page_isrc')
+    isrc_page_obj = isrc_paginator.get_page(isrc_page_number)
+
+    return render(request, 'matching_tool_list.html', {
+        'titulo_autor_page_obj': titulo_autor_page_obj,
+        'isrc_page_obj': isrc_page_obj
+    })
+
+
+
+def matching_tool_table_titulo_autor(request):
+    records = MatchingToolTituloAutor.objects.select_related(
+        'obra', 'autor', 'codigo_mlc'
+    ).all()
+
+    creation_date = request.GET.get('creation_date', '').strip()
+
+    if creation_date:
+        try:
+            # Convierte la fecha a un objeto datetime
+            creation_date_obj = datetime.strptime(creation_date, '%Y-%m-%d')
+
+            # Define el rango del día (inicio y fin)
+            start_of_day = creation_date_obj
+            end_of_day = creation_date_obj + timedelta(days=1) - timedelta(seconds=1)
+
+            # Aplica el filtro entre inicio y fin del día
+            records = records.filter(fecha_creacion__gte=start_of_day, fecha_creacion__lte=end_of_day)
+
+            print(f"Filtro aplicado - Inicio del día: {start_of_day}, Fin del día: {end_of_day}")
+        except ValueError:
+            print("Error: Fecha no válida")
+
+    print(f"Total registros después del filtro de fecha: {records.count()}")
+
+    paginator = Paginator(records, 10)  # 10 registros por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'matching_tool_table_partial.html', {
+        'page_obj': page_obj,
+        'records': page_obj.object_list
+    })
+
+def matching_tool_table_isrc(request):
+    records = MatchingToolISRC.objects.select_related(
+        'obra', 'codigo_mlc', 'id_isrc'
+    ).all()
+
+    # Filtros de búsqueda
+    work_title = request.GET.get('work_title', '').strip()
+    mlc_code = request.GET.get('mlc_code', '').strip()
+    creation_date = request.GET.get('creation_date', '').strip()
+    status = request.GET.get('status', '').strip()
+
+    print(f"Filtros recibidos - Work Title: {work_title}, MLC Code: {mlc_code}, Creation Date: {creation_date}, Status: {status}")
+    print(f"Total registros antes del filtro: {records.count()}")
+
+    if work_title:
+        records = records.filter(obra__titulo__icontains=work_title)
+    if mlc_code:
+        records = records.filter(codigo_mlc__codigo_MLC__icontains=mlc_code)
+    if creation_date:
+        try:
+            # Convierte la fecha de entrada al formato datetime
+            creation_date_obj = datetime.strptime(creation_date, '%Y-%m-%d')
+
+            # Define el inicio y fin del día
+            start_of_day = creation_date_obj
+            end_of_day = creation_date_obj + timedelta(days=1) - timedelta(seconds=1)
+
+            # Aplica el filtro entre el inicio y el fin del día
+            records = records.filter(fecha_creacion__gte=start_of_day, fecha_creacion__lte=end_of_day)
+
+            print(f"Filtro aplicado - Inicio del día: {start_of_day}, Fin del día: {end_of_day}")
+        except ValueError:
+            print("Error: Fecha no válida")
+    if status:
+        records = records.filter(estado=status)
+
+    print(f"Total registros después del filtro: {records.count()}")
+
+    paginator = Paginator(records, 10)  # 10 registros por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'matching_tool_isrc_table_partial.html', {
+        'page_obj': page_obj,
+        'records': page_obj.object_list
+    })
+
+
+@csrf_exempt
+def update_estado_isrc(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)  # Parsear los datos enviados en la solicitud
+            record_id = data.get('id')  # ID del registro
+            table = data.get('table')  # Nombre de la tabla
+            estado = data.get('estado')  # Nuevo estado
+
+            # Verificar si la tabla es válida y buscar el registro
+            if table == 'matching_tool_titulo_autor':
+                record = MatchingToolTituloAutor.objects.get(id=record_id)
+            elif table == 'matching_tool_isrc':
+                record = MatchingToolISRC.objects.get(id=record_id)
+            else:
+                return JsonResponse({'success': False, 'error': 'Invalid table name.'})
+
+            # Actualizar el estado y guardar el registro
+            record.estado = estado
+            record.save()
+
+            return JsonResponse({'success': True})
+        except MatchingToolTituloAutor.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Record in matching_tool_titulo_autor not found.'})
+        except MatchingToolISRC.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Record in matching_tool_isrc not found.'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method.'})
+# Cerrar sesión
+def logout_view(request):
+    logout(request)
+    print("Sesión cerrada, redirigiendo a login")
+    return redirect('login')

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Obras Liberadas</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .search-container {
+            flex: 0 0 20%;
+            background-color: #f4f4f4;
+            padding: 5px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .search-title {
+            text-align: center;
+            color: #112F6D;
+            margin-bottom: 15px;
+        }
+
+        .table-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .search-row {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .search-row input {
+            width: calc(45% - 5px);
+            padding: 5px;
+            font-size: 16px;
+        }
+
+        .search-button-container {
+            display: flex;
+            justify-content: center;
+        }
+
+        .search-button {
+            padding: 12px 20px;
+            font-size: 16px;
+            background-color: #112F6D;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .search-button:hover {
+            background-color: #0d2450;
+        }
+
+        .styled-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 16px;
+            text-align: left;
+        }
+
+        .styled-table th, .styled-table td {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+        }
+
+        .styled-table th {
+            background-color: #112F6D;
+            color: white;
+        }
+
+        .pagination {
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .pagination span {
+            font-size: 14px;
+        }
+
+        .pagination a {
+            padding: 5px 10px;
+            margin: 0 5px;
+            background-color: #0712aa;
+            color: white;
+            text-decoration: none;
+        }
+
+        .pagination a:hover {
+            background-color: #0d2450;
+        }
+    </style>
+</head>
+<body>
+    {% include 'header.html' %}
+    <div class="container">
+        <div class="search-container">
+            <h2 class="search-title">SEARCH RELEASED WORKS IN KLAIM MUSIC</h2>
+            <div class="search-row">
+                <input type="text" id="titulo" placeholder="Type Title">
+                <input type="text" id="codigo_iswc" placeholder="Type Cod ISWC">
+            </div>
+            <div class="search-row">
+                <input type="text" id="nombre_autor" placeholder="Type Author´s name">
+                <input type="text" id="id_cliente" placeholder="Type Client ID">
+            </div>
+            <div class="search-button-container">
+                <button class="search-button" onclick="buscar()">SEARCH</button>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <table class="styled-table">
+                <thead>
+                    <tr>
+                        <th>Select</th>
+                        <th>Released ID</th>
+                        <th>Cod Klaim</th>
+                        <th>Title</th>
+                        <th>SGS Code</th>
+                        <th>ISWC Code</th>
+                        <th>Client</th>
+                        <th>Author</th>
+                        <th>Share</th>
+                        <th>Release Date</th>
+                        <th>Status remove</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for obra in liberadas %}
+                    <tr>
+                        <td><input type="checkbox" class="select-checkbox" value="{{ obra.id_liberada }}"></td>
+                        <td>{{ obra.id_liberada }}</td>
+                        <td>{{ obra.cod_klaim.cod_klaim }}</td>
+                        <td>{{ obra.titulo }}</td>
+                        <td>{{ obra.codigo_sgs }}</td>
+                        <td>{{ obra.codigo_iswc }}</td>
+                        <td>{{ obra.id_cliente.nombre_cliente }}</td>
+                        <td>{{ obra.nombre_autor }}</td>
+                        <td>{{ obra.porcentaje_autor }}%</td>
+                        <td>{{ obra.fecha_creacion }}</td>
+                        <td>{{ obra.estado_liberacion }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Botón para eliminar las liberaciones seleccionadas -->
+            <div class="search-button-container">
+                <button class="search-button" onclick="eliminarLiberaciones()">DELETE SELECTED</button>
+            </div>
+
+            <div class="pagination">
+                <span class="step-links">
+                    {% if page_obj.has_previous %}
+                        <a href="?page=1">&laquo; first</a>
+                        <a href="?page={{ page_obj.previous_page_number }}">back</a>
+                    {% endif %}
+
+                    <span class="current">
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+                    </span>
+
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}">Next page</a>
+                        <a href="?page={{ page_obj.paginator.num_pages }}">Last page &raquo;</a>
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function buscar() {
+            const titulo = document.getElementById('titulo').value;
+            const codigo_iswc = document.getElementById('codigo_iswc').value;
+            const nombre_autor = document.getElementById('nombre_autor').value;
+            const id_cliente = document.getElementById('id_cliente').value;
+
+            let url = `/liberadas/?titulo=${encodeURIComponent(titulo)}&codigo_iswc=${encodeURIComponent(codigo_iswc)}&nombre_autor=${encodeURIComponent(nombre_autor)}&id_cliente=${encodeURIComponent(id_cliente)}`;
+            window.location.href = url;
+        }
+
+        function eliminarLiberaciones() {
+            const checkboxes = document.querySelectorAll('.select-checkbox:checked');
+            const obrasSeleccionadas = Array.from(checkboxes).map(checkbox => checkbox.value);
+
+            if (obrasSeleccionadas.length === 0) {
+                alert("Seleccione al menos una obra para eliminar.");
+                return;
+            }
+
+            const csrfToken = '{{ csrf_token }}';
+
+            fetch('/eliminar-liberaciones/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({ obras: obrasSeleccionadas })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert("Obras liberadas eliminadas correctamente.");
+                    location.reload();  // Recargar la página para mostrar los cambios
+                } else {
+                    alert(data.error);
+                }
+            })
+            .catch(error => {
+                console.error("Error en la solicitud:", error);
+                alert("Error al eliminar las obras liberadas.");
+            });
+        }
+    </script>
+</body>
+</html>

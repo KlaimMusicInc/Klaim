@@ -1,0 +1,137 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOG IN</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f7f6;
+            flex-direction: column;
+        }
+
+        .logo {
+            width: 350px;
+            height: auto;
+            margin-bottom: 20px;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border: none;
+            text-align: center;
+        }
+
+        .card-header {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333333;
+            padding: 20px;
+            border-bottom: none;
+            background-color: transparent;
+        }
+
+        .card-body {
+            padding: 30px;
+        }
+
+        form {
+            display: inline-block;
+            width: 100%;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #555555;
+            display: block;
+            text-align: left;
+            margin-bottom: 5px;
+        }
+
+        .form-control {
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ced4da;
+            background-color: #f7f8f9;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+            width: calc(100% - 22px); /* Ajustar ancho para mantener padding y borde */
+            margin-bottom: 15px;
+        }
+
+        .btn-success {
+            background-color: #112F6D;
+            border: none;
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100%; /* Ocupa todo el ancho disponible */
+            color: #ffffff
+        }
+
+        .btn-success:hover {
+            background-color: #112F6D;
+        }
+
+        .alert-danger {
+            font-size: 14px;
+            margin-top: 10px;
+            color: #721c24;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 6px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <img src="{% static 'images/logo.png' %}" alt="Logo de la Empresa" class="logo">
+    <div class="login-container">
+        <div class="card mt-5">
+            <div class="card-header text-center">
+                LOG IN
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="username" class="form-label">User</label>
+                        <input type="text" class="form-control" name="username" id="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" name="password" id="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-success">KLAIM</button>
+                </form>
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-danger" role="alert">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

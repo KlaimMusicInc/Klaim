@@ -1,0 +1,415 @@
+'''
+HTML PARA HISTORIAL MATCHING TOOL AMBAS TABLAS ISRC Y AUTORES
+
+'''
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matching Tool - Titles, Authors & ISRC</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .search-container {
+            flex: 0 0 10%;
+            background-color: #f4f4f4;
+            padding: 3px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: -50px;
+
+        }
+
+        .search-title {
+            text-align: center;
+            color: #112F6D;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 100px;
+
+        }
+
+        .table-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .styled-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 16px;
+            text-align: left;
+            min-width: 1200px;
+        }
+
+        .styled-table th, .styled-table td {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+        }
+
+        .styled-table th {
+            background-color: #112F6D;
+            color: white;
+        }
+
+        .pagination {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .pagination a {
+            display: inline-block;
+            padding: 8px 15px;
+            margin: 0 5px;
+            background-color: #112F6D;
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+            border-radius: 4px;
+        }
+
+        .pagination a:hover {
+            background-color: #0d2450;
+        }
+
+        .pagination .current {
+            display: inline-block;
+            padding: 8px 15px;
+            margin: 0 5px;
+            background-color: #f4f4f4;
+            color: #112F6D;
+            border: 1px solid #ddd;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .modal {
+            display: none;  /* Ocultar el modal por defecto */
+            position: fixed;
+            z-index: 999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); /* Fondo oscuro */
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            width: 400px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+        }
+
+        .modal-content select, .modal-content button {
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 16px;
+        }
+
+        .modal-content button {
+            background-color: #0712aa;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .modal-content button:hover {
+            background-color: #0712aa;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            right: 20px;
+            top: 20px;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+            .search-row {
+                display: flex;
+                justify-content: center;
+                gap: 10px; /* Espacio entre los elementos */
+                margin-bottom: 105px;
+                margin-top: -50px;
+            }
+
+        /* Estilo para los campos de entrada */
+        .search-row input,
+        .search-row select {
+            width: 20%; /* Ajusta el ancho */
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+
+        }
+
+        /* Estilo para los botones */
+        .search-button-container {
+            display: flex;
+            justify-content: center;
+        }
+
+        .search-button {
+            padding: 10px 20px;
+            font-size: 20px;
+            background-color: #112F6D;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .search-button:hover {
+            background-color: #0d2450;
+        }
+
+        .search-button:active {
+            background-color: #0a1f4f;
+            transform: translateY(1px);
+        }
+
+        /* Mejora visual en dispositivos pequeños */
+        @media (max-width: 768px) {
+            .search-row input,
+            .search-row select {
+                width: 40%; /* Ajusta el ancho para pantallas pequeñas */
+            }
+
+            .search-button {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% include 'header.html' %}
+
+    <div class="container">
+        <!-- Título -->
+        <div class="search-container">
+            <h2 class="search-title">MATCHING TOOL - TITLES, AUTHORS & ISRC</h2>
+        </div>
+        <div class="search-container">
+            <form id="search-form" class="search-row">
+                <input type="text" id="work-title" name="work_title" placeholder="Work Title" value="{{ request.GET.work_title }}">
+                <input type="text" id="mlc-code" name="mlc_code" placeholder="MLC Code" value="{{ request.GET.mlc_code }}">
+                <input type="date" id="creation-date" name="creation_date" placeholder="Creation Date" value="{{ request.GET.creation_date }}">
+                <select id="status" name="status">
+                    <option value="" {% if request.GET.status == "" %}selected{% endif %}>All Status</option>
+                    <option value="Enviado" {% if request.GET.status == "Enviado" %}selected{% endif %}>Enviado</option>
+                    <option value="Aceptada" {% if request.GET.status == "Aceptada" %}selected{% endif %}>Aceptada</option>
+                    <option value="Rechazada" {% if request.GET.status == "Rechazada" %}selected{% endif %}>Rechazada</option>
+                </select>
+                <div class="search-button-container">
+                    <button type="button" class="search-button" onclick="search()">Search</button>
+                </div>
+            </form>
+            
+        </div>
+        <!-- Tabla de Titles and Authors -->
+        <div class="table-container" id="table-titulo-autor-container">
+            {% include 'matching_tool_table_partial.html' with page_obj=titulo_autor_page_obj %}
+        </div>
+
+        <!-- Tabla de ISRC -->
+        <div class="table-container" id="table-isrc-container">
+            {% include 'matching_tool_isrc_table_partial.html' with page_obj=isrc_page_obj %}
+        </div>
+    </div>
+
+    <!-- Modal para actualizar estado -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>Modify Status</h2>
+            <select id="estado-select">
+                <option value="Enviado">Enviado</option>
+                <option value="Aceptada">Aceptada</option>
+                <option value="Rechazada">Rechazada</option>
+            </select>
+            <br><br>
+            <button onclick="submitEstado()">Accept</button>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+
+        function search() {
+            const workTitle = document.getElementById('work-title').value;
+            const mlcCode = document.getElementById('mlc-code').value;
+            const creationDate = document.getElementById('creation-date').value;
+            const status = document.getElementById('status').value;
+
+            // Construir queryString correctamente
+            let queryString = `work_title=${encodeURIComponent(workTitle)}&mlc_code=${encodeURIComponent(mlcCode)}`;
+
+            if (creationDate) {
+                try {
+                    // Convertir el formato de la fecha a YYYY-MM-DD
+                    const formattedDate = new Date(creationDate).toISOString().split('T')[0];
+                    queryString += `&creation_date=${encodeURIComponent(formattedDate)}`;
+                } catch (error) {
+                    console.error('Fecha no válida:', error);
+                }
+            }
+
+            if (status) {
+                queryString += `&status=${encodeURIComponent(status)}`;
+            }
+
+            // Actualizar tabla de título-autor
+            $.get(`{% url 'matching_tool_table_titulo_autor' %}?${queryString}`, function(data) {
+                $('#table-titulo-autor-container').html(data);
+            });
+
+            // Actualizar tabla de ISRC
+            $.get(`{% url 'matching_tool_table_isrc' %}?${queryString}`, function(data) {
+                $('#table-isrc-container').html(data);
+            });
+        }
+
+        let recordId = null;
+        let tableName = null;
+
+        // Función para abrir el modal
+        function openModal(id, table) {
+            recordId = id; // Asigna el ID del registro
+            tableName = table; // Asigna la tabla correspondiente
+            document.getElementById('modal').style.display = 'flex'; // Muestra el modal
+        }
+
+        // Función para cerrar el modal
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none'; // Oculta el modal
+        }
+
+        // Función para enviar el nuevo estado
+        function submitEstado() {
+            const estado = document.getElementById('estado-select').value;
+            const csrfToken = '{{ csrf_token }}';
+
+            console.log(`Enviando ID: ${recordId}, Tabla: ${tableName}, Estado: ${estado}`);
+
+            fetch('/update-estado-isrc/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({
+                    id: recordId,
+                    table: tableName,
+                    estado: estado
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    closeModal();
+                    window.location.reload(true);
+                } else {
+                    alert(data.error);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        // Cerrar el modal si se hace clic fuera de él
+        window.onclick = function(event) {
+            const modal = document.getElementById('modal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        };
+
+
+        $(document).on('click', '.page-link-titulo-autor', function(event) {
+            event.preventDefault(); // Prevenir el comportamiento predeterminado del enlace
+            const page = $(this).data('page');
+
+            // Obtener los valores actuales de los filtros
+            const workTitle = $('#work-title').val();
+            const mlcCode = $('#mlc-code').val();
+            const creationDate = $('#creation-date').val();
+            const status = $('#status').val();
+
+            // Crear el query string
+            const queryString = `work_title=${encodeURIComponent(workTitle)}&mlc_code=${encodeURIComponent(mlcCode)}&creation_date=${encodeURIComponent(creationDate)}&status=${encodeURIComponent(status)}&page=${page}`;
+
+            // Actualizar la tabla de título-autor
+            $.get(`{% url 'matching_tool_table_titulo_autor' %}?${queryString}`, function(data) {
+                $('#table-titulo-autor-container').html(data);
+            });
+        });
+
+        $(document).on('click', '.page-link-isrc', function(event) {
+            event.preventDefault(); // Prevenir el comportamiento predeterminado del enlace
+            const page = $(this).data('page');
+
+            // Obtener los valores actuales de los filtros
+            const workTitle = $('#work-title').val();
+            const mlcCode = $('#mlc-code').val();
+            const creationDate = $('#creation-date').val();
+            const status = $('#status').val();
+
+            // Crear el query string
+            const queryString = `work_title=${encodeURIComponent(workTitle)}&mlc_code=${encodeURIComponent(mlcCode)}&creation_date=${encodeURIComponent(creationDate)}&status=${encodeURIComponent(status)}&page=${page}`;
+
+            // Actualizar la tabla de ISRC
+            $.get(`{% url 'matching_tool_table_isrc' %}?${queryString}`, function(data) {
+                $('#table-isrc-container').html(data);
+            });
+        });
+
+    </script>
+</body>
+</html>
