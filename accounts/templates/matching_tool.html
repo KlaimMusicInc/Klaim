@@ -1,0 +1,297 @@
+
+<!--HTML PARA MATCHING TOOL POR TITULO AUTOR-->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matching Tool</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .table-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .styled-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 16px;
+            text-align: left;
+        }
+
+        .styled-table th, .styled-table td {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+        }
+
+        .styled-table th {
+            background-color: #112F6D;
+            color: white;
+        }
+
+        input.usos-input {
+            width: 60px;
+            padding: 5px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .save-button {
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .save-button:hover {
+            background-color: #45a049;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .pagination a {
+            margin: 0 5px;
+            padding: 8px 12px;
+            text-decoration: none;
+            color: white;
+            background-color: #112F6D;
+            border-radius: 4px;
+        }
+
+        .pagination a:hover {
+            background-color: #0b48a2;
+        }
+
+        .pagination .current {
+            margin: 0 5px;
+            padding: 8px 12px;
+            background-color: #4CAF50;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+        }
+        input.usos-input, input.isrc-input, input.artist-input {
+            width: 120px;
+            padding: 5px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .save-button, .insert-isrc-button {
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .save-button:hover, .insert-isrc-button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    {% include 'header.html' %}
+    <div class="container">
+        <div class="table-container">
+            <h2 class="search-title">Uploads to Platform with MLC Code and Authors</h2>
+            <table class="styled-table">
+                <thead>
+                    <tr>
+                        <th>Work</th>
+                        <th>Cod MLC</th>
+                        <th>Author</th>
+                        <th>Artists</th>
+                        <th>Matching Tool</th> <!-- Nueva columna -->
+                        <th>Uses</th>
+                        <th>Action</th>
+                        <th>ISRC's found</th> <!-- Nueva columna -->
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for subida in subidas %}
+                    <tr>
+                        <td class="obra" data-id="{{ subida.obra_id }}">{{ subida.obra }}</td>
+                        <td class="codigo-mlc" data-id="{{ subida.id_subida }}">{{ subida.codigo_MLC }}</td>
+                        <td class="autor" data-id="{{ subida.autor_id }}">{{ subida.autor }}</td>
+                        <td class="artistas" data-ids="{{ subida.artistas_ids|default:'' }}">{{ subida.artistas|default:'No artistas' }}</td>
+                        <td>{{ subida.matching_tool|yesno:"Sí,No" }}</td> <!-- Mostrar True como Sí y False como No -->
+                        <td>
+                            <input
+                                type="number"
+                                class="usos-input"
+                                name="usos_{{ forloop.counter }}"
+                                min="0"
+                                max="999"
+                                placeholder="0">
+                        </td>
+                        <td>
+                            <button class="save-button" onclick="guardarMatch(this)">Guardar Match</button>
+                        </td>
+                        <td>
+                            <input
+                                type="text"
+                                class="isrc-input"
+                                name="isrc_{{ forloop.counter }}"
+                                placeholder="Ingresar ISRC">
+                            <input
+                                type="text"
+                                class="artist-input"
+                                name="artist_{{ forloop.counter }}"
+                                placeholder="Ingresar Interprete">
+                            <button class="insert-isrc-button" onclick="insertarISRC(this)">Insertar ISRC</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Paginación -->
+            <div class="pagination">
+                <span class="step-links">
+                    {% if page_obj.has_previous %}
+                        <a href="?page=1">&laquo; First</a>
+                        <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                    {% endif %}
+
+                    <span class="current">
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                    </span>
+
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}">Next</a>
+                        <a href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function guardarMatch(button) {
+            const fila = button.closest('tr');
+            const obra_id = fila.querySelector('.obra')?.dataset.id;
+            const codigo_mlc_id = parseInt(fila.querySelector('.codigo-mlc')?.dataset.id, 10);
+            const autor_id = fila.querySelector('.autor')?.dataset.id;
+            const artista_ids_raw = fila.querySelector('.artistas')?.dataset.ids || "";
+            const artista_ids = artista_ids_raw ? artista_ids_raw.split(',') : [];
+            const usos = fila.querySelector('.usos-input')?.value.trim();
+
+            console.log('Depuración de valores obtenidos:', {
+                obra_id,
+                codigo_mlc_id,
+                autor_id,
+                artista_ids,
+                usos,
+            });
+
+            if (!obra_id || !codigo_mlc_id || !autor_id || !usos) {
+                alert(`Error: Todos los campos deben estar completos.`);
+                return;
+            }
+
+            fetch('/guardar-match/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify({ obra_id, codigo_mlc_id, autor_id, artista_ids, usos }),
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Registro guardado exitosamente.');
+                    window.location.reload();
+                } else {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Error desconocido.');
+                    });
+                }
+            })
+            .catch(error => {
+                alert(`Error al guardar el registro: ${error.message}`);
+            });
+        }
+        function insertarISRC(button) {
+            const fila = button.closest('tr');
+            const isrcInput = fila.querySelector('.isrc-input')?.value.trim();
+            const artistInput = fila.querySelector('.artist-input')?.value.trim();
+            const cod_klaim = fila.querySelector('.obra')?.dataset.id; // Obtenemos el cod_klaim
+
+            if (!isrcInput || !artistInput) {
+                alert('Por favor, complete todos los campos (ISRC e intérprete).');
+                return;
+            }
+
+            // Validar formato alfanumérico sin espacios ni caracteres especiales
+            const isrcRegex = /^[a-zA-Z0-9]+$/;
+            if (!isrcRegex.test(isrcInput)) {
+                alert('El código ISRC debe ser alfanumérico, sin espacios ni caracteres especiales.');
+                return;
+            }
+
+            fetch('/insertar-isrc/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify({ isrc: isrcInput, artista: artistInput, cod_klaim }),
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('ISRC registrado exitosamente.');
+                    window.location.reload(); // Recargar la página para actualizar los datos
+                } else {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Error desconocido.');
+                    });
+                }
+            })
+            .catch(error => {
+                alert(`Error al registrar el ISRC: ${error.message}`);
+            });
+        }
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === name + '=') {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>

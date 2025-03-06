@@ -1,0 +1,45 @@
+
+'''
+HTML PARA HISTORIAL MATCHING TOOL POR TITULO AUTOR
+
+'''
+<table class="styled-table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Work Title</th>
+            <th>Author Name</th>
+            <th>MLC Code</th>
+            <th>Usages</th>
+            <th>Creation Date</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for record in page_obj %}
+        <tr>
+            <td>{{ record.id }}</td>
+            <td>{{ record.obra.titulo }}</td>
+            <td>{{ record.autor.nombre_autor }}</td>
+            <td>{{ record.codigo_mlc.codigo_MLC }}</td>
+            <td>{{ record.usos }}</td>
+            <td>{{ record.fecha_creacion|date:"Y-m-d H:i:s" }}</td>
+            <td onclick="openModal('{{ record.id }}', 'matching_tool_titulo_autor')">{{ record.estado }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="pagination">
+    {% if page_obj.has_previous %}
+        <a href="#" class="page-link-titulo-autor" data-page="1">&laquo; First</a>
+        <a href="#" class="page-link-titulo-autor" data-page="{{ page_obj.previous_page_number }}">Previous</a>
+    {% endif %}
+
+    <span class="current">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+    {% if page_obj.has_next %}
+        <a href="#" class="page-link-titulo-autor" data-page="{{ page_obj.next_page_number }}">Next</a>
+        <a href="#" class="page-link-titulo-autor" data-page="{{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+    {% endif %}
+</div>

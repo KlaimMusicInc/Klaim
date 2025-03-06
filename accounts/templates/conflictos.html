@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conflictos</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            padding: 20px;
+        }
+        .styled-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 16px;
+            text-align: left;
+        }
+        .styled-table th, .styled-table td {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+        }
+        .styled-table th {
+            background-color: #112F6D;
+            color: white;
+        }
+        .selected {
+            background-color: #d1e7ff;
+        }
+        .section-title {
+            margin-top: 30px;
+        }
+        .input-container {
+            margin-top: 20px;
+        }
+        .input-container label {
+            margin-left: 20px;
+            display: block;
+            margin-bottom: 10px;
+        }
+        .input-container input, .input-container textarea {
+            margin-left: 20px;
+            width: 60%;
+            padding: 10px;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+
+        .btn {
+            margin-left: 20px;
+            padding: 12px 20px;
+            font-size: 16px;
+            background-color: #112F6D;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+
+        /* Estilos para el modal */
+        .modal {
+            display: none;  /* Ocultar el modal por defecto */
+            position: fixed;
+            z-index: 999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); /* Fondo oscuro */
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            width: 400px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+        }
+
+        .modal-content select, .modal-content button {
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 16px;
+        }
+
+        .modal-content button {
+            background-color: #0712aa;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .modal-content button:hover {
+            background-color: #0712aa;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            right: 20px;
+            top: 20px;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+    </style>
+</head>
+<body>
+    {% include 'header.html' %}
+    <div id="modal-estado" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModalEstado()">&times;</span>
+            <h2>Modify Platform Status</h2>
+            <select id="estado-select">
+                <option value="OK">OK</option>
+                <option value="LIBERADA">LIBERADA</option>
+            </select>
+            <br>
+            <button onclick="submitEstado()">ACCEPT</button>
+        </div>
+    </div>
+    <div class="input-container">
+        <label for="nombre-contraparte">Counterparty's name:</label>
+        <input type="text" id="nombre-contraparte" placeholder="Counterparty's name">
+
+        <label for="porcentaje-contraparte">Counterparty´s shares:</label>
+        <input type="number" id="porcentaje-contraparte" placeholder="Counterparty´s shares" step="0.01">
+
+        <label for="informacion-adicional">Actions Taken:</label>
+        <textarea id="informacion-adicional" placeholder="More information"></textarea>
+
+        <div class="btn-container">
+            <button class="btn" onclick="eliminarConflicto()">Delete Claim</button>
+            <button class="btn" onclick="actualizarConflicto()">Create Claim</button>
+            <button class="btn" onclick="insertarInformacionConflicto()">Update Claim</button>
+        </div>
+    </div>
+    <div class="container">
+        <h2>Overclaim works MLC</h2>
+        <form id="conflictos-mlc-form">
+            <table class="styled-table">
+                <thead>
+                    <tr>
+                        <th>Select</th>
+                        <th>Title</th>
+                        <th>SGS</th>
+                        <th>ISWC</th>
+                        <th>Authors</th>
+                        <th>Share</th>
+                        <th>Client</th>
+                        <th>Cod MLC</th>
+                        <th>Counterparty</th>
+                        <th>Share Counterparty</th>
+                        <th>Additional information</th>
+                    </tr>
+                </thead>
+                <tbody id="mlc-conflicts">
+                    {% for obra in conflictos_mlc %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" name="obras" value="{{ obra.cod_klaim }}">
+                        </td>
+                        <td>{{ obra.titulo }}</td>
+                        <td>{{ obra.codigo_sgs }}</td>
+                        <td>{{ obra.codigo_iswc }}</td>
+                        <td>
+                            {% for obra_autor in obra.obrasautores_set.all %}
+                                {{ obra_autor.autor.nombre_autor }}<br>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% for obra_autor in obra.obrasautores_set.all %}
+                                {{ obra_autor.porcentaje_autor }}%<br>
+                            {% endfor %}
+                        </td>
+                        <td>{{ obra.catalogo.cliente.nombre_cliente }}</td>
+                        <td>{{ obra.subidasplataforma_set.first.codigo_MLC|default:"N/A" }}</td>
+                
+                        <!-- Mostrar solo si el último conflicto es "vigente" -->
+                        {% with ultimo_conflicto=obra.conflictos.last %}
+                            {% if ultimo_conflicto and ultimo_conflicto.estado_conflicto == 'vigente' %}
+                                <td>{{ ultimo_conflicto.nombre_contraparte|default:"N/A" }}</td>
+                                <td>{{ ultimo_conflicto.porcentaje_contraparte|default:"N/A" }}</td>
+                                <td>{{ ultimo_conflicto.informacion_adicional|default:"N/A" }}</td>
+                            {% else %}
+                                <td>N/A</td>
+                                <td>N/A</td>
+                                <td>N/A</td>
+                            {% endif %}
+                        {% endwith %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </form>
+        
+        <h2 class="section-title">Overclaims works ADREV</h2>
+        <form id="conflictos-adrev-form">
+            <table class="styled-table">
+                <thead>
+                    <tr>
+                        <th>Select</th>
+                        <th>Title</th>
+                        <th>SGS</th>
+                        <th>ISWC</th>
+                        <th>Authors</th>
+                        <th>Share</th>
+                        <th>Client</th>
+                        <th>Cod ADREV</th>
+                        <th>Counterparty</th>
+                        <th>Share Counterparty</th>
+                        <th>Additional information</th>
+                    </tr>
+                </thead>
+                <tbody id="adrev-conflicts">
+                    {% for obra in conflictos_adrev %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" name="obras" value="{{ obra.cod_klaim }}">
+                        </td>
+                        <td>{{ obra.titulo }}</td>
+                        <td>{{ obra.codigo_sgs }}</td>
+                        <td>{{ obra.codigo_iswc }}</td>
+                        <td>
+                            {% for obra_autor in obra.obrasautores_set.all %}
+                                {{ obra_autor.autor.nombre_autor }}<br>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% for obra_autor in obra.obrasautores_set.all %}
+                                {{ obra_autor.porcentaje_autor }}%<br>
+                            {% endfor %}
+                        </td>
+                        <td>{{ obra.catalogo.cliente.nombre_cliente }}</td>
+                        <td>{{ obra.subidasplataforma_set.first.codigo_ADREV|default:"N/A" }}</td>
+                
+                        <!-- Mostrar solo si el último conflicto es "vigente" -->
+                        {% with ultimo_conflicto=obra.conflictos.last %}
+                            {% if ultimo_conflicto and ultimo_conflicto.estado_conflicto == 'vigente' %}
+                                <td>{{ ultimo_conflicto.nombre_contraparte|default:"N/A" }}</td>
+                                <td>{{ ultimo_conflicto.porcentaje_contraparte|default:"N/A" }}</td>
+                                <td>{{ ultimo_conflicto.informacion_adicional|default:"N/A" }}</td>
+                            {% else %}
+                                <td>N/A</td>
+                                <td>N/A</td>
+                                <td>N/A</td>
+                            {% endif %}
+                        {% endwith %}
+                    </tr>
+                    {% endfor %}
+                </tbody>                
+            </table>
+        </form>
+    </div>
+    
+
+    </div>
+
+    <script>
+        function actualizarConflicto() {
+            const obrasSeleccionadasMLC = document.querySelectorAll('#conflictos-mlc-form input[type="checkbox"]:checked');
+            const obrasSeleccionadasADREV = document.querySelectorAll('#conflictos-adrev-form input[type="checkbox"]:checked');
+            
+            let obrasSeleccionadas = [];
+            let plataforma = null;
+
+            if (obrasSeleccionadasMLC.length > 0) {
+                plataforma = "MLC";
+                obrasSeleccionadasMLC.forEach((checkbox) => obrasSeleccionadas.push(checkbox.value));
+            }
+
+            if (obrasSeleccionadasADREV.length > 0) {
+                plataforma = "ADREV";
+                obrasSeleccionadasADREV.forEach((checkbox) => obrasSeleccionadas.push(checkbox.value));
+            }
+
+            if (obrasSeleccionadas.length === 0) {
+                alert("Seleccione al menos una obra en conflicto.");
+                return;
+            }
+
+            const nombre_contraparte = document.getElementById('nombre-contraparte').value;
+            const porcentaje_contraparte = document.getElementById('porcentaje-contraparte').value;
+            const informacion_adicional = document.getElementById('informacion-adicional').value;
+
+            // Preguntar al usuario si desea enviar el correo
+            const enviarCorreo = confirm("¿Desea enviar un correo notificando el conflicto?");
+            const csrfToken = '{{ csrf_token }}';
+
+            fetch('/actualizar-conflicto/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({
+                    obras: obrasSeleccionadas,
+                    nombre_contraparte: nombre_contraparte,
+                    porcentaje_contraparte: porcentaje_contraparte,
+                    informacion_adicional: informacion_adicional,
+                    plataforma: plataforma,
+                    enviar_correo: enviarCorreo // Enviar esta decisión al backend
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert("Conflicto creado correctamente.");
+                    location.reload();
+                } else {
+                    alert(data.error); 
+                }
+            })
+            .catch(error => {
+                console.error("Error en la solicitud:", error);
+                alert("Error al crear el conflicto.");
+            });
+        }
+
+    </script>
+    <script>
+        let obraIdForUpdate;
+        let plataformaForUpdate;
+
+        function eliminarConflicto() {
+            const obrasSeleccionadasMLC = document.querySelectorAll('#conflictos-mlc-form input[type="checkbox"]:checked');
+            const obrasSeleccionadasADREV = document.querySelectorAll('#conflictos-adrev-form input[type="checkbox"]:checked');
+            
+            let obrasSeleccionadas = [];
+            
+            // Detectamos las obras seleccionadas en cada plataforma y asignamos la plataforma correspondiente
+            if (obrasSeleccionadasMLC.length > 0) {
+                plataformaForUpdate = "MLC";
+                obrasSeleccionadasMLC.forEach((checkbox) => obrasSeleccionadas.push(checkbox.value));
+            }
+            if (obrasSeleccionadasADREV.length > 0) {
+                plataformaForUpdate = "ADREV";
+                obrasSeleccionadasADREV.forEach((checkbox) => obrasSeleccionadas.push(checkbox.value));
+            }
+
+            if (obrasSeleccionadas.length === 0) {
+                alert("Seleccione al menos una obra en conflicto para eliminar.");
+                return;
+            }
+
+            if (confirm("¿Está seguro de que desea eliminar los conflictos seleccionados?")) {
+                const csrfToken = '{{ csrf_token }}';
+
+                fetch('/eliminar-conflicto/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        obras: obrasSeleccionadas
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        obraIdForUpdate = obrasSeleccionadas[0];  // Asignamos la primera obra seleccionada para actualizar el estado
+                        openModalEstado();  // Abrir el modal para seleccionar el nuevo estado
+                    } else {
+                        alert("Error al eliminar los conflictos.");
+                    }
+                })
+                .catch(error => {
+                    console.error("Error en la solicitud:", error);
+                    alert("Error al eliminar los conflictos.");
+                });
+            }
+        }
+
+        function openModalEstado() {
+            document.getElementById('modal-estado').style.display = 'flex';
+        }
+
+        function closeModalEstado() {
+            document.getElementById('modal-estado').style.display = 'none';
+        }
+
+        function submitEstado() {
+            const estado = document.getElementById('estado-select').value; // Estado seleccionado
+            const csrfToken = '{{ csrf_token }}'; // Token CSRF
+            const fechaLiberacion = new Date().toISOString().split('T')[0]; // Fecha actual
+
+            // Determinar el mensaje adicional basado en el estado seleccionado
+            let mensaje;
+            if (estado === "LIBERADA") {
+                mensaje = `Obra liberada ${fechaLiberacion}`;
+            } else if (estado === "OK") {
+                mensaje = `Conflicto ganado ${fechaLiberacion}`;
+            } else {
+                alert("Estado no válido.");
+                return;
+            }
+
+            // Log para verificar datos enviados
+            console.log("Enviando datos al backend:", {
+                obra_id: obraIdForUpdate,
+                estado: estado,
+                plataforma: plataformaForUpdate,
+                informacion_adicional: mensaje
+            });
+
+            fetch('/update-estado-conflicto/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({
+                    'obra_id': obraIdForUpdate,
+                    'estado': estado,
+                    'plataforma': plataformaForUpdate,
+                    'informacion_adicional': mensaje
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Respuesta del servidor:", data); // Verificar respuesta del backend
+                if (data.success) {
+                    closeModalEstado();  // Cierra el modal
+                    location.reload();   // Recarga la página para reflejar los cambios
+                } else {
+                    alert(data.error);
+                }
+            })
+            .catch(error => {
+                console.error("Error en la solicitud:", error);
+                alert("Error al actualizar el estado.");
+            });
+        }
+
+
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('modal-estado');
+            if (event.target == modal) {
+                closeModalEstado();
+            }
+        }
+
+
+    </script>
+    <script>
+        function insertarInformacionConflicto() {
+            // Obtenemos las obras seleccionadas del formulario
+            const obrasSeleccionadasMLC = document.querySelectorAll('#conflictos-mlc-form input[type="checkbox"]:checked');
+            const obrasSeleccionadasADREV = document.querySelectorAll('#conflictos-adrev-form input[type="checkbox"]:checked');
+            
+            // Arreglo para almacenar los IDs de las obras seleccionadas
+            let obrasSeleccionadas = [];
+        
+            // Recorremos las obras seleccionadas en MLC
+            obrasSeleccionadasMLC.forEach((checkbox) => {
+                obrasSeleccionadas.push(checkbox.value);
+            });
+        
+            // Recorremos las obras seleccionadas en ADREV
+            obrasSeleccionadasADREV.forEach((checkbox) => {
+                obrasSeleccionadas.push(checkbox.value);
+            });
+        
+            // Confirmar selección de obras
+            if (obrasSeleccionadas.length === 0) {
+                alert("Seleccione al menos una obra en conflicto.");
+                return;
+            }
+    
+            // Obtener el texto ingresado en el campo de información adicional
+            const informacionAdicional = document.getElementById('informacion-adicional').value.trim();
+            
+            // Verificar que el campo no esté vacío
+            if (!informacionAdicional) {
+                alert("El campo 'Información Adicional' no puede estar vacío.");
+                return;
+            }
+    
+            const csrfToken = '{{ csrf_token }}';
+    
+            fetch('/insertar-informacion-conflicto/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({
+                    obras: obrasSeleccionadas,
+                    informacion_adicional: informacionAdicional
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert("Información agregada correctamente.");
+                    location.reload(); // Recargar la página para mostrar los cambios
+                } else {
+                    alert(data.error);
+                }
+            })
+            .catch(error => {
+                console.error("Error en la solicitud:", error);
+                alert("Error al agregar información.");
+            });
+        }
+    </script>
+</body>
+</html>

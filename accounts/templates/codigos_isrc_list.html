@@ -1,0 +1,242 @@
+
+<!--HTML PARA MATCHING TOOL POR ISRC-->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codes ISRC</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .table-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .styled-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 16px;
+            text-align: left;
+        }
+
+        .styled-table th, .styled-table td {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+        }
+
+        .styled-table th {
+            background-color: #112F6D;
+            color: white;
+        }
+
+        .pagination {
+            margin-top: 10px;
+        }
+
+        .pagination span {
+            font-size: 14px;
+        }
+
+        .pagination a {
+            padding: 5px 10px;
+            margin: 0 5px;
+            background-color: #0712aa;
+            color: white;
+            text-decoration: none;
+        }
+
+        .pagination a:hover {
+            background-color: #0712aa;
+        }
+        input.usos-input{
+            width: 120px;
+            padding: 5px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .save-button {
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .save-button:hover{
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    {% include 'header.html' %}
+    <div class="container">
+        <div class="table-container">
+            <h2 class="search-title">Códigos ISRC</h2>
+            <table class="styled-table">
+                <thead>
+                    <tr>
+                        <th>ID ISRC</th>
+                        <th>Cod ISRC</th>
+                        <th>Cod MLC</th> <!-- Nueva columna -->
+                        <th>Work</th>
+                        <th>Artists</th>
+                        <th>Artists Alternative</th>
+                        <th>Title Alternative</th>
+                        <th>Authors</th>
+                        <th>Matching Tool ISRC</th>
+                        <th>Uses</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for codigo in page_obj %}
+                    <tr>
+                        <td>{{ codigo.id_isrc }}</td>
+                        <td>{{ codigo.codigo_isrc }}</td>
+                        <td>{{ codigo.codigo_mlc }}</td> <!-- Mostrar el código MLC al usuario -->
+                        <td>{{ codigo.obra.titulo }}</td>
+                        <td>
+                            {% if codigo.id_artista_unico %}
+                                {{ codigo.id_artista_unico.nombre_artista }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ codigo.name_artista_alternativo|default:"-" }}</td>
+                        <td>{{ codigo.titulo_alternativo|default:"-" }}</td>
+                        <td>
+                            <ul>
+                                {% for obra_autor in codigo.obra.obrasautores_set.all %}
+                                <li>{{ obra_autor.autor.nombre_autor }}</li>
+                                {% endfor %}
+                            </ul>
+                        </td>
+                        <td>
+                            {% if codigo.matching_tool_isrc %}
+                                Sí
+                            {% else %}
+                                No
+                            {% endif %}
+                        </td>
+                        <td>
+                            <input
+                                type="number"
+                                class="usos-input"
+                                id="usos_{{ codigo.id_isrc }}"
+                                name="usos_{{ codigo.id_isrc }}"
+                                min="0"
+                                max="999"
+                                placeholder="0"
+                                data-id-subida="{{ codigo.codigo_mlc_id }}"> <!-- Usar el id_subida para las acciones -->
+                        </td>
+                        <td>
+                            <button
+                                class="save-button"
+                                onclick="guardarMatchIsrc('{{ codigo.id_isrc }}')">
+                                Guardar Match
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Paginación -->
+            <div class="pagination">
+                <span class="step-links">
+                    {% if page_obj.has_previous %}
+                        <a href="?page=1">&laquo; Primera</a>
+                        <a href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                    {% endif %}
+
+                    <span class="current">
+                        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                    </span>
+
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+                        <a href="?page={{ page_obj.paginator.num_pages }}">Última &raquo;</a>
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function guardarMatchIsrc(idIsrc) {
+            const usosInput = document.getElementById(`usos_${idIsrc}`);
+            const usos = usosInput.value;
+            const idSubida = usosInput.dataset.idSubida;
+
+            if (!usos || usos < 0 || !idSubida) {
+                alert("Por favor, complete todos los campos correctamente.");
+                return;
+            }
+
+            const datos = {
+                id_isrc: idIsrc,
+                usos: usos,
+                id_subida: idSubida
+            };
+
+            fetch("/guardar-match-isrc/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCookie("csrftoken")
+                },
+                body: JSON.stringify(datos)
+            })
+                .then(response => {
+                    // Guardar la respuesta completa y parsear el JSON
+                    return response.json().then(result => ({ response, result }));
+                })
+                .then(({ response, result }) => {
+                    if (response.ok) {
+                        alert("Match guardado correctamente.");
+                        window.location.reload();
+                    } else {
+                        alert(result.message || "Error desconocido.");
+                    }
+                })
+                .catch(error => {
+                    alert(`Error al guardar el match: ${error.message}`);
+                });
+        }
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    // Verifica si esta cookie comienza con el nombre proporcionado
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>
