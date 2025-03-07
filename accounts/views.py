@@ -20,6 +20,121 @@ from django.db.models import Prefetch, Exists, OuterRef, Value, Q, F, Count, Sub
 from django.db.models.functions import Concat
 from django.core.cache import cache
 from django.shortcuts import redirect
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+from reportlab.lib import colors
+from django.http import HttpResponse
+from reportlab.lib.styles import getSampleStyleSheet
+from datetime import datetime
+
+
+@csrf_exempt
+def generar_reporte_pdf(request):
+    # Crear la respuesta con tipo de contenido PDF
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'inline; filename="reporte.pdf"'
+    
+    # Crear el documento PDF
+    doc = SimpleDocTemplate(response, pagesize=letter)
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    # Agregar la fecha al encabezado del reporte
+    fecha_actual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    titulo = Paragraph(f"<b>Reporte de Base de Datos KLAIM</b><br/><br/>Generado el: {fecha_actual}", styles['Title'])
+    elements.append(titulo)
+    
+    # Obtener datos
+    total_obras = Obras.objects.count()
+    obras_por_cliente = (
+        Catalogos.objects
+        .values("cliente__nombre_cliente")
+        .annotate(total_obras=Count("obras"))
+    )
+    
+    total_isrc = CodigosISRC.objects.count()
+    isrc_por_cliente = (
+        CodigosISRC.objects
+        .values("obra__catalogo__cliente__nombre_cliente")
+        .annotate(total_isrc=Count("id_isrc"))
+    )
+    
+    total_conflictos = ConflictosPlataforma.objects.count()
+    conflictos_por_cliente = (
+        ConflictosPlataforma.objects
+        .values("obra__catalogo__cliente__nombre_cliente")
+        .annotate(total_conflictos=Count("id_conflicto"))
+    )
+    
+    total_matching_isrc = MatchingToolISRC.objects.filter(usos__gt=0).count()
+    matching_isrc_por_cliente = (
+        MatchingToolISRC.objects.filter(usos__gt=0)
+        .values("obra__catalogo__cliente__nombre_cliente")
+        .annotate(total_matching_isrc=Count("id"))
+    )
+    
+    # Crear la tabla
+    data = [["Categoría", "Total"]]  # Encabezados
+    data.append(["Total de Obras", total_obras])
+    data.append(["Total de ISRCs", total_isrc])
+    data.append(["Total de Conflictos", total_conflictos])
+    data.append(["Total de Matching Tool ISRC", total_matching_isrc])
+    
+    data.append(["\nObras por Cliente:", "\n"])
+    for item in obras_por_cliente:
+        data.append([item["cliente__nombre_cliente"], item["total_obras"]])
+    
+    data.append(["\nISRCs por Cliente:", "\n"])
+    for item in isrc_por_cliente:
+        data.append([item["obra__catalogo__cliente__nombre_cliente"], item["total_isrc"]])
+    
+    data.append(["\nConflictos por Cliente:", "\n"])
+    for item in conflictos_por_cliente:
+        data.append([item["obra__catalogo__cliente__nombre_cliente"], item["total_conflictos"]])
+    
+    data.append(["\nMatching Tool ISRC por Cliente:", "\n"])
+    for item in matching_isrc_por_cliente:
+        data.append([item["obra__catalogo__cliente__nombre_cliente"], item["total_matching_isrc"]])
+    
+    table = Table(data)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.darkgrey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 14),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('LEFTPADDING', (0, 0), (-1, -1), 50),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 50),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+
+        # **Estilos para los subencabezados**
+        ('BACKGROUND', (0, 5), (-1, 5), colors.lightgrey),  # "Obras por Cliente"
+        ('FONTNAME', (0, 5), (-1, 5), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 5), (-1, 5), 12),
+
+        ('BACKGROUND', (0, 10), (-1, 10), colors.lightgrey),  # "ISRCs por Cliente"
+        ('FONTNAME', (0, 10), (-1, 10), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 10), (-1, 10), 12),
+
+        ('BACKGROUND', (0, 13), (-1, 13), colors.lightgrey),  # "Conflictos por Cliente"
+        ('FONTNAME', (0, 13), (-1, 13), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 13), (-1, 13), 12),
+
+        ('BACKGROUND', (0, 17), (-1, 17), colors.lightgrey),  # "Matching Tool ISRC por Cliente"
+        ('FONTNAME', (0, 17), (-1, 17), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 17), (-1, 17), 12),
+    ]))
+    
+    elements.append(table)
+    doc.build(elements)
+    return response
+
 # Vista de login
 def login_view(request):
     if request.method == 'POST':
@@ -905,6 +1020,12 @@ def update_estado_isrc(request):
             return JsonResponse({'success': False, 'error': str(e)})
 
     return JsonResponse({'success': False, 'error': 'Invalid request method.'})
+
+from django.http import JsonResponse
+from django.db.models import Count
+from .models import Obras, CodigosISRC, ConflictosPlataforma, Catalogos, Clientes
+
+
 # Cerrar sesión
 def logout_view(request):
     logout(request)
