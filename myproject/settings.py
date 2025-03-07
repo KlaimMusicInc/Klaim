@@ -2,6 +2,8 @@ import os
 from pathlib import Path
 import environ
 from decouple import config
+from dotenv import load_dotenv
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -54,16 +56,30 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'myproject.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'base_datos_klaim',  # Nombre de la base de datos MySQL
-        'USER': 'ADMINISTRADOR',      # Usuario de MySQL
-        'PASSWORD': '97072201144Ss.',  # Contraseña de MySQL
-        'HOST': 'localhost',          # Dirección del servidor MySQL
-        'PORT': '3306',               # Puerto MySQL, generalmente es 3306
+ENVIRONMENT = os.environ.get('DJANGO_ENV', 'development')
+
+if ENVIRONMENT == 'production':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'base_datos_klaim',  # Base de datos de producción (ya existente)
+            'USER': 'ADMINISTRADOR',
+            'PASSWORD': '97072201144Ss.',
+            'HOST': 'localhost',
+            'PORT': '3306',
+        }
     }
-}
+else:  # Modo desarrollo (usa una base de datos separada)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'base_datos_klaim_dev',  # Nueva base de datos solo para desarrollo
+            'USER': 'ADMINISTRADOR',
+            'PASSWORD': '97072201144Ss.',
+            'HOST': 'localhost',
+            'PORT': '3306',
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
