@@ -27,7 +27,15 @@ from reportlab.lib import colors
 from django.http import HttpResponse
 from reportlab.lib.styles import getSampleStyleSheet
 from datetime import datetime
-
+from django.db.models import F, Value
+from django.db.models.functions import Coalesce
+from django.http import JsonResponse, Http404
+from .models import CodigosISRC, ObrasAutores, Artistas
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse, HttpResponseNotAllowed
+from django.views.decorators.csrf import csrf_exempt
+from django.shortcuts import get_object_or_404
+from .models import CodigosISRC, ObrasAutores, Artistas
 
 @csrf_exempt
 def generar_reporte_pdf(request):
@@ -825,9 +833,44 @@ def guardar_match_isrc(request):
     return JsonResponse({"message": "Método no permitido."}, status=405)
 
 
+@csrf_exempt
+def obtener_info_isrc(request, id_isrc):
+    if request.method != 'GET':
+        return HttpResponseNotAllowed(['GET'])
 
+    try:
+        print(f"🔍 Buscando ISRC con ID: {id_isrc}")  # <--- LOG
+        isrc = CodigosISRC.objects.select_related('obra').get(id_isrc=id_isrc)
+        print("✅ ISRC encontrado:", isrc.codigo_isrc)
 
+        titulo = isrc.obra.titulo
+        autores_qs = ObrasAutores.objects.filter(obra=isrc.obra).select_related('autor')
+        autores = ', '.join([a.autor.nombre_autor for a in autores_qs])
+        artistas_qs = Artistas.objects.filter(obra=isrc.obra).select_related('artista_unico')
+        artistas = ', '.join([a.artista_unico.nombre_artista for a in artistas_qs if a.artista_unico])
 
+        return JsonResponse({
+            'codigo_isrc': isrc.codigo_isrc,
+            'titulo': titulo,
+            'autores': autores or 'Sin autores',
+            'artistas': artistas or 'Sin artistas'
+        })
+
+    except CodigosISRC.DoesNotExist:
+        print("❌ ISRC no encontrado")  # <--- LOG
+        return JsonResponse({'success': False, 'message': 'ISRC no encontrado.'}, status=404)
+@csrf_exempt
+def eliminar_isrc(request, id_isrc):
+    if request.method != 'DELETE':
+        return HttpResponseNotAllowed(['DELETE'])
+
+    try:
+        isrc = CodigosISRC.objects.get(id_isrc=id_isrc)
+        isrc.delete()
+        return JsonResponse({'success': True, 'message': 'ISRC eliminado correctamente.'})
+    except CodigosISRC.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'ISRC no encontrado.'}, status=404)
+    
 @login_required(login_url='login')
 def redirect_to_matching_tool(request):
     return redirect('matching_tool')
@@ -835,56 +878,63 @@ def redirect_to_matching_tool(request):
 
 @login_required(login_url='login')
 def codigos_isrc_list(request):
-    #Subconsulta para obtener el `codigo_MLC` y el `id_subida` desde `SubidasPlataforma`
+    cliente_id = request.GET.get('cliente')
+
+    # Subconsultas para traer id_subida y código MLC
     subquery_id_subida = SubidasPlataforma.objects.filter(
         obra_id=OuterRef('obra_id')
-    ).values('id_subida')[:1]  # Obtener el id_subida
+    ).values('id_subida')[:1]
 
     subquery_codigo_mlc = SubidasPlataforma.objects.filter(
         obra_id=OuterRef('obra_id')
-    ).values('codigo_MLC')[:1]  # Obtener el codigo_MLC
+    ).values('codigo_MLC')[:1]
 
-    # Prefetch para evitar múltiples consultas
+    # Prefetch para autores relacionados
     autores_prefetch = Prefetch(
         'obra__obrasautores_set',
         queryset=ObrasAutores.objects.select_related('autor'),
-        to_attr='autores_prefetched'  # Guarda los autores prefetchados en un atributo
+        to_attr='autores_prefetched'
     )
 
-    #Query principal con subconsultas y prefetch
+    # Base queryset de ISRCs
     codigos_isrc = CodigosISRC.objects.filter(
         obra__subidasplataforma__codigo_MLC__isnull=False
     ).exclude(
         obra__subidasplataforma__codigo_MLC=''
-    ).exclude(  # Excluir registros donde matching_tool_isrc = 1
+    ).exclude(
         matching_tool_isrc=1
     ).select_related(
-        'obra', 'id_artista_unico'
+        'obra', 'id_artista_unico', 'obra__catalogo__cliente'
     ).prefetch_related(
         autores_prefetch
     ).annotate(
-        codigo_mlc_id=Subquery(subquery_id_subida),  # Anotación para el id_subida
-        codigo_mlc=Subquery(subquery_codigo_mlc)    # Anotación para el codigo_MLC
+        codigo_mlc_id=Subquery(subquery_id_subida),
+        codigo_mlc=Subquery(subquery_codigo_mlc),
+        rating_val=Coalesce(F('rating'), Value(-1.0), output_field=models.FloatField())
+    ).distinct().order_by('-rating_val')
+
+    # Si se seleccionó cliente, filtramos
+    if cliente_id and cliente_id.isdigit():
+        codigos_isrc = codigos_isrc.filter(obra__catalogo__cliente__id_cliente=int(cliente_id))
+
+    # Lista de todos los clientes para el selector
+    clientes = Clientes.objects.filter(
+        catalogos__obras__codigos_isrc__isnull=False
     ).distinct()
 
-    #Procesar los datos para agrupar autores por obra
-    for codigo in codigos_isrc:
-        # Concatenar los nombres de los autores relacionados con la obra
-        codigo.autores_concatenados = ', '.join(
-            [autor.autor.nombre_autor for autor in codigo.obra.autores_prefetched]
-        )
-
-    # Implementar la paginación
-    paginator = Paginator(codigos_isrc, 10)  # Mostrar 10 registros por página
+    # Paginación
+    paginator = Paginator(codigos_isrc, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Pasar los datos al template
     context = {
         'page_obj': page_obj,
+        'clientes': clientes,
+        'cliente_seleccionado': int(cliente_id) if cliente_id and cliente_id.isdigit() else None,
     }
-    
+
     return render(request, 'codigos_isrc_list.html', context)
+
 
 
 @login_required(login_url='login')

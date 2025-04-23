@@ -1,0 +1,30 @@
+#################################
+# Entornos virtuales
+#################################
+venv/
+KLAIM/
+
+#################################
+# Archivos Python compilados
+#################################
+__pycache__/
+*.py[cod]
+*.pyo
+
+#################################
+# Ficheros de datos locales
+#################################
+db.sqlite3
+*.xlsx
+~$*.xlsx        # temporales de Excel
+
+#################################
+# Configuración sensible
+#################################
+*.env           # cualquier .env (incluye myproject/.env)
+
+#################################
+# Otros
+#################################
+.DS_Store
+Thumbs.db
