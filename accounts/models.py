@@ -156,7 +156,10 @@ class CodigosISRC(models.Model):
     )
     name_artista_alternativo = models.CharField(max_length=255, null=True, blank=True)
     titulo_alternativo = models.CharField(max_length=255, null=True, blank=True)
-    matching_tool_isrc = models.BooleanField(default=False)  # Nueva columna
+    matching_tool_isrc = models.BooleanField(default=False)
+    
+    # 👉 Agrega este campo:
+    rating = models.FloatField(null=True, blank=True)
 
     class Meta:
         db_table = 'codigos_isrc'

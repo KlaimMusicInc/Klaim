@@ -84,10 +84,35 @@
         .save-button:hover{
             background-color: #45a049;
         }
+        .delete-button {
+            padding: 5px 10px;
+            background-color: #cf1616;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .delete-button:hover{
+            background-color: #ca1616;
+        }
     </style>
 </head>
 <body>
     {% include 'header.html' %}
+
+    <!-- Filtro de cliente -->
+    <form method="get" style="margin-bottom: 20px;">
+        <label for="cliente">Filtrar por cliente:</label>
+        <select name="cliente" id="cliente" onchange="this.form.submit()">
+            <option value="">-- Todos --</option>
+            {% for cliente in clientes %}
+                <option value="{{ cliente.id_cliente }}" {% if cliente.id_cliente == cliente_seleccionado %}selected{% endif %}>
+                    {{ cliente.nombre_cliente }}
+                </option>
+            {% endfor %}
+        </select>
+    </form>
+
     <div class="container">
         <div class="table-container">
             <h2 class="search-title">Códigos ISRC</h2>
@@ -96,7 +121,7 @@
                     <tr>
                         <th>ID ISRC</th>
                         <th>Cod ISRC</th>
-                        <th>Cod MLC</th> <!-- Nueva columna -->
+                        <th>Cod MLC</th>
                         <th>Work</th>
                         <th>Artists</th>
                         <th>Artists Alternative</th>
@@ -112,7 +137,7 @@
                     <tr>
                         <td>{{ codigo.id_isrc }}</td>
                         <td>{{ codigo.codigo_isrc }}</td>
-                        <td>{{ codigo.codigo_mlc }}</td> <!-- Mostrar el código MLC al usuario -->
+                        <td>{{ codigo.codigo_mlc }}</td>
                         <td>{{ codigo.obra.titulo }}</td>
                         <td>
                             {% if codigo.id_artista_unico %}
@@ -146,21 +171,18 @@
                                 min="0"
                                 max="999"
                                 placeholder="0"
-                                data-id-subida="{{ codigo.codigo_mlc_id }}"> <!-- Usar el id_subida para las acciones -->
+                                data-id-subida="{{ codigo.codigo_mlc_id }}">
                         </td>
                         <td>
-                            <button
-                                class="save-button"
-                                onclick="guardarMatchIsrc('{{ codigo.id_isrc }}')">
-                                Guardar Match
-                            </button>
+                            <button class="save-button" onclick="guardarMatchIsrc('{{ codigo.id_isrc }}')">Guardar Match</button>
+                            <br>
+                            <button class="delete-button" onclick="confirmarEliminarIsrc('{{ codigo.id_isrc }}')">Eliminar ISRC</button>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
 
-            <!-- Paginación -->
             <div class="pagination">
                 <span class="step-links">
                     {% if page_obj.has_previous %}
@@ -206,29 +228,58 @@
                 },
                 body: JSON.stringify(datos)
             })
-                .then(response => {
-                    // Guardar la respuesta completa y parsear el JSON
-                    return response.json().then(result => ({ response, result }));
-                })
-                .then(({ response, result }) => {
-                    if (response.ok) {
-                        alert("Match guardado correctamente.");
-                        window.location.reload();
+            .then(response => response.json().then(result => ({ response, result })))
+            .then(({ response, result }) => {
+                if (response.ok) {
+                    alert("Match guardado correctamente.");
+                    window.location.reload();
+                } else {
+                    alert(result.message || "Error desconocido.");
+                }
+            })
+            .catch(error => {
+                alert(`Error al guardar el match: ${error.message}`);
+            });
+        }
+
+        function confirmarEliminarIsrc(idIsrc) {
+            fetch(`/obtener-info-isrc/${idIsrc}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.codigo_isrc) {
+                        const mensaje = `¿Estás seguro de eliminar este ISRC?\n\nISRC: ${data.codigo_isrc}\nObra: ${data.titulo}\nAutores: ${data.autores}\nArtistas: ${data.artistas}`;
+                        if (confirm(mensaje)) {
+                            fetch(`/eliminar-isrc/${idIsrc}/`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'X-CSRFToken': getCookie('csrftoken')
+                                }
+                            })
+                            .then(response => response.json())
+                            .then(result => {
+                                if (result.success) {
+                                    alert(result.message);
+                                    window.location.reload();
+                                } else {
+                                    alert(result.message || "Error desconocido.");
+                                }
+                            });
+                        }
                     } else {
-                        alert(result.message || "Error desconocido.");
+                        alert("No se pudo obtener la información del ISRC.");
                     }
                 })
                 .catch(error => {
-                    alert(`Error al guardar el match: ${error.message}`);
+                    alert("No se pudo obtener la información del ISRC: " + error.message);
                 });
         }
+
         function getCookie(name) {
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {
                 const cookies = document.cookie.split(';');
                 for (let i = 0; i < cookies.length; i++) {
                     const cookie = cookies[i].trim();
-                    // Verifica si esta cookie comienza con el nombre proporcionado
                     if (cookie.substring(0, name.length + 1) === (name + '=')) {
                         cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
                         break;
