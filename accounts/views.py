@@ -16,7 +16,7 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.db import models
 from django.db import transaction
-from django.db.models import Prefetch, Exists, OuterRef, Value, Q, F, Count, Subquery, OuterRef, Exists
+from django.db.models import Prefetch, Exists, OuterRef, Value, Q, F, Count, Subquery, OuterRef, Exists, FloatField
 from django.db.models.functions import Concat
 from django.core.cache import cache
 from django.shortcuts import redirect
@@ -878,13 +878,13 @@ def redirect_to_matching_tool(request):
 
 @login_required(login_url='login')
 def codigos_isrc_list(request):
-    cliente_id = request.GET.get('cliente')
+    cliente_id    = request.GET.get('cliente')
+    cod_klaim_id  = request.GET.get('cod_klaim')
 
     # Subconsultas para traer id_subida y código MLC
     subquery_id_subida = SubidasPlataforma.objects.filter(
         obra_id=OuterRef('obra_id')
     ).values('id_subida')[:1]
-
     subquery_codigo_mlc = SubidasPlataforma.objects.filter(
         obra_id=OuterRef('obra_id')
     ).values('codigo_MLC')[:1]
@@ -902,7 +902,7 @@ def codigos_isrc_list(request):
     ).exclude(
         obra__subidasplataforma__codigo_MLC=''
     ).exclude(
-        matching_tool_isrc=1
+        matching_tool_isrc=True
     ).select_related(
         'obra', 'id_artista_unico', 'obra__catalogo__cliente'
     ).prefetch_related(
@@ -910,12 +910,17 @@ def codigos_isrc_list(request):
     ).annotate(
         codigo_mlc_id=Subquery(subquery_id_subida),
         codigo_mlc=Subquery(subquery_codigo_mlc),
-        rating_val=Coalesce(F('rating'), Value(-1.0), output_field=models.FloatField())
+        rating_val=Coalesce(F('rating'), Value(-1.0), output_field=FloatField())
     ).distinct().order_by('-rating_val')
 
-    # Si se seleccionó cliente, filtramos
-    if cliente_id and cliente_id.isdigit():
-        codigos_isrc = codigos_isrc.filter(obra__catalogo__cliente__id_cliente=int(cliente_id))
+    # Filtro por cod_klaim si se proporcionó
+    if cod_klaim_id and cod_klaim_id.isdigit():
+        codigos_isrc = codigos_isrc.filter(obra__cod_klaim=int(cod_klaim_id))
+    # Si no se filtró por cod_klaim, aplicamos filtro por cliente si se proporcionó
+    elif cliente_id and cliente_id.isdigit():
+        codigos_isrc = codigos_isrc.filter(
+            obra__catalogo__cliente__id_cliente=int(cliente_id)
+        )
 
     # Lista de todos los clientes para el selector
     clientes = Clientes.objects.filter(
@@ -931,10 +936,10 @@ def codigos_isrc_list(request):
         'page_obj': page_obj,
         'clientes': clientes,
         'cliente_seleccionado': int(cliente_id) if cliente_id and cliente_id.isdigit() else None,
+        'cod_klaim_seleccionado': int(cod_klaim_id) if cod_klaim_id and cod_klaim_id.isdigit() else None,
     }
 
     return render(request, 'codigos_isrc_list.html', context)
-
 
 
 @login_required(login_url='login')
