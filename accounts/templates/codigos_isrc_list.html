@@ -112,7 +112,18 @@
             {% endfor %}
         </select>
     </form>
-
+    <form method="get" style="margin-bottom: 20px;">
+        <label for="cod_klaim">Filtrar por Cod_Klaim:</label>
+        <input
+            type="number"
+            name="cod_klaim"
+            id="cod_klaim"
+            placeholder="ID de obra"
+            value="{{ cod_klaim_seleccionado|default:'' }}"
+            min="1"
+        >
+        <button type="submit">Buscar</button>
+    </form>
     <div class="container">
         <div class="table-container">
             <h2 class="search-title">Códigos ISRC</h2>
