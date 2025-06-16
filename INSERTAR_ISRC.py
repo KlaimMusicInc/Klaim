@@ -1,5 +1,6 @@
 from sqlalchemy import create_engine, text
 import pandas as pd
+from tkinter import Tk, filedialog          # ← añadido
 
 # ════════════════ 1) CONEXIÓN ════════════════
 def create_connection():
@@ -128,7 +129,7 @@ def process_row(row, obras_dict, connection):
     Procesa una fila del DataFrame.
     Devuelve la fila original si el SGS no está en el catálogo.
     """
-    codigo_sgs_raw  = row["CODIGO SGS"]
+    codigo_sgs_raw  = row["CODIGO_SGS"]
     codigo_sgs      = normalize_sgs(codigo_sgs_raw)          # ← normalizado
     codigo_isrc     = str(row["ISRC"]).strip()
 
@@ -204,9 +205,21 @@ if __name__ == "__main__":
         raise SystemExit("No fue posible establecer conexión a la base de datos.")
 
     try:
+        # ── Selección del archivo Excel ──
+        root = Tk()
+        root.withdraw()                        # Oculta la ventana principal de Tkinter
+        excel_path = filedialog.askopenfilename(
+            title="Seleccionar archivo de Excel",
+            filetypes=[("Archivos Excel", "*.xlsx *.xls")]
+        )
+        if not excel_path:
+            raise SystemExit("No se seleccionó ningún archivo de Excel.")
+
+        # Solicitar ID del catálogo
         catalogo_id = input("Ingrese el ID del catálogo: ").strip()
-        process_isrc_file(conn, catalogo_id, "ISRC_no_encontrados.xlsx")
+
+        # Procesar
+        process_isrc_file(conn, catalogo_id, excel_path)
     finally:
         conn.close()
         print("Conexión cerrada.")
-4

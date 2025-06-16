@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path
-from accounts.views import generar_reporte_pdf, eliminar_isrc, obtener_info_isrc, guardar_match,login_view, redirect_to_matching_tool, actualizar_estado_obra, guardar_match_isrc, update_estado_isrc, matching_tool_table_titulo_autor, matching_tool_table_isrc, matching_tool_list, codigos_isrc_list, insertar_isrc_view, index_view, logout_view, update_estado, conflictos_view, matching_tool_view, actualizar_conflicto, eliminar_conflicto, insertar_informacion_conflicto, liberadas_view, eliminar_liberaciones
+from accounts.views import lyricfind_records, lyricfind_pendientes, lyricfind_guardar, lyricfind_omitir, generar_reporte_pdf, eliminar_isrc, obtener_info_isrc, guardar_match,login_view, redirect_to_matching_tool, actualizar_estado_obra, guardar_match_isrc, update_estado_isrc, matching_tool_table_titulo_autor, matching_tool_table_isrc, matching_tool_list, codigos_isrc_list, insertar_isrc_view, index_view, logout_view, update_estado, conflictos_view, matching_tool_view, actualizar_conflicto, eliminar_conflicto, insertar_informacion_conflicto, liberadas_view, eliminar_liberaciones
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -29,6 +29,11 @@ urlpatterns = [
     path('reporte/', generar_reporte_pdf, name='reporte'),
     path('obtener-info-isrc/<int:id_isrc>/', obtener_info_isrc, name='obtener_info_isrc'),
     path('eliminar-isrc/<int:id_isrc>/', eliminar_isrc, name='eliminar_isrc'),
+    path("lyricfind/pendientes/", lyricfind_pendientes, name="lyricfind_pendientes"),
+    path("lyricfind/guardar/<int:link_id>/", lyricfind_guardar, name="lyricfind_guardar"),
+    path("lyricfind/omitir/<int:link_id>/", lyricfind_omitir, name="lyricfind_omitir"),
+    path("lyricfind/records/", lyricfind_records, name="lyricfind_records"),
+
 ]
 
 

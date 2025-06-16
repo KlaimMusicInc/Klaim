@@ -5,7 +5,6 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import connection  # Conexión a la base de datos para consultas directas
 from django.middleware.csrf import get_token  # Para generar el token CSRF
-from .models import LegacyUser, Obras, Artistas, MatchingToolTituloAutor,MatchingToolISRC, CodigosISRC, ArtistasUnicos, Catalogos, SubidasPlataforma, ConflictosPlataforma, ObrasLiberadas, MovimientoUsuario, ObrasAutores, AutoresUnicos
 from django.db import connections
 from django.core.paginator import Paginator
 from django.http import JsonResponse
@@ -30,13 +29,13 @@ from datetime import datetime
 from django.db.models import F, Value
 from django.db.models.functions import Coalesce
 from django.http import JsonResponse, Http404
-from .models import CodigosISRC, ObrasAutores, Artistas
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse, HttpResponseNotAllowed
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
-from .models import CodigosISRC, ObrasAutores, Artistas
-
+from django.http import JsonResponse
+from django.db.models import Count
+from .models import LegacyUser, Obras, Artistas, MatchingToolTituloAutor,MatchingToolISRC, CodigosISRC, ArtistasUnicos, Catalogos, SubidasPlataforma, ConflictosPlataforma, ObrasLiberadas, MovimientoUsuario, ObrasAutores, AutoresUnicos, Clientes, IsrcLinksAudios, LyricfindRegistro
 @csrf_exempt
 def generar_reporte_pdf(request):
     # Crear la respuesta con tipo de contenido PDF
@@ -1076,10 +1075,85 @@ def update_estado_isrc(request):
 
     return JsonResponse({'success': False, 'error': 'Invalid request method.'})
 
-from django.http import JsonResponse
-from django.db.models import Count
-from .models import Obras, CodigosISRC, ConflictosPlataforma, Catalogos, Clientes
 
+
+def lyricfind_pendientes(request):
+    # Filtra links que aún NO tienen registro LyricFind
+    pendientes_qs = IsrcLinksAudios.objects.annotate(
+        ya_procesado=Exists(
+            LyricfindRegistro.objects.filter(isrc=OuterRef("id_isrc"))
+        )
+    ).filter(ya_procesado=False, activo=True).select_related(
+        "obra", "obra__catalogo__cliente", "id_isrc__id_artista_unico"
+    ).order_by("-fecha_creacion")
+
+    return render(
+        request,
+        "lyricfind_pendientes.html",
+        {"pendientes": pendientes_qs}
+    )
+
+
+# ► Guardar la letra y crear registro
+def lyricfind_guardar(request, link_id):
+    if request.method == "POST":
+        link = get_object_or_404(IsrcLinksAudios, pk=link_id)
+
+        letra = request.POST.get("lyric_text", "").strip()
+        if not letra:
+            messages.error(request, "La letra no puede estar vacía.")
+            return redirect("lyricfind_pendientes")
+
+        # Crear registro
+        LyricfindRegistro.objects.create(
+            obra_id=link.obra_id,
+            isrc_id=link.id_isrc_id,
+            artista_unico_id = link.id_isrc.id_artista_unico_id,
+            lyric_text=letra,
+            estado="Procesado"
+        )
+
+        # Eliminar link procesado
+        link.delete()
+
+        messages.success(request, "Letra guardada y audio procesado.")
+    return redirect("lyricfind_pendientes")
+
+
+# ► Omitir / eliminar audio erróneo
+def lyricfind_omitir(request, link_id):
+    link = get_object_or_404(IsrcLinksAudios, pk=link_id)
+    link.activo = False
+    link.save()
+    return redirect('lyricfind_pendientes')
+
+def lyricfind_records(request):
+    # --- filtros por fecha ---
+    date_from = request.GET.get("from")
+    date_to   = request.GET.get("to")
+
+    registros_qs = LyricfindRegistro.objects.select_related(
+        "obra", "isrc", "artista_unico"
+    ).order_by("-fecha_proceso")
+
+    # aplicar filtro si hay fechas
+    if date_from:
+        registros_qs = registros_qs.filter(fecha_proceso__date__gte=date_from)
+    if date_to:
+        registros_qs = registros_qs.filter(fecha_proceso__date__lte=date_to)
+
+    # paginación simple 50 por página
+    paginator  = Paginator(registros_qs, 50)
+    page_num   = request.GET.get('page')
+    page_obj   = paginator.get_page(page_num)
+
+    context = {
+        "page_obj": page_obj,
+        "total_registros": LyricfindRegistro.objects.count(),
+        "from": date_from or "",
+        "to": date_to or "",
+    }
+    return render(request, "lyricfind_records.html", context)
 
 # Cerrar sesión
 def logout_view(request):
