@@ -219,7 +219,87 @@ class MatchingToolISRC(models.Model):
     class Meta:
         db_table = 'matching_tool_isrc'
 
+class LyricfindRegistro(models.Model):
+    id_lyricfind = models.AutoField(primary_key=True, db_column='id_lyricfind')
 
+    obra = models.ForeignKey(
+        Obras,
+        on_delete=models.CASCADE,
+        db_column='obra_id',
+        related_name='lyricfind_registros'
+    )
+    isrc = models.ForeignKey(
+        CodigosISRC,
+        on_delete=models.CASCADE,
+        db_column='id_isrc',
+        related_name='lyricfind_registros'
+    )
+    artista_unico = models.ForeignKey(
+        ArtistasUnicos,
+        on_delete=models.CASCADE,
+        db_column='id_artista_unico',
+        related_name='lyricfind_registros'
+    )
+
+    lyric_text = models.TextField()
+
+    ESTADO_CHOICES = (
+        ('Pendiente',  'Pendiente'),
+        ('Procesado',  'Procesado'),
+        ('Error',      'Error'),
+    )
+    estado = models.CharField(
+        max_length=10,
+        choices=ESTADO_CHOICES,
+        default='Pendiente'
+    )
+
+    motivo_error = models.TextField(null=True, blank=True)
+
+    fecha_proceso = models.DateTimeField(
+        auto_now_add=True,
+        db_column='fecha_proceso'
+    )
+    fecha_actualizacion = models.DateTimeField(
+        auto_now=True,
+        db_column='fecha_actualizacion'
+    )
+
+    class Meta:
+        db_table = 'lyricfind_registros'
+        unique_together = ('obra', 'isrc', 'artista_unico')
+        verbose_name = 'Registro LyricFind'
+        verbose_name_plural = 'Registros LyricFind'
+        managed = False     
+
+class IsrcLinksAudios(models.Model):
+    id_isrc_link = models.AutoField(primary_key=True, db_column='id_isrc_link')
+
+    id_isrc = models.ForeignKey(
+        CodigosISRC,
+        on_delete=models.CASCADE,
+        db_column='id_isrc',
+        related_name='links_audio'
+    )
+    obra = models.ForeignKey(
+        Obras,
+        on_delete=models.CASCADE,
+        db_column='obra_id',
+        related_name='links_audio'
+    )
+
+    codigo_isrc = models.CharField(max_length=100)          # redundante, pero está en la tabla
+    spotify_link = models.URLField(max_length=255, null=True, blank=True)
+    deezer_link  = models.URLField(max_length=255, null=True, blank=True)
+    activo = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'isrc_links_audios'
+        unique_together = ('id_isrc',)      # igual que el UNIQUE KEY uq_isrc
+        managed = False
+        verbose_name = 'Link de Audio (ISRC)'
+        verbose_name_plural = 'Links de Audio (ISRC)'
 class MovimientoUsuario(models.Model):
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, db_column='usuario_id')  # Ajuste para el modelo correcto
     obra = models.ForeignKey(Obras, on_delete=models.CASCADE, db_column='obra_id')

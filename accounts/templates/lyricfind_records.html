@@ -1,0 +1,176 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LyricFind Records</title>
+
+    <!-- Hoja principal por si tienes rules genéricas -->
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+
+    <style>
+    /* ------------- PALETA Y TIPOGRAFÍA BÁSICA ------------- */
+    :root{
+        --blue:       #112F6D;
+        --blue-hover: #0d2450;
+        --white:      #ffffff;
+        --gray-row:   #f9f9f9;
+    }
+    body{
+        font-family: 'Arial', sans-serif;
+        margin:0; padding:0;
+    }
+
+    /* ------------- LAYOUT FLEX ------------- */
+    .container{
+        display:flex;
+        flex-direction:column;
+        height:100vh;
+    }
+
+    /* ------------- BARRA DE FILTRO ------------- */
+    .filter-bar{
+        background:#f4f4f4;
+        padding:12px 18px;
+        display:flex;
+        flex-wrap:wrap;
+        align-items:center;
+        gap:12px;
+        font-size:15px;
+    }
+    .filter-bar label{
+        display:flex;
+        align-items:center;
+        gap:6px;
+    }
+    .filter-bar input[type="date"]{
+        padding:6px 10px;
+        font-size:15px;
+        border:1px solid #ccc;
+        border-radius:3px;
+    }
+    .filter-bar button{
+        padding:8px 18px;
+        background:var(--blue);
+        border:none;
+        color:var(--white);
+        cursor:pointer;
+        font-size:15px;
+        border-radius:3px;
+        transition:background .25s;
+    }
+    .filter-bar button:hover{ background:var(--blue-hover); }
+
+    /* ------------- TABLA ------------- */
+    .table-container{
+        flex:1;
+        overflow:auto;
+        padding:20px;
+    }
+    .styled-table{
+        width:100%;
+        border-collapse:collapse;
+        min-width:1200px;
+        font-size:15px;
+    }
+    .styled-table th,
+    .styled-table td{
+        padding:10px 14px;
+        border:1px solid #ddd;
+    }
+    .styled-table th{
+        background:var(--blue);
+        color:var(--white);
+        text-align:left;
+    }
+    .styled-table tbody tr:nth-child(even){ background:var(--gray-row); }
+
+    /* ------------- PAGINACIÓN ------------- */
+    .pagination{
+        margin-top:15px;
+        text-align:center;
+        font-size:14px;
+    }
+    .pagination a{
+        display:inline-block;
+        margin:0 4px;
+        padding:6px 12px;
+        background:var(--blue);
+        color:var(--white);
+        text-decoration:none;
+        border-radius:3px;
+        transition:background .25s;
+    }
+    .pagination a:hover{ background:var(--blue-hover); }
+    </style>
+</head>
+<body>
+
+{% include 'header.html' %}
+
+<div class="container">
+
+    <!-- FILTROS + CONTADOR -->
+    <form class="filter-bar" method="get">
+        <strong>Total registros: {{ total_registros }}</strong>
+
+        <label>
+            From
+            <input type="date" name="from" value="{{ from }}">
+        </label>
+
+        <label>
+            To
+            <input type="date" name="to" value="{{ to }}">
+        </label>
+
+        <button type="submit">Filter</button>
+    </form>
+
+    <!-- TABLA -->
+    <div class="table-container">
+        <table class="styled-table">
+            <thead>
+                <tr>
+                    <th>Klaim</th>
+                    <th>Title</th>
+                    <th>Artist</th>
+                    <th>ISRC</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for reg in page_obj %}
+                <tr>
+                    <td>{{ reg.obra_id }}</td>
+                    <td>{{ reg.obra.titulo }}</td>
+                    <td>{{ reg.artista_unico.nombre_artista }}</td>
+                    <td>{{ reg.isrc.codigo_isrc }}</td>
+                    <td>{{ reg.estado }}</td>
+                    <td>{{ reg.fecha_proceso|date:"Y-m-d" }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="6">No records.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- PAGINACIÓN -->
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+                <a href="?{% if from %}from={{from}}&{% endif %}{% if to %}to={{to}}&{% endif %}page={{ page_obj.previous_page_number }}">« Prev</a>
+            {% endif %}
+
+            Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+
+            {% if page_obj.has_next %}
+                <a href="?{% if from %}from={{from}}&{% endif %}{% if to %}to={{to}}&{% endif %}page={{ page_obj.next_page_number }}">Next »</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

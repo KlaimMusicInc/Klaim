@@ -7,7 +7,7 @@ from tkinter import filedialog, Tk
 def create_connection():
     try:
         print("Intentando conectar a la base de datos...")
-        engine = create_engine('mysql+mysqlconnector://ADMINISTRADOR:97072201144Ss.@localhost/base_datos_klaim')
+        engine = create_engine('mysql+mysqlconnector://ADMINISTRADOR:97072201144Ss.@localhost/base_datos_klaim_dev4')
         connection = engine.connect()
         print("Conexión exitosa a la base de datos")
         return connection
@@ -50,9 +50,14 @@ def seleccionar_archivo_excel():
 
 # Optimización de la extracción de códigos SGS únicos en el DataFrame
 def obtener_codigos_sgs_nuevo_catalogo(catalogo_df):
-    print("Extrayendo códigos SGS únicos del nuevo catálogo...")
-    catalogo_df['Código SGS'] = catalogo_df['Código SGS'].astype(int)  # Convertir a entero para asegurar consistencia
-    codigos_sgs = set(catalogo_df[['Título', 'Código SGS']].drop_duplicates()['Código SGS'])
+    """
+    Devuelve un set de códigos SGS únicos (int).  NO altera el DataFrame original.
+    ▸ Hace forward-fill en una copia para que las filas hijas hereden el SGS
+      de la fila principal.
+    """
+    tmp = catalogo_df['Código SGS'].copy().ffill()              # heredar SGS
+    tmp = pd.to_numeric(tmp, errors='coerce')                   # convertir a num
+    codigos_sgs = set(tmp.dropna().astype(int).unique())        # únicos y limpios
     print(f"{len(codigos_sgs)} códigos SGS únicos encontrados en el nuevo catálogo.")
     return codigos_sgs
 
@@ -74,6 +79,11 @@ def procesar_catalogo_nuevo(connection, catalogo_df, obras_existentes):
     print(f"Códigos que continúan: {len(continúan)}")
     
     return list(registrar), list(liberar), list(continúan)
+
+def exportar_listas_excel(registrar, liberar, continuan):
+    pd.DataFrame({'Código SGS': registrar}).to_excel('registrar.xlsx', index=False)
+    pd.DataFrame({'Código SGS': liberar}).to_excel('liberar.xlsx', index=False)
+    pd.DataFrame({'Código SGS': continuan}).to_excel('continuan.xlsx', index=False)
 
 def liberar_obras(connection, liberar, id_cliente):
     print("Liberando obras en la base de datos...")
@@ -176,53 +186,66 @@ def obtener_id_catalogo_existente(connection, id_cliente):
 
 # Insertar datos en la tabla Obras si no existen
 def registrar_obras(connection, catalogo_df, registrar, id_cliente):
+    """
+    Inserta las nuevas obras y todos sus autores / artistas.
+    Utiliza una COPIA del DataFrame donde SGS y Título se han
+    rellenado con forward-fill para poder agrupar las filas hijas.
+    """
     print("Registrando nuevas obras en la base de datos...")
-    
-    # Obtener el id_catalogo del cliente ingresado por el usuario
-    query_catalogo = text("""
-        SELECT id_catalogo 
-        FROM Catalogos 
-        WHERE id_cliente = :id_cliente AND estado = 'Activo'
-    """)
-    id_catalogo = connection.execute(query_catalogo, {'id_cliente': id_cliente}).fetchone()[0]
 
-    # Variables para rastrear obras ya insertadas
-    obras_existentes = set()
+    id_catalogo = connection.execute(
+        text("SELECT id_catalogo FROM Catalogos WHERE id_cliente = :id AND estado = 'Activo'"),
+        {'id': id_cliente}).fetchone()[0]
+
+    # ---- copia de trabajo con SGS y Título forward-fill ----
+    df_proc = catalogo_df.copy()
+    df_proc['Código SGS'] = df_proc['Código SGS'].ffill()
+    df_proc['Título']     = df_proc['Título'].ffill()
+    df_proc['Código SGS'] = pd.to_numeric(df_proc['Código SGS'], errors='coerce')
+
+    # rastreador interno para evitar duplicados en la misma corrida
+    obras_insertadas = set()
 
     for codigo_sgs in registrar:
-        # Filtrar el DataFrame para obtener solo las filas correspondientes a esta obra específica
-        obra_rows = catalogo_df[catalogo_df['Código SGS'] == codigo_sgs]
+        # seleccionar todas las filas (padre + hijas) de esa obra
+        obra_rows = df_proc[df_proc['Código SGS'] == codigo_sgs]
 
-        # Verificar si esta obra ya fue insertada usando `titulo` y `codigo_sgs`
-        titulo = obra_rows.iloc[0]['Título']
-        codigo_iswc = obra_rows.iloc[0]['Código ISWC'] if pd.notna(obra_rows.iloc[0]['Código ISWC']) else None
-        
-        if (titulo, codigo_sgs) in obras_existentes:
+        if obra_rows.empty:
+            print(f"⚠️ No se encontraron filas para SGS {codigo_sgs} en el Excel.")
             continue
 
-        # Insertar la obra en `Obras` y obtener `obra_id`
-        obra_id_actual = insert_obras(connection, titulo, codigo_sgs, codigo_iswc, id_catalogo)
-        obras_existentes.add((titulo, codigo_sgs))  # Marcar la obra como registrada
+        titulo       = obra_rows.iloc[0]['Título']
+        codigo_iswc  = obra_rows.iloc[0]['Código ISWC'] if pd.notna(obra_rows.iloc[0]['Código ISWC']) else None
+        codigo_sgs_i = int(codigo_sgs)                  # aseguramos int
 
-        # Procesar artistas (en caso de múltiples artistas)
-        artistas = obra_rows.iloc[0]['Artistas'] if pd.notna(obra_rows.iloc[0]['Artistas']) else None
-        if artistas:
-            artistas_lista = artistas.split(';')
-            for artista in artistas_lista:
+        # evitar doble inserción dentro de la misma ejecución
+        if (titulo, codigo_sgs_i) in obras_insertadas:
+            continue
+
+        obra_id_actual = insert_obras(connection, titulo, codigo_sgs_i, codigo_iswc, id_catalogo)
+        obras_insertadas.add((titulo, codigo_sgs_i))
+
+        # ---------- ARTISTAS ----------
+        artistas_raw = obra_rows.iloc[0]['Artistas']
+        if pd.notna(artistas_raw):
+            for artista in str(artistas_raw).split(';'):
                 insert_artistas(connection, artista.strip(), obra_id_actual)
 
-        # Procesar autores y porcentajes para cada fila de la misma obra
+        # ---------- AUTORES ----------
         for _, row in obra_rows.iterrows():
-            nombre_autor = row['Nombre Autor'] if pd.notna(row['Nombre Autor']) else None
-            numero_ip_autor = row['Número IP Autor'] if pd.notna(row['Número IP Autor']) else None
-            tipo_autor = row['Tipo de Autor'] if pd.notna(row['Tipo de Autor']) else None
-            porcentaje_autor = row['Porcentaje Reclamado de Autor'] if pd.notna(row['Porcentaje Reclamado de Autor']) else None
+            n_autor = row['Nombre Autor']
+            ipi     = row['Número IP Autor']
+            t_autor = row['Tipo de Autor']
+            pct     = row['Porcentaje Reclamado de Autor']
 
-            if nombre_autor and tipo_autor and porcentaje_autor:
-                # Insertar o encontrar el autor único
-                autor_id = insert_autores_unicos(connection, nombre_autor.strip(), numero_ip_autor, tipo_autor.strip())
-                # Insertar el porcentaje en la relación ObrasAutores
-                insert_obras_autores(connection, obra_id_actual, autor_id, float(porcentaje_autor))
+            if pd.notna(n_autor) and pd.notna(t_autor) and pd.notna(pct):
+                autor_id = get_or_create_autor_unico(
+                    connection,
+                    n_autor.strip(),
+                    ipi,
+                    t_autor.strip()
+                )
+                insert_obras_autores(connection, obra_id_actual, autor_id, float(pct))
 
     connection.execute(text("COMMIT"))
     print("Nuevas obras registradas exitosamente.")
@@ -233,15 +256,84 @@ def insert_obras(connection, titulo, codigo_sgs, codigo_iswc, catalogo_id):
     query = text("INSERT INTO Obras (titulo, codigo_sgs, codigo_iswc, catalogo_id) VALUES (:titulo, :codigo_sgs, :codigo_iswc, :catalogo_id)")
     connection.execute(query, {'titulo': titulo, 'codigo_sgs': codigo_sgs, 'codigo_iswc': codigo_iswc, 'catalogo_id': catalogo_id})
     return connection.execute(text("SELECT LAST_INSERT_ID()")).fetchone()[0]
+def get_or_create_artista_unico(connection, nombre_artista):
+    """
+    Devuelve el id_artista_unico correspondiente al nombre.
+    Si no existe, lo crea y devuelve el nuevo id.
+    La búsqueda es case-insensitive y sin espacios extra.
+    """
+    nombre_normalizado = nombre_artista.strip()
 
+    # 1. Intentar recuperar
+    query_sel = text("""
+        SELECT id_artista_unico 
+        FROM artistas_unicos 
+        WHERE nombre_artista = :nombre
+        LIMIT 1
+    """)
+    result = connection.execute(query_sel, {'nombre': nombre_normalizado}).fetchone()
+    if result:
+        return result[0]
+
+    # 2. No existe → insertar
+    query_ins = text("""
+        INSERT INTO artistas_unicos (nombre_artista) 
+        VALUES (:nombre)
+    """)
+    connection.execute(query_ins, {'nombre': nombre_normalizado})
+    new_id = connection.execute(text("SELECT LAST_INSERT_ID()")).fetchone()[0]
+    return new_id
 def insert_artistas(connection, nombre_artista, obra_id):
-    query = text("INSERT INTO Artistas (nombre_artista, obra_id) VALUES (:nombre_artista, :obra_id)")
-    connection.execute(query, {'nombre_artista': nombre_artista, 'obra_id': obra_id})
+    # 1. Obtener id_artista_unico
+    id_artista_unico = get_or_create_artista_unico(connection, nombre_artista)
 
+    # 2. Insertar relación obra-artista
+    query = text("""
+        INSERT INTO artistas (nombre_artista, obra_id, id_artista_unico)
+        VALUES (:nombre_artista, :obra_id, :id_unico)
+    """)
+    connection.execute(query, {
+        'nombre_artista': nombre_artista,
+        'obra_id': obra_id,
+        'id_unico': id_artista_unico
+    })
+    
+def get_or_create_autor_unico(connection, nombre_autor, codigo_ipi, tipo_autor):
+    """
+    Devuelve id_autor correspondiente al trío (nombre, ipi, tipo).
+    Si no existe, lo crea y devuelve el nuevo id.
+    """
+    nombre_norm = nombre_autor.strip()
+
+    # 1. Buscar existente
+    sel = text("""
+        SELECT id_autor 
+        FROM autoresunicos
+        WHERE nombre_autor = :nombre
+          AND codigo_ipi   = :ipi
+          AND tipo_autor   = :tipo
+        LIMIT 1
+    """)
+    row = connection.execute(sel,
+                             {'nombre': nombre_norm,
+                              'ipi': codigo_ipi,
+                              'tipo': tipo_autor}).fetchone()
+    if row:
+        return row[0]
+
+    # 2. Insertar si no existe
+    ins = text("""
+        INSERT INTO autoresunicos (nombre_autor, codigo_ipi, tipo_autor)
+        VALUES (:nombre, :ipi, :tipo)
+    """)
+    connection.execute(ins,
+                       {'nombre': nombre_norm,
+                        'ipi': codigo_ipi,
+                        'tipo': tipo_autor})
+    new_id = connection.execute(text("SELECT LAST_INSERT_ID()")).fetchone()[0]
+    return new_id
 def insert_autores_unicos(connection, nombre_autor, codigo_ipi, tipo_autor):
-    query = text("INSERT INTO AutoresUnicos (nombre_autor, codigo_ipi, tipo_autor) VALUES (:nombre_autor, :codigo_ipi, :tipo_autor)")
-    connection.execute(query, {'nombre_autor': nombre_autor, 'codigo_ipi': codigo_ipi, 'tipo_autor': tipo_autor})
-    return connection.execute(text("SELECT LAST_INSERT_ID()")).fetchone()[0]
+    return get_or_create_autor_unico(connection, nombre_autor, codigo_ipi, tipo_autor)
 
 def insert_obras_autores(connection, obra_id, autor_id, porcentaje_autor):
     query = text("INSERT INTO ObrasAutores (obra_id, autor_id, porcentaje_autor) VALUES (:obra_id, :autor_id, :porcentaje_autor)")
@@ -263,7 +355,7 @@ if __name__ == "__main__":
 
             # Procesar el catálogo y obtener las listas de registrar, liberar y continuar
             registrar, liberar, continúan = procesar_catalogo_nuevo(connection, catalogo_df, obras_existentes)
-
+            exportar_listas_excel(registrar, liberar, continúan)
             # Registrar las nuevas obras en la base de datos usando el id_catalogo del cliente
             registrar_obras(connection, catalogo_df, registrar, id_cliente)
 

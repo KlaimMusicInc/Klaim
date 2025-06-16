@@ -2,150 +2,517 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Header</title>
-    <style>
-        /* Estilos generales del header */
-        .header {
-            background-color: #112F6D; /* Azul oscuro */
-            display: flex;
-            align-items: center;
-            padding: 30px;
-            justify-content: space-between; /* Espacia entre logo y botones */
-        }
-        .header img {
-            height: 70px; /* Ajusta el tamaño del logo */
-            margin: auto;
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-        .header .nav-buttons {
-            margin-left: auto;
-            display: flex;
-            align-items: center;
-            gap: 10px; /* Espaciado entre botones */
-        }
-        .nav-buttons a {
-            color: white;
-            padding: 10px 15px;
-            text-decoration: none;
-            border: 1px solid transparent;
-            transition: background-color 0.3s;
-        }
-        .nav-buttons a:hover {
-            background-color: #2403dd73;
-        }
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Modern Header</title>
 
-        /* Dropdown */
-        .dropdown {
-            position: relative;
-            display: inline-block;
-        }
+<style>
+:root {
+  --blue: #112F6D;
+  --blue-dark: #0d2450;
+  --blue-light: #1a4a9e;
+  --white: #fff;
+  --accent: #4fc3f7;
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
 
-        .dropdown button {
-            background-color: #112F6D; /* Azul */
-            color: white;
-            padding: 10px 15px;
-            font-size: 16px;
-            border: none;
-            cursor: pointer;
-        }
+/* ----- Base Styles ----- */
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', sans-serif;
+  overflow-x: hidden;
+}
 
-        .dropdown button:hover {
-            background-color: #112F6D; /* Más oscuro */
-        }
+/* ----- Glassmorphism Header ----- */
+.header {
+  position: relative;
+  height: 80px;
+  background: rgba(17, 47, 109, 0.9);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  box-shadow: var(--shadow);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
 
-        .dropdown-content {
-            display: none; /* Oculta el menú por defecto */
-            position: absolute;
-            background-color: #112F6D; /* Azul oscuro */
-            min-width: 160px;
-            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
-            z-index: 1;
-        }
+/* ----- Animated Logo ----- */
+.logo {
+  height: 60px;
+  transition: transform 0.3s ease;
+}
 
-        .dropdown-content a {
-            color: white;
-            padding: 12px 16px;
-            text-decoration: none;
-            display: block;
-            transition: background-color 0.3s;
-        }
+.logo:hover {
+  transform: scale(1.05) rotate(-2deg);
+}
 
-        .dropdown-content a:hover {
-            background-color: #2403dd73; /* Más claro */
-        }
+/* ----- Holographic Burger Button ----- */
+.burger {
+  position: absolute;
+  left: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  z-index: 2100;
+  background: none;
+  border: none;
+  padding: 10px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
 
-        /* Mostrar el menú al pasar el ratón */
-        .dropdown:hover .dropdown-content {
-            display: block;
-        }
-        .loader-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255, 255, 255, 0.8); /* Fondo semitransparente */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999; /* Asegúrate de que esté por encima de todo */
-            visibility: hidden; /* Oculto por defecto */
-            opacity: 1;
-            transition: visibility 0s, opacity 0.3s ease-in-out;
-        }
+.burger:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
 
-        .loader-container.active {
-            visibility: visible; /* Muestra el loader */
-            opacity: 1;
-        }
+.burger span {
+  width: 30px;
+  height: 3px;
+  background: var(--white);
+  transition: all 0.4s cubic-bezier(0.68, -0.6, 0.32, 1.6);
+  position: relative;
+}
 
-        .loader-image {
-            width: 100px; /* Ajusta el tamaño del loader */
-            height: 100px;
-        }
-    </style>
+.burger span::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: var(--accent);
+  top: 0;
+  left: 0;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.burger:hover span::before {
+  opacity: 1;
+}
+
+.burger.open span:nth-child(1) { 
+  transform: translateY(10px) rotate(45deg);
+  background: var(--accent);
+}
+.burger.open span:nth-child(2) { 
+  opacity: 0; 
+  transform: translateX(-20px);
+}
+.burger.open span:nth-child(3) { 
+  transform: translateY(-10px) rotate(-45deg);
+  background: var(--accent);
+}
+
+/* ----- Futuristic Side Panel ----- */
+.side-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 320px;
+  height: 100vh;
+  background: linear-gradient(135deg, var(--blue) 0%, var(--blue-dark) 100%);
+  padding: 100px 0 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transform: translateX(-100%);
+  transition: transform 0.5s cubic-bezier(0.77, 0.2, 0.05, 1);
+  z-index: 2050;
+  box-shadow: none;
+  overflow-y: auto;
+}
+
+.side-nav.open {
+  transform: translateX(0);
+  box-shadow: 10px 0 30px rgba(0, 0, 0, 0.4);
+}
+
+/* Neon Border Effect */
+.side-nav::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 2px;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity 0.3s 0.2s ease;
+}
+
+.side-nav.open::after {
+  opacity: 1;
+  animation: neonGlow 2s infinite alternate;
+}
+
+@keyframes neonGlow {
+  from {
+    box-shadow: 0 0 5px var(--accent);
+  }
+  to {
+    box-shadow: 0 0 20px var(--accent), 0 0 30px var(--accent);
+  }
+}
+
+/* Menu Items with Hover Effect */
+.side-nav a, .dropdown-btn {
+  color: var(--white);
+  font: 500 16px/1.4 'Segoe UI', sans-serif;
+  text-decoration: none;
+  padding: 14px 24px;
+  margin: 0 12px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.side-nav a::before, .dropdown-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(79, 195, 247, 0.2), transparent);
+  transition: all 0.6s ease;
+}
+
+.side-nav a:hover, .dropdown-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateX(8px);
+}
+
+.side-nav a:hover::before, .dropdown-btn:hover::before {
+  left: 100%;
+}
+
+/* Icon Placeholder (you can add real icons) */
+.side-nav a::after, .dropdown-btn::after {
+  content: '→';
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  transform: translateX(-10px);
+}
+
+.side-nav a:hover::after, .dropdown-btn:hover::after {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ----- Advanced Dropdown ----- */
+.dropdown { 
+  width: 100%;
+  position: relative;
+}
+
+.dropdown-btn {
+  width: 100%;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dropdown-btn::after {
+  content: '▾';
+  margin-left: auto;
+  transform: rotate(0deg) translateX(0);
+  transition: transform 0.3s ease;
+}
+
+.dropdown.open .dropdown-btn::after {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.5s cubic-bezier(0.77, 0.2, 0.05, 1);
+  margin-left: 24px;
+  padding-left: 12px;
+  border-left: 1px dashed rgba(255, 255, 255, 0.2);
+}
+
+.dropdown.open .dropdown-menu { 
+  max-height: 500px;
+  animation: fadeIn 0.4s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dropdown-menu a {
+  font-size: 14px;
+  padding: 10px 16px;
+  margin: 4px 0;
+  border-left: 2px solid var(--accent);
+  border-radius: 0 6px 6px 0;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-menu a:hover {
+  background: rgba(79, 195, 247, 0.1);
+}
+
+/* ----- Modern Loader ----- */
+.loader-container {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 47, 109, 0.9);
+  backdrop-filter: blur(5px);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 3000;
+  flex-direction: column;
+}
+
+.loader-container.active { 
+  display: flex;
+  animation: fadeIn 0.3s ease;
+}
+
+.loader-image { 
+  width: 120px;
+  filter: drop-shadow(0 0 10px rgba(79, 195, 247, 0.7));
+}
+
+.loader-text {
+  color: var(--white);
+  margin-top: 20px;
+  font-size: 18px;
+  letter-spacing: 1px;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 480px) {
+  .header {
+    height: 70px;
+  }
+  
+  .logo {
+    height: 50px;
+  }
+  
+  .burger {
+    left: 16px;
+    padding: 8px;
+  }
+  
+  .side-nav {
+    width: 280px;
+  }
+}
+</style>
 </head>
 <body>
-    <div id="loader" class="loader-container">
-        <img src="{% static 'images/K.gif' %}" alt="Loading..." class="loader-image">
-    </div>
-    <div class="header">
-        <!-- Logo -->
-        <img src="{% static 'images/Logo_Blanco.png' %}" alt="Logo">
-        
-        <!-- Navegación -->
-        <div class="nav-buttons">
-            <a href="{% url 'index' %}">Index</a>
-            <a href="{% url 'conflictos' %}">Claims</a>            
-            <a href="{% url 'liberadas' %}">Remove Works</a>
-            
-            <!-- Dropdown -->
-            <div class="dropdown">
-                <button>Matching Tool MLC</button>
-                <div class="dropdown-content">
-                    <a href="{% url 'matching_tool' %}">Matching Title-Writer</a>
-                    <a href="{% url 'codigos_isrc_list' %}">Matching ISRC</a>
-                    <a href="{% url 'matching_tool_list' %}">Historial Matching</a>
-                </div>
-            </div>
 
-            <a href="{% url 'logout' %}">Logout</a>
-        </div>
+<!-- Modern Loader -->
+<div id="loader" class="loader-container">
+  <img src="{% static 'images/K.gif' %}" alt="Loading…" class="loader-image">
+  <div class="loader-text">LOADING...</div>
+</div>
+
+<header class="header">
+
+  <!-- Animated Burger -->
+  <button id="burger" class="burger" onclick="toggleMenu()" aria-label="Toggle menu">
+    <span></span><span></span><span></span>
+  </button>
+
+  <!-- Centered Logo with Hover Effect -->
+  <a href="{% url 'index' %}" class="logo-link">
+    <img src="{% static 'images/Logo_Blanco.png' %}" alt="Logo" class="logo">
+  </a>
+</header>
+
+<!-- Futuristic Side Navigation -->
+<nav id="sideNav" class="side-nav">
+
+  <a href="{% url 'index' %}">Index</a>
+  <a href="{% url 'conflictos' %}">Claims</a>
+  <a href="{% url 'liberadas' %}">Remove Works</a>
+
+  <!-- Interactive Dropdown -->
+  <div class="dropdown">
+    <button class="dropdown-btn" onclick="toggleDropdown(event)">
+      <span>Matching Tool MLC</span>
+    </button>
+    <div class="dropdown-menu">
+      <a href="{% url 'matching_tool' %}">Matching Title-Writer</a>
+      <a href="{% url 'codigos_isrc_list' %}">Matching ISRC</a>
+      <a href="{% url 'matching_tool_list' %}">Matching History</a>
     </div>
-    <script>
-        // Mostrar el loader al iniciar el cambio de página
-        window.addEventListener('beforeunload', function () {
-            document.getElementById('loader').classList.add('active');
-        });
+  </div>
+
+    <div class="dropdown">
+    <button class="dropdown-btn" onclick="toggleDropdown(event)">
+      <span>LyricFind</span>
+    </button>
+    <div class="dropdown-menu">
+      <a href="{% url 'lyricfind_pendientes' %}">Process Audio LyricFind</a>
+      <a href="{% url 'lyricfind_records' %}">LyricFind Records</a>
+    </div>
+  </div>
+  
+  <a href="{% url 'logout' %}">Logout</a>
+</nav>
+
+<script>
+/* ---- Toggle Menu with Animation ---- */
+function toggleMenu() {
+  const burger = document.getElementById('burger');
+  const nav = document.getElementById('sideNav');
+  
+  burger.classList.toggle('open');
+  nav.classList.toggle('open');
+  
+  // Add ripple effect to burger
+  if (burger.classList.contains('open')) {
+    const ripple = document.createElement('span');
+    ripple.style.cssText = `
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      background: rgba(79, 195, 247, 0.3);
+      border-radius: 50%;
+      pointer-events: none;
+      transform: translate(-50%, -50%) scale(0);
+      animation: ripple 0.6s ease-out;
+    `;
     
-        // Opcional: Ocultar el loader después de que la página haya terminado de cargar
-        window.addEventListener('load', function () {
-            document.getElementById('loader').classList.remove('active');
-        });
-    </script>
+    burger.appendChild(ripple);
+    
+    setTimeout(() => {
+      ripple.style.transform = 'translate(-50%, -50%) scale(1)';
+      ripple.style.opacity = '0';
+    }, 10);
+    
+    setTimeout(() => {
+      ripple.remove();
+    }, 600);
+  }
+}
+
+/* ---- Advanced Dropdown with Animation ---- */
+function toggleDropdown(e) {
+  e.stopPropagation();
+  const dropdown = e.currentTarget.parentElement;
+  const isOpen = dropdown.classList.contains('open');
+  
+  // Close all other dropdowns first
+  document.querySelectorAll('.dropdown.open').forEach(d => {
+    if (d !== dropdown) d.classList.remove('open');
+  });
+  
+  dropdown.classList.toggle('open');
+  
+  // Add subtle animation
+  if (!isOpen) {
+    const menu = dropdown.querySelector('.dropdown-menu');
+    menu.style.opacity = '0';
+    menu.style.transform = 'translateY(-10px)';
+    
+    setTimeout(() => {
+      menu.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+      menu.style.opacity = '1';
+      menu.style.transform = 'translateY(0)';
+    }, 10);
+  }
+}
+
+/* Close menu when clicking outside */
+document.addEventListener('click', e => {
+  const nav = document.getElementById('sideNav');
+  const burger = document.getElementById('burger');
+  
+  if (nav.classList.contains('open') && !nav.contains(e.target) && !burger.contains(e.target)) {
+    toggleMenu();
+  }
+});
+
+/* Close dropdowns when clicking outside */
+document.addEventListener('click', e => {
+  if (!e.target.closest('.dropdown')) {
+    document.querySelectorAll('.dropdown.open').forEach(d => {
+      d.classList.remove('open');
+    });
+  }
+});
+
+/* Enhanced loader functionality */
+window.addEventListener('beforeunload', () => {
+  const loader = document.getElementById('loader');
+  loader.classList.add('active');
+  loader.style.opacity = '0';
+  setTimeout(() => {
+    loader.style.opacity = '1';
+    loader.style.transition = 'opacity 0.3s ease';
+  }, 10);
+});
+
+window.addEventListener('load', () => {
+  const loader = document.getElementById('loader');
+  loader.style.opacity = '0';
+  setTimeout(() => {
+    loader.classList.remove('active');
+  }, 300);
+});
+
+/* Add ripple effect to menu items */
+document.querySelectorAll('.side-nav a, .dropdown-btn').forEach(item => {
+  item.addEventListener('click', function(e) {
+    if (this.href || this.classList.contains('dropdown-btn')) {
+      const rect = this.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      const ripple = document.createElement('span');
+      ripple.style.cssText = `
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        background: rgba(79, 195, 247, 0.6);
+        border-radius: 50%;
+        pointer-events: none;
+        transform: translate(-50%, -50%) scale(0);
+        animation: ripple 0.6s ease-out;
+        top: ${y}px;
+        left: ${x}px;
+      `;
+      
+      this.appendChild(ripple);
+      
+      setTimeout(() => {
+        ripple.style.transform = 'translate(-50%, -50%) scale(10)';
+        ripple.style.opacity = '0';
+      }, 10);
+      
+      setTimeout(() => {
+        ripple.remove();
+      }, 600);
+    }
+  });
+});
+</script>
 </body>
 </html>

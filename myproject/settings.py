@@ -11,7 +11,7 @@ SECRET_KEY = config('SECRET_KEY')
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.0.100', 'localhost', '127.0.0.1', '190.25.45.47',]
+ALLOWED_HOSTS = ['192.168.0.220', 'localhost', '127.0.0.1', '190.25.45.47', '186.31.4.192']
 
 # Configuración de CSRF para aceptar HTTPS en localhost
 CSRF_TRUSTED_ORIGINS = ['https://localhost', 'https://127.0.0.1']
