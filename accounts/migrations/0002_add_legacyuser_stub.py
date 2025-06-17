@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
             ],
             options={
                 'db_table': 'users',
-                'managed': False,  # No crea/modifica la tabla real
+                'managed': False,
             },
         ),
     ]
