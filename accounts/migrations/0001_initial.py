@@ -11,6 +11,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        # --- Modelo User (ya existente) ------------------------------------
         migrations.CreateModel(
             name='User',
             fields=[
@@ -24,6 +25,23 @@ class Migration(migrations.Migration):
             ],
             options={
                 'abstract': False,
+            },
+        ),
+
+        # --- Stub para el modelo heredado LegacyUser -----------------------
+        #     • Satisface la FK que usa django.contrib.admin (LogEntry.user)
+        #     • managed=False ⇒ no crea ni altera la tabla real 'users'
+        migrations.CreateModel(
+            name='LegacyUser',
+            fields=[
+                ('id', models.AutoField(primary_key=True, serialize=False)),
+                ('username', models.CharField(max_length=150, unique=True)),
+                ('password', models.CharField(max_length=255)),
+                ('last_login', models.DateTimeField(auto_now=True)),
+            ],
+            options={
+                'db_table': 'users',  # tabla legada
+                'managed': False,
             },
         ),
     ]
