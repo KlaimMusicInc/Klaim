@@ -5,133 +5,412 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LOG IN</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <title>LOG IN | KLAIM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <style>
+        :root {
+            --primary: #112F6D;
+            --primary-light: #1a4a9e;
+            --secondary: #00C4FF;
+            --dark: #0A1A3A;
+            --light: #F0F5FF;
+            --glass: rgba(255, 255, 255, 0.55);  /* 85% blanco (sólido pero con un 15% de transparencia) */
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --error: #FF4D6D;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Poppins', sans-serif;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f4f7f6;
-            flex-direction: column;
+            background: linear-gradient(135deg, var(--dark), var(--primary));
+            background-size: 400% 400%;
+            animation: gradientBG 12s ease infinite;
+            color: white;
+            perspective: 1000px;
+            overflow-x: hidden;
         }
 
-        .logo {
-            width: 350px;
-            height: auto;
-            margin-bottom: 20px;
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
         .login-container {
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
+            padding: 2rem;
+            transform-style: preserve-3d;
         }
 
         .card {
-            background: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            border: none;
-            text-align: center;
+            background: var(--glass);
+            backdrop-filter: blur(8px);  /* Un poco menos difuminado que el original (12px) */
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid var(--glass-border); 
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2),
+                        inset 0 4px 12px rgba(255, 255, 255, 0.1);
+            padding: 2.5rem;
+            transform-style: preserve-3d;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
-        .card-header {
-            font-size: 24px;
-            font-weight: 600;
-            color: #333333;
-            padding: 20px;
-            border-bottom: none;
-            background-color: transparent;
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            transform: rotate(30deg);
+            animation: shine 6s infinite;
         }
 
-        .card-body {
-            padding: 30px;
+        @keyframes shine {
+            0% { transform: rotate(30deg) translate(-20%, -20%); }
+            100% { transform: rotate(30deg) translate(20%, 20%); }
+        }
+
+        .logo-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 2rem;
+            filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.2));
+            transform: translateZ(50px);
+            width: 100%;
+        }
+
+        .logo {
+            width: 220px;
+            height: auto;
+            transition: all 0.3s ease;
+            margin-bottom: 1.5rem;
+        }
+
+        .logo:hover {
+            transform: scale(1.05) rotate(-2deg);
         }
 
         form {
-            display: inline-block;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            transform: translateZ(30px);
+            width: 100%;
+        }
+
+        .form-group {
+            position: relative;
             width: 100%;
         }
 
         .form-label {
-            font-weight: 600;
-            color: #555555;
-            display: block;
-            text-align: left;
-            margin-bottom: 5px;
+            position: absolute;
+            top: 12px;
+            left: 16px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.8);
+            background: var(--primary);
+            padding: 0 6px;
+            border-radius: 4px;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            transform-origin: left center;
+            transform: translateZ(20px);
         }
 
         .form-control {
-            border-radius: 6px;
-            padding: 10px;
-            font-size: 16px;
-            border: 1px solid #ced4da;
-            background-color: #f7f8f9;
-            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
-            width: calc(100% - 22px); /* Ajustar ancho para mantener padding y borde */
-            margin-bottom: 15px;
+            width: 100%;
+            padding: 16px;
+            font-size: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--secondary);
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 3px rgba(0, 196, 255, 0.2);
+        }
+
+        .form-control:focus + .form-label,
+        .form-control:not(:placeholder-shown) + .form-label {
+            top: -10px;
+            left: 12px;
+            font-size: 0.75rem;
+            background: var(--primary-light);
+            transform: translateZ(30px);
         }
 
         .btn-success {
-            background-color: #112F6D;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
             border: none;
-            border-radius: 6px;
-            padding: 12px;
-            font-size: 16px;
+            padding: 16px;
+            font-size: 1rem;
             font-weight: 600;
+            border-radius: 12px;
             cursor: pointer;
-            transition: background-color 0.3s ease;
-            width: 100%; /* Ocupa todo el ancho disponible */
-            color: #ffffff
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(17, 47, 109, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 0.5rem;
+            position: relative;
+            overflow: hidden;
+            transform: translateZ(20px);
+            width: 100%;
+        }
+
+        .btn-success::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: all 0.5s ease;
         }
 
         .btn-success:hover {
-            background-color: #112F6D;
+            transform: translateY(-2px) translateZ(25px);
+            box-shadow: 0 6px 16px rgba(17, 47, 109, 0.4);
+        }
+
+        .btn-success:hover::before {
+            left: 100%;
+        }
+
+        .btn-success:active {
+            transform: translateY(0) translateZ(20px);
+            box-shadow: 0 2px 8px rgba(17, 47, 109, 0.3);
+        }
+
+        .alert-container {
+            transform: translateZ(20px);
+            width: 100%;
         }
 
         .alert-danger {
-            font-size: 14px;
-            margin-top: 10px;
-            color: #721c24;
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            border-radius: 6px;
-            padding: 10px;
+            background: rgba(255, 77, 109, 0.2);
+            border: 1px solid var(--error);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+            transform: translate3d(0, 0, 0);
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            animation: float linear infinite;
+            opacity: 0.8;
+            transition: all 0.5s ease;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.8; }
+            100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 1.5rem;
+            }
+            
+            .card {
+                padding: 1.5rem;
+                border-radius: 16px;
+            }
+            
+            .logo {
+                width: 180px;
+                margin-bottom: 1rem;
+            }
         }
     </style>
 </head>
 <body>
-    <img src="{% static 'images/logo.png' %}" alt="Logo de la Empresa" class="logo">
-    <div class="login-container">
-        <div class="card mt-5">
-            <div class="card-header text-center">
-                LOG IN
+    <div class="particles" id="particles"></div>
+    
+    <div class="login-container animate__animated animate__fadeIn">
+        <div class="card">
+            <div class="logo-container">
+                <img src="{% static 'images/logo.png' %}" alt="Logo de la Empresa" class="logo">
             </div>
+            
             <div class="card-body">
                 <form method="post">
                     {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="username" class="form-label">User</label>
-                        <input type="text" class="form-control" name="username" id="username" required>
+                    <div class="form-group">
+                        <input type="text" class="form-control" name="username" id="username" placeholder=" " required>
+                        <label for="username" class="form-label">Usuario</label>
                     </div>
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" name="password" id="password" required>
+                    
+                    <div class="form-group">
+                        <input type="password" class="form-control" name="password" id="password" placeholder=" " required>
+                        <label for="password" class="form-label">Contraseña</label>
                     </div>
-                    <button type="submit" class="btn btn-success">KLAIM</button>
+                    
+                    <button type="submit" class="btn btn-success">
+                        INGRESAR
+                    </button>
                 </form>
+                
                 {% if messages %}
+                <div class="alert-container">
                     {% for message in messages %}
-                        <div class="alert alert-danger" role="alert">
+                        <div class="alert alert-danger animate__animated animate__shakeX">
                             {{ message }}
                         </div>
                     {% endfor %}
+                </div>
                 {% endif %}
             </div>
         </div>
     </div>
+
+    <script>
+        // Lista de imágenes de partículas desde tu carpeta static
+        const particleImages = [
+            "{% static 'images/particles/capital.png' %}",
+            "{% static 'images/particles/accordion.png' %}",
+            "{% static 'images/particles/piano.png' %}",
+            "{% static 'images/particles/krachapp.png' %}",
+            "{% static 'images/particles/guitar.png' %}",
+            "{% static 'images/particles/microphone.png' %}",
+            "{% static 'images/particles/money-bag.png' %}",
+            "{% static 'images/particles/money.png' %}",
+            "{% static 'images/particles/Cash.png' %}"
+        ];
+
+        // Crear partículas flotantes
+        document.addEventListener('DOMContentLoaded', function() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 20;
+            
+            // Precargar imágenes
+            const loadedImages = [];
+            let imagesLoaded = 0;
+            
+            particleImages.forEach(src => {
+                const img = new Image();
+                img.src = src;
+                img.onload = () => {
+                    imagesLoaded++;
+                    if (imagesLoaded === particleImages.length) {
+                        createParticles();
+                    }
+                };
+                loadedImages.push(img);
+            });
+
+            function createParticles() {
+                for (let i = 0; i < particleCount; i++) {
+                    const particle = document.createElement('div');
+                    particle.classList.add('particle');
+                    
+                    // Seleccionar una imagen aleatoria
+                    const randomImage = loadedImages[Math.floor(Math.random() * loadedImages.length)];
+                    
+                    // Tamaño y posición aleatorios
+                    const size = Math.random() * 40 + 30; // Entre 30px y 70px
+                    const posX = Math.random() * 100;
+                    const delay = Math.random() * 10;
+                    const duration = Math.random() * 20 + 10;
+                    const rotation = Math.random() * 360;
+                    const opacity = Math.random() * 0.5 + 0.5; // Entre 0.5 y 1
+                    
+                    // Configurar la partícula
+                    particle.style.width = `${size}px`;
+                    particle.style.height = `${size}px`;
+                    particle.style.left = `${posX}%`;
+                    particle.style.bottom = `-${size}px`;
+                    particle.style.animationDuration = `${duration}s`;
+                    particle.style.animationDelay = `${delay}s`;
+                    particle.style.transform = `rotate(${rotation}deg)`;
+                    particle.style.opacity = opacity;
+                    particle.style.backgroundImage = `url("${randomImage.src}")`;
+                    
+                    particlesContainer.appendChild(particle);
+                }
+            }
+            
+            // Add 3D tilt effect to card
+            const card = document.querySelector('.card');
+            
+            if (card) {
+                card.addEventListener('mousemove', (e) => {
+                    const xAxis = (window.innerWidth / 2 - e.pageX) / 15;
+                    const yAxis = (window.innerHeight / 2 - e.pageY) / 15;
+                    card.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
+                });
+                
+                card.addEventListener('mouseenter', () => {
+                    card.style.transition = 'none';
+                });
+                
+                card.addEventListener('mouseleave', () => {
+                    card.style.transition = 'all 0.5s ease';
+                    card.style.transform = 'rotateY(0deg) rotateX(0deg)';
+                });
+            }
+        });
+    </script>
 </body>
 </html>

@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Avance | Klaim Music</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+    <style>
+        :root {
+            --primary: #3a86ff;
+            --primary-dark: #2667cc;
+            --secondary: #4913df;
+            --accent: #ff006e;
+            --dark: #1a1b25;
+            --light: #f8f9fa;
+            --gray: #6c757d;
+            --light-gray: #e9ecef;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --glass: rgba(255, 255, 255, 0.15);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #f5f7ff;
+            color: var(--dark);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header space */
+        .header-space {
+            height: 80px;
+        }
+
+        /* Main container */
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            background: linear-gradient(135deg, #f5f7ff 0%, #f0f4ff 100%);
+        }
+
+        /* Dashboard header */
+        .dashboard-header {
+            padding: 2rem 5vw;
+            background: linear-gradient(135deg, var(--light), var(--light-gray));
+            color: rgb(36, 9, 155);
+            text-align: center;
+        }
+
+        .dashboard-header h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+        }
+
+        .dashboard-header p {
+            color: rgba(17, 4, 129, 0.8);
+            font-size: 0.9rem;
+        }
+
+        /* KPIs section */
+        .kpis-section {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 249, 250, 0.9) 100%);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            margin: 2rem 5vw;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+            border: 1px solid var(--glass-border);
+        }
+
+        .kpis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .kpi-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(58, 134, 255, 0.15);
+        }
+
+        .kpi-card h3 {
+            font-size: 0.9rem;
+            color: var(--gray);
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-card .kpi-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-top: 0.25rem;
+        }
+
+        /* Buttons section */
+        .buttons-section {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin: 0 5vw 2rem;
+            flex-wrap: wrap;
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 2.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 4px 15px rgba(58, 134, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(58, 134, 255, 0.4);
+        }
+
+        .download-btn:active {
+            transform: translateY(0);
+        }
+
+        .download-btn svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        /* Charts section */
+        .charts-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            padding: 2rem 5vw;
+            background: white;
+            margin: 0 5vw 2rem;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .chart-container h3 {
+            text-align: center;
+            margin-bottom: 1rem;
+            color: var(--dark);
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .chart-container canvas {
+            width: 100% !important;
+            height: 180px !important;
+        }
+
+        /* Table section */
+        .table-section {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            margin: 0 5vw 3rem;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+            overflow-x: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .data-table thead th {
+            position: sticky;
+            top: 0;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            font-weight: 600;
+            padding: 1rem 1.5rem;
+            text-align: left;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: none;
+        }
+
+        .data-table thead th:first-child {
+            border-top-left-radius: 12px;
+            border-bottom-left-radius: 12px;
+        }
+
+        .data-table thead th:last-child {
+            border-top-right-radius: 12px;
+            border-bottom-right-radius: 12px;
+        }
+
+        .data-table tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        .data-table tbody tr:hover {
+            transform: translateX(4px);
+            box-shadow: 4px 0 0 0 var(--primary) inset;
+        }
+
+        .data-table tbody td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--light-gray);
+            font-size: 0.9rem;
+            background: white;
+        }
+
+        .data-table tbody tr:nth-child(even) td {
+            background-color: #f8f9fa;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--gray);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .dashboard-header {
+                padding: 1.5rem 3vw;
+            }
+
+            .dashboard-header h1 {
+                font-size: 1.5rem;
+            }
+
+            .kpis-section {
+                padding: 1.5rem;
+                margin: 1.5rem 3vw;
+            }
+
+            .kpis-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+
+            .buttons-section {
+                margin: 0 3vw 1.5rem;
+                gap: 1rem;
+            }
+
+            .download-btn {
+                padding: 0.8rem 1.5rem;
+                font-size: 0.9rem;
+            }
+
+            .charts-section {
+                padding: 1.5rem 3vw;
+                margin: 0 3vw 1.5rem;
+                grid-template-columns: 1fr;
+            }
+
+            .table-section {
+                padding: 1rem;
+                margin: 0 3vw 2rem;
+            }
+
+            .data-table thead th,
+            .data-table tbody td {
+                padding: 0.75rem;
+            }
+        }
+
+        /* Animation classes */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); }
+            to { transform: translateY(0); }
+        }
+
+        .animate-fade {
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        .animate-slide {
+            animation: slideUp 0.3s ease forwards;
+        }
+    </style>
+</head>
+<body>
+    <!-- Space for Django header include -->
+    <div class="header-space">{% include 'header.html' %}</div>
+    
+    <div class="main-container animate-fade">
+        <!-- Dashboard Header -->
+        <header class="dashboard-header animate-slide">
+            <h1>Reporte de Avance</h1>
+            <p>Generado: {{ hoy|date:"d /m /Y – H:i" }}</p>
+        </header>
+
+        <!-- KPIs Section -->
+        <section class="kpis-section animate-slide">
+            <div class="kpis-grid">
+                <div class="kpi-card">
+                    <h3>Obras</h3>
+                    <div class="kpi-value">{{ totales.obras }}</div>
+                </div>
+                <div class="kpi-card">
+                    <h3>ISRC</h3>
+                    <div class="kpi-value">{{ totales.isrc }}</div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Conflictos</h3>
+                    <div class="kpi-value">{{ totales.conflictos }}</div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Matching-ISRC</h3>
+                    <div class="kpi-value">{{ totales.matching_isrc }}</div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Matching T/A</h3>
+                    <div class="kpi-value">{{ totales.matching_ta }}</div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Audios</h3>
+                    <div class="kpi-value">{{ totales.audio_links }}</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Buttons Section -->
+        <div class="buttons-section animate-slide">
+            <button id="btnDownloadScreen" class="download-btn" type="button" title="Descargar lo que ves">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                PDF de pantalla
+            </button>
+
+            <a href="{% url 'generar_reporte_pdf' %}" target="_blank" class="download-btn" title="Generado por ReportLab">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10 9 9 9 8 9"/>
+                </svg>
+                PDF detallado
+            </a>
+        </div>
+
+        <!-- Charts Section -->
+        <section id="charts" class="charts-section animate-slide"></section>
+
+        <!-- Table Section -->
+        <section class="table-section animate-slide">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Obras</th>
+                        <th>ISRC</th>
+                        <th>Conflictos</th>
+                        <th>Matching-ISRC</th>
+                        <th>Matching T/A</th>
+                        <th>Audios</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in clientes %}
+                        <tr>
+                            <td style="text-align:left">{{ row.cliente }}</td>
+                            <td>{{ row.obras }}</td>
+                            <td>{{ row.isrc }}</td>
+                            <td>{{ row.conflictos }}</td>
+                            <td>{{ row.matching_isrc }}</td>
+                            <td>{{ row.matching_ta }}</td>
+                            <td>{{ row.audio_links }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="7" class="empty-state">No hay datos disponibles</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+    </div>
+
+    <!-- ====== Datos JSON ====== -->
+    <script>
+    const rows = JSON.parse('{{ clientes|safe|escapejs }}'.replace(/'/g,'"') || '[]');
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <script>
+    /* === Gráficas === */
+    (() => {
+        if (!rows.length) return;
+        const METRICAS = [
+            {key:'obras',         label:'Obras',        color:'#3a86ff'},
+            {key:'isrc',          label:'ISRC',         color:'#ff006e'},
+            {key:'conflictos',    label:'Conflictos',   color:'#dc3545'},
+            {key:'matching_isrc', label:'Matching-ISRC',   color:'#28a745'},
+            {key:'matching_ta',   label:'Matching T/A',    color:'#ffc107'},
+            {key:'audio_links',   label:'Audios',  color:'#4913df'},
+        ];
+        const labels  = rows.map(r=>r.cliente);
+        const wrapper = document.getElementById('charts');
+
+        METRICAS.forEach(m=>{
+            const box = document.createElement('div');
+            box.className = 'chart-container';
+            box.innerHTML = `<h3>${m.label}</h3><canvas id="c_${m.key}" height="160"></canvas>`;
+            wrapper.appendChild(box);
+
+            new Chart(document.getElementById(`c_${m.key}`),{
+                type:'bar',
+                data:{labels,
+                      datasets:[{label:m.label,data:rows.map(r=>r[m.key]),backgroundColor:m.color}]},
+                options:{responsive:true,maintainAspectRatio:false,
+                         plugins:{legend:{display:false}},
+                         scales:{y:{beginAtZero:true,precision:0}}}
+            });
+        });
+    })();
+
+    /* === PDF de pantalla === */
+    document.getElementById('btnDownloadScreen').addEventListener('click', ()=>{
+        html2pdf().set({
+            margin:0,
+            filename:'Reporte_Klaim_{{ hoy|date:"Ymd_His" }}.pdf',
+            image:{type:'jpeg',quality:0.98},
+            html2canvas:{scale:2},
+            jsPDF:{unit:'in',format:'letter',orientation:'portrait'}
+        }).from(document.querySelector('.main-container')).save();
+    });
+    </script>
+</body>
+</html>

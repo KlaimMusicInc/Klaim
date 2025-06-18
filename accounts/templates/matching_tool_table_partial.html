@@ -1,9 +1,10 @@
 
-'''
-HTML PARA HISTORIAL MATCHING TOOL POR TITULO AUTOR
 
-'''
-<table class="styled-table">
+<!--HTML PARA HISTORIAL MATCHING TOOL POR TITULO AUTOR-->
+
+
+
+<table class="data-table">
     <thead>
         <tr>
             <th>ID</th>
@@ -24,22 +25,38 @@ HTML PARA HISTORIAL MATCHING TOOL POR TITULO AUTOR
             <td>{{ record.codigo_mlc.codigo_MLC }}</td>
             <td>{{ record.usos }}</td>
             <td>{{ record.fecha_creacion|date:"Y-m-d H:i:s" }}</td>
-            <td onclick="openModal('{{ record.id }}', 'matching_tool_titulo_autor')">{{ record.estado }}</td>
+            <td onclick="openModal('{{ record.id }}', 'matching_tool_titulo_autor')">
+                <span class="status-badge status-{{ record.estado|lower }}">
+                    {{ record.estado }}
+                </span>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="7" class="empty-state">No records found</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 
-<div class="pagination">
+<nav class="pagination-container">
     {% if page_obj.has_previous %}
-        <a href="#" class="page-link-titulo-autor" data-page="1">&laquo; First</a>
-        <a href="#" class="page-link-titulo-autor" data-page="{{ page_obj.previous_page_number }}">Previous</a>
+        <a href="#" class="pagination-btn page-link-titulo-autor" data-page="1">&laquo; First</a>
+        <a href="#" class="pagination-btn page-link-titulo-autor" data-page="{{ page_obj.previous_page_number }}">Previous</a>
+    {% else %}
+        <span class="pagination-btn disabled">&laquo; First</span>
+        <span class="pagination-btn disabled">Previous</span>
     {% endif %}
 
-    <span class="current">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    <span class="pagination-info">
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </span>
 
     {% if page_obj.has_next %}
-        <a href="#" class="page-link-titulo-autor" data-page="{{ page_obj.next_page_number }}">Next</a>
-        <a href="#" class="page-link-titulo-autor" data-page="{{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+        <a href="#" class="pagination-btn page-link-titulo-autor" data-page="{{ page_obj.next_page_number }}">Next</a>
+        <a href="#" class="pagination-btn page-link-titulo-autor" data-page="{{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+    {% else %}
+        <span class="pagination-btn disabled">Next</span>
+        <span class="pagination-btn disabled">Last &raquo;</span>
     {% endif %}
-</div>
+</nav>

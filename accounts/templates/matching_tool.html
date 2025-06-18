@@ -1,7 +1,3 @@
-
-<!--HTML PARA MATCHING TOOL POR TITULO AUTOR-->
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,127 +7,338 @@
     <title>Matching Tool</title>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <style>
-        body {
-            font-family: 'Arial', sans-serif;
+        :root {
+            --primary: #3a86ff;
+            --primary-dark: #2667cc;
+            --secondary: #3813df;
+            --accent: #ff006e;
+            --dark: #1a1b25;
+            --light: #f8f9fa;
+            --gray: #6c757d;
+            --light-gray: #e9ecef;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --glass: rgba(255, 255, 255, 0.15);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
 
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #f5f7ff;
+            color: var(--dark);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header space */
+        .header-space {
+            height: 80px;
+        }
+
+        /* Main container */
         .container {
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            flex: 1;
+            padding: 0 5vw;
+            background: linear-gradient(135deg, #f5f7ff 0%, #f0f4ff 100%);
         }
 
+        /* Table container */
         .table-container {
             flex: 1;
-            overflow-y: auto;
-            padding: 20px;
+            padding: 2rem 0;
         }
 
-        .styled-table {
+        /* Section header */
+        .section-header {
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--dark);
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        /* Modern Data Table */
+        .data-table {
             width: 100%;
-            border-collapse: collapse;
-            font-size: 16px;
+            border-collapse: separate;
+            border-spacing: 0;
+            min-width: 1200px;
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+        }
+
+        .data-table th {
+            position: sticky;
+            top: 0;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            font-weight: 600;
+            padding: 1rem 1.5rem;
             text-align: left;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .styled-table th, .styled-table td {
-            padding: 12px 15px;
-            border: 1px solid #ddd;
+        .data-table td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--light-gray);
+            font-size: 0.9rem;
+            background: white;
         }
 
-        .styled-table th {
-            background-color: #112F6D;
-            color: white;
+        .data-table tr:nth-child(even) td {
+            background-color: #f8f9fa;
         }
 
-        input.usos-input {
-            width: 60px;
-            padding: 5px;
-            font-size: 14px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            text-align: center;
+        .data-table tbody tr {
+            transition: all 0.2s ease;
         }
 
-        .save-button {
-            padding: 5px 10px;
-            background-color: #4CAF50;
-            color: white;
+        .data-table tbody tr:hover {
+            transform: translateX(4px);
+            box-shadow: 4px 0 0 0 var(--primary) inset;
+        }
+
+        /* Form Inputs */
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            font-size: 0.95rem;
             border: none;
-            border-radius: 5px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .form-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.2);
+            background: white;
+        }
+
+        .form-input::placeholder {
+            color: #adb5bd;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            padding: 0.75rem 1.25rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
             cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            min-width: 120px;
         }
 
-        .save-button:hover {
-            background-color: #45a049;
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(58, 134, 255, 0.4);
         }
 
-        .pagination {
+        .action-btn:active {
+            transform: translateY(0);
+        }
+
+        .action-btn.primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            box-shadow: 0 4px 15px rgba(58, 134, 255, 0.3);
+        }
+
+        .action-btn.success {
+            background: linear-gradient(135deg, var(--success), #86efac);
+            color: white;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-block;
+            padding: 0.35rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-badge.true {
+            background-color: rgba(40, 167, 69, 0.1);
+            color: var(--success);
+        }
+
+        .status-badge.false {
+            background-color: rgba(255, 193, 7, 0.1);
+            color: #d39e00;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--gray);
+            font-size: 1.1rem;
+        }
+
+        /* ISRC Input Group */
+        .isrc-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        /* Pagination */
+        .pagination-container {
             display: flex;
             justify-content: center;
-            margin-top: 20px;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
         }
 
-        .pagination a {
-            margin: 0 5px;
-            padding: 8px 12px;
+        .pagination-btn, 
+        .pagination-info {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
             text-decoration: none;
-            color: white;
-            background-color: #112F6D;
-            border-radius: 4px;
+            transition: all 0.2s ease;
         }
 
-        .pagination a:hover {
-            background-color: #0b48a2;
+        .pagination-btn {
+            background: white;
+            color: var(--primary);
+            border: 1px solid var(--light-gray);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
-        .pagination .current {
-            margin: 0 5px;
-            padding: 8px 12px;
-            background-color: #4CAF50;
-            border-radius: 4px;
+        .pagination-btn:hover {
+            background: var(--primary);
             color: white;
-            font-weight: bold;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(58, 134, 255, 0.2);
         }
-        input.usos-input, input.isrc-input, input.artist-input {
-            width: 120px;
-            padding: 5px;
-            font-size: 14px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            text-align: center;
+
+        .pagination-btn.disabled {
+            background: var(--light-gray);
+            color: var(--gray);
+            cursor: not-allowed;
+            box-shadow: none;
         }
-        .save-button, .insert-isrc-button {
-            padding: 5px 10px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
+
+        .pagination-info {
+            background: var(--light-gray);
+            color: var(--gray);
+            cursor: default;
         }
-        .save-button:hover, .insert-isrc-button:hover {
-            background-color: #45a049;
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 3vw;
+            }
+            
+            .section-title {
+                font-size: 1.5rem;
+            }
+            
+            .data-table {
+                font-size: 0.85rem;
+            }
+            
+            .data-table th,
+            .data-table td {
+                padding: 0.75rem;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .action-btn {
+                width: 100%;
+                min-width: auto;
+            }
+        }
+
+        /* Animation classes */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); }
+            to { transform: translateY(0); }
+        }
+
+        .animate-fade {
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        .animate-slide {
+            animation: slideUp 0.3s ease forwards;
         }
     </style>
 </head>
 <body>
+    <!-- Floating Particles Background -->
+    
     {% include 'header.html' %}
+    
     <div class="container">
         <div class="table-container">
-            <h2 class="search-title">Uploads to Platform with MLC Code and Authors</h2>
-            <table class="styled-table">
+            <div class="section-header">
+                <h2 class="section-title">Uploads to Platform with MLC Code and Authors</h2>
+            </div>
+
+            <table class="data-table">
                 <thead>
                     <tr>
                         <th>Work</th>
                         <th>Cod MLC</th>
                         <th>Author</th>
                         <th>Artists</th>
-                        <th>Matching Tool</th> <!-- Nueva columna -->
+                        <th>Matching Tool</th>
                         <th>Uses</th>
                         <th>Action</th>
-                        <th>ISRC's found</th> <!-- Nueva columna -->
+                        <th>ISRC's found</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -141,59 +348,120 @@
                         <td class="codigo-mlc" data-id="{{ subida.id_subida }}">{{ subida.codigo_MLC }}</td>
                         <td class="autor" data-id="{{ subida.autor_id }}">{{ subida.autor }}</td>
                         <td class="artistas" data-ids="{{ subida.artistas_ids|default:'' }}">{{ subida.artistas|default:'No artistas' }}</td>
-                        <td>{{ subida.matching_tool|yesno:"Sí,No" }}</td> <!-- Mostrar True como Sí y False como No -->
+                        <td>
+                            <span class="status-badge {{ subida.matching_tool|yesno:'true,false' }}">
+                                {{ subida.matching_tool|yesno:"Sí,No" }}
+                            </span>
+                        </td>
                         <td>
                             <input
                                 type="number"
-                                class="usos-input"
+                                class="form-input usos-input"
                                 name="usos_{{ forloop.counter }}"
                                 min="0"
                                 max="999"
                                 placeholder="0">
                         </td>
                         <td>
-                            <button class="save-button" onclick="guardarMatch(this)">Guardar Match</button>
+                            <button class="action-btn success" onclick="guardarMatch(this)">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                    <polyline points="7 3 7 8 15 8"></polyline>
+                                </svg>
+                                Guardar Match
+                            </button>
                         </td>
                         <td>
-                            <input
-                                type="text"
-                                class="isrc-input"
-                                name="isrc_{{ forloop.counter }}"
-                                placeholder="Ingresar ISRC">
-                            <input
-                                type="text"
-                                class="artist-input"
-                                name="artist_{{ forloop.counter }}"
-                                placeholder="Ingresar Interprete">
-                            <button class="insert-isrc-button" onclick="insertarISRC(this)">Insertar ISRC</button>
+                            <div class="isrc-input-group">
+                                <input
+                                    type="text"
+                                    class="form-input isrc-input"
+                                    name="isrc_{{ forloop.counter }}"
+                                    placeholder="Ingresar ISRC">
+                                <input
+                                    type="text"
+                                    class="form-input artist-input"
+                                    name="artist_{{ forloop.counter }}"
+                                    placeholder="Ingresar Interprete">
+                                <button class="action-btn primary" onclick="insertarISRC(this)">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    </svg>
+                                    Insertar ISRC
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            No records found.
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
 
-            <!-- Paginación -->
-            <div class="pagination">
-                <span class="step-links">
-                    {% if page_obj.has_previous %}
-                        <a href="?page=1">&laquo; First</a>
-                        <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
-                    {% endif %}
+            <!-- Pagination -->
+            <nav class="pagination-container">
+                {% if page_obj.has_previous %}
+                    <a class="pagination-btn" href="?page=1">&laquo; First</a>
+                    <a class="pagination-btn" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                {% else %}
+                    <span class="pagination-btn disabled">&laquo; First</span>
+                    <span class="pagination-btn disabled">Previous</span>
+                {% endif %}
 
-                    <span class="current">
-                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-                    </span>
-
-                    {% if page_obj.has_next %}
-                        <a href="?page={{ page_obj.next_page_number }}">Next</a>
-                        <a href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
-                    {% endif %}
+                <span class="pagination-info">
+                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
                 </span>
-            </div>
+
+                {% if page_obj.has_next %}
+                    <a class="pagination-btn" href="?page={{ page_obj.next_page_number }}">Next</a>
+                    <a class="pagination-btn" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+                {% else %}
+                    <span class="pagination-btn disabled">Next</span>
+                    <span class="pagination-btn disabled">Last &raquo;</span>
+                {% endif %}
+            </nav>
         </div>
     </div>
 
     <script>
+        // Floating particles animation
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = window.innerWidth < 768 ? 20 : 50;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                
+                // Random size between 5px and 15px
+                const size = Math.random() * 10 + 5;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                
+                // Random position
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${Math.random() * 100}%`;
+                
+                // Random animation duration between 10s and 30s
+                const duration = Math.random() * 20 + 10;
+                particle.style.animationDuration = `${duration}s`;
+                
+                // Random delay
+                particle.style.animationDelay = `${Math.random() * 5}s`;
+                
+                particlesContainer.appendChild(particle);
+            }
+        }
+        
+        // Initialize particles when DOM is loaded
+        document.addEventListener('DOMContentLoaded', createParticles);
+
         function guardarMatch(button) {
             const fila = button.closest('tr');
             const obra_id = fila.querySelector('.obra')?.dataset.id;
@@ -238,11 +506,12 @@
                 alert(`Error al guardar el registro: ${error.message}`);
             });
         }
+
         function insertarISRC(button) {
             const fila = button.closest('tr');
             const isrcInput = fila.querySelector('.isrc-input')?.value.trim();
             const artistInput = fila.querySelector('.artist-input')?.value.trim();
-            const cod_klaim = fila.querySelector('.obra')?.dataset.id; // Obtenemos el cod_klaim
+            const cod_klaim = fila.querySelector('.obra')?.dataset.id;
 
             if (!isrcInput || !artistInput) {
                 alert('Por favor, complete todos los campos (ISRC e intérprete).');
@@ -267,7 +536,7 @@
             .then(response => {
                 if (response.ok) {
                     alert('ISRC registrado exitosamente.');
-                    window.location.reload(); // Recargar la página para actualizar los datos
+                    window.location.reload();
                 } else {
                     return response.json().then(data => {
                         throw new Error(data.error || 'Error desconocido.');
@@ -278,6 +547,7 @@
                 alert(`Error al registrar el ISRC: ${error.message}`);
             });
         }
+
         function getCookie(name) {
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {

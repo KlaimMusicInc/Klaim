@@ -1,7 +1,5 @@
 
 <!--HTML PARA MATCHING TOOL POR ISRC-->
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,123 +9,454 @@
     <title>Codes ISRC</title>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            margin: 0;
-            padding: 0;
+        :root {
+            --primary: #112F6D;
+            --primary-dark: #0d2450;
+            --primary-light: #1a4a9e;
+            --accent: #4fc3f7;
+            --success: #4CAF50;
+            --success-light: #86efac;
+            --danger: #ef4444;
+            --danger-light: #f87171;
+            --warning: #f59e0b;
+            --white: #ffffff;
+            --light-bg: #f8fafc;
+            --gray-light: #e2e8f0;
+            --gray-medium: #94a3b8;
+            --gray-dark: #475569;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
+            --border-radius: 12px;
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
 
+        /* ----- Base Styles ----- */
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--light-bg);
+            color: var(--gray-dark);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* ----- Layout Container ----- */
         .container {
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            min-height: calc(100vh - 85px);
+            padding: 0;
+            background: linear-gradient(135deg, var(--light-bg) 0%, #e6f0fa 100%);
         }
 
+        /* ----- Header Section ----- */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(17, 47, 109, 0.1);
+        }
+
+        .section-title {
+            color: var(--primary);
+            font-size: 1.8rem;
+            margin: 0;
+            position: relative;
+            display: inline-block;
+            font-weight: 600;
+            text-align: center;
+            width: 100%;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 2px;
+        }
+
+        /* ----- Filter Section ----- */
+        .filter-section {
+            background: var(--white);
+            padding: 1.5rem;
+            margin: 0 5% 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-label {
+            font-weight: 500;
+            color: var(--gray-dark);
+        }
+
+        /* ----- Form Inputs ----- */
+        .form-input, .form-select {
+            padding: 0.75rem 1rem;
+            font-size: 0.95rem;
+            border: 1px solid var(--gray-light);
+            border-radius: var(--border-radius);
+            background-color: var(--white);
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+            min-width: 200px;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.2);
+        }
+
+        /* ----- Table Container ----- */
         .table-container {
             flex: 1;
+            padding: 0 5% 2rem;
             overflow-y: auto;
-            padding: 20px;
         }
 
-        .styled-table {
+        /* ----- Modern Data Table ----- */
+        .data-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 16px;
+            font-size: 0.95rem;
             text-align: left;
+            background-color: var(--white);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
         }
 
-        .styled-table th, .styled-table td {
-            padding: 12px 15px;
-            border: 1px solid #ddd;
+        .data-table th {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: var(--white);
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
         }
 
-        .styled-table th {
-            background-color: #112F6D;
-            color: white;
+        .data-table td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--gray-light);
+            vertical-align: middle;
+            background-color: var(--glass-bg);
+            transition: var(--transition);
         }
 
-        .pagination {
-            margin-top: 10px;
-        }
-
-        .pagination span {
-            font-size: 14px;
-        }
-
-        .pagination a {
-            padding: 5px 10px;
-            margin: 0 5px;
-            background-color: #0712aa;
-            color: white;
-            text-decoration: none;
-        }
-
-        .pagination a:hover {
-            background-color: #0712aa;
-        }
-        input.usos-input{
-            width: 120px;
-            padding: 5px;
-            font-size: 14px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+        /* Específico para la columna Uses */
+        .data-table td:nth-child(10),
+        .data-table th:nth-child(10) {
+            width: 80px;
+            min-width: 80px;
+            max-width: 80px;
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
             text-align: center;
         }
-        .save-button {
-            padding: 5px 10px;
-            background-color: #4CAF50;
-            color: white;
+
+        .data-table tr:not(:first-child):hover td {
+            background-color: rgba(79, 195, 247, 0.08);
+        }
+
+        .data-table tr:nth-child(even) td {
+            background-color: rgba(241, 245, 249, 0.7);
+        }
+
+        /* Input de usos específico */
+        .usos-input {
+            width: 50px !important;
+            padding: 0.5rem !important;
+            margin: 0 auto;
+            display: block;
+            text-align: center;
+            border: 1px solid var(--gray-light);
+            border-radius: var(--border-radius);
+        }
+
+        /* ----- Action Buttons ----- */
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            min-width: 150px;
+        }
+
+        .action-btn {
+            padding: 0.6rem 0.8rem;
+            font-size: 0.85rem;
+            font-weight: 500;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: var(--shadow-sm);
+            width: 100%;
         }
-        .save-button:hover{
-            background-color: #45a049;
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
         }
-        .delete-button {
-            padding: 5px 10px;
-            background-color: #cf1616;
-            color: white;
+
+        .action-btn:active {
+            transform: translateY(0);
+        }
+
+        .action-btn.success {
+            background: linear-gradient(135deg, var(--success), var(--success-light));
+            color: var(--white);
+        }
+
+        .action-btn.success:hover {
+            background: linear-gradient(135deg, #16a34a, var(--success));
+        }
+
+        .action-btn.danger {
+            background: linear-gradient(135deg, var(--danger), var(--danger-light));
+            color: var(--white);
+        }
+
+        .action-btn.danger:hover {
+            background: linear-gradient(135deg, #dc2626, var(--danger));
+        }
+
+        /* ----- Status Badges ----- */
+        .status-badge {
+            padding: 0.35rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            display: inline-block;
+        }
+
+        .status-true {
+            background: rgba(74, 222, 128, 0.2);
+            color: #16a34a;
+        }
+
+        .status-false {
+            background: rgba(251, 191, 36, 0.2);
+            color: #d97706;
+        }
+
+        /* ----- Pagination ----- */
+        .pagination-container {
+            margin-top: 1.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            padding: 1rem;
+            background: var(--white);
+            border-radius: 0 0 var(--border-radius) var(--border-radius);
+        }
+
+        .pagination-btn,
+        .pagination-info {
+            padding: 0.55rem 1rem;
+            font-size: 0.9rem;
+            font-weight: 500;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            box-shadow: var(--shadow-sm);
+            min-width: 40px;
         }
-        .delete-button:hover{
-            background-color: #ca1616;
+
+        .pagination-btn {
+            color: var(--white);
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        }
+
+        .pagination-btn:hover {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            transform: translateY(-2px);
+        }
+
+        .pagination-btn.disabled {
+            background: var(--gray-light);
+            color: var(--gray-medium);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .pagination-info {
+            background: var(--white);
+            color: var(--gray-dark);
+            cursor: default;
+            box-shadow: none;
+        }
+
+        /* ----- Floating Particles Background ----- */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(79, 195, 247, 0.15);
+            border-radius: 50%;
+            animation: float linear infinite;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0) rotate(0deg);
+            }
+            to {
+                transform: translateY(-100vh) rotate(360deg);
+            }
+        }
+
+        /* ----- Responsive Adjustments ----- */
+        @media (max-width: 768px) {
+            .section-title {
+                font-size: 1.5rem;
+            }
+            
+            .filter-section {
+                flex-direction: column;
+                align-items: stretch;
+                margin: 0 1.5rem 1.5rem;
+            }
+            
+            .filter-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .form-input, .form-select {
+                width: 100%;
+            }
+            
+            .data-table {
+                font-size: 0.85rem;
+            }
+            
+            .data-table th,
+            .data-table td {
+                padding: 0.75rem;
+            }
+
+            /* Ajuste específico para móviles */
+            .data-table td:nth-child(10),
+            .data-table th:nth-child(10) {
+                width: 60px;
+                min-width: 60px;
+                max-width: 60px;
+                padding-left: 0.3rem;
+                padding-right: 0.3rem;
+            }
+
+            .usos-input {
+                width: 40px !important;
+                padding: 0.4rem !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .section-title {
+                font-size: 1.3rem;
+            }
+            
+            .pagination-container {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Floating Particles Background -->
+    <div class="particles" id="particles"></div>
+    
     {% include 'header.html' %}
-
-    <!-- Filtro de cliente -->
-    <form method="get" style="margin-bottom: 20px;">
-        <label for="cliente">Filtrar por cliente:</label>
-        <select name="cliente" id="cliente" onchange="this.form.submit()">
-            <option value="">-- Todos --</option>
-            {% for cliente in clientes %}
-                <option value="{{ cliente.id_cliente }}" {% if cliente.id_cliente == cliente_seleccionado %}selected{% endif %}>
-                    {{ cliente.nombre_cliente }}
-                </option>
-            {% endfor %}
-        </select>
-    </form>
-    <form method="get" style="margin-bottom: 20px;">
-        <label for="cod_klaim">Filtrar por Cod_Klaim:</label>
-        <input
-            type="number"
-            name="cod_klaim"
-            id="cod_klaim"
-            placeholder="ID de obra"
-            value="{{ cod_klaim_seleccionado|default:'' }}"
-            min="1"
-        >
-        <button type="submit">Buscar</button>
-    </form>
+    
     <div class="container">
+        <!-- Header Section -->
+        <div class="section-header">
+            <h1 class="section-title">Códigos ISRC</h1>
+        </div>
+
+        <!-- Filter Section -->
+        <div class="filter-section">
+            <!-- ▼ antes había dos “forms” separados ▼ -->
+            <form method="get" id="filter-form" class="filter-group" style="display:flex;gap:1.5rem;flex-wrap:wrap;">
+                <div class="filter-group">
+                    <label for="cliente" class="filter-label">Filtrar por cliente:</label>
+                    <select name="cliente"
+                            id="cliente"
+                            class="form-select"
+                            {% comment %}si quieres que cambie al instante descomenta la línea de abajo{% endcomment %}
+                            <!-- onchange="document.getElementById('filter-form').submit()" -->
+                    >
+                        <option value="">-- Todos --</option>
+                        {% for c in clientes %}
+                            <option value="{{ c.id_cliente }}"
+                                    {% if c.id_cliente|stringformat:"s" == cliente_seleccionado|stringformat:"s" %}selected{% endif %}>
+                                {{ c.nombre_cliente }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="cod_klaim" class="filter-label">Filtrar por Cod_Klaim:</label>
+                    <input  type="number"
+                            name="cod_klaim"
+                            id="cod_klaim"
+                            class="form-input"
+                            placeholder="ID de obra"
+                            min="1"
+                            value="{{ cod_klaim_seleccionado|default_if_none:'' }}">
+                    <button type="submit" class="action-btn primary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        Buscar
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Table Container -->
         <div class="table-container">
-            <h2 class="search-title">Códigos ISRC</h2>
-            <table class="styled-table">
+            <table class="data-table">
                 <thead>
                     <tr>
                         <th>ID ISRC</th>
@@ -160,18 +489,16 @@
                         <td>{{ codigo.name_artista_alternativo|default:"-" }}</td>
                         <td>{{ codigo.titulo_alternativo|default:"-" }}</td>
                         <td>
-                            <ul>
+                            <ul style="margin: 0; padding-left: 1rem;">
                                 {% for obra_autor in codigo.obra.obrasautores_set.all %}
                                 <li>{{ obra_autor.autor.nombre_autor }}</li>
                                 {% endfor %}
                             </ul>
                         </td>
                         <td>
-                            {% if codigo.matching_tool_isrc %}
-                                Sí
-                            {% else %}
-                                No
-                            {% endif %}
+                            <span class="status-badge status-{{ codigo.matching_tool_isrc|yesno:'true,false' }}">
+                                {{ codigo.matching_tool_isrc|yesno:"Sí,No" }}
+                            </span>
                         </td>
                         <td>
                             <input
@@ -185,36 +512,93 @@
                                 data-id-subida="{{ codigo.codigo_mlc_id }}">
                         </td>
                         <td>
-                            <button class="save-button" onclick="guardarMatchIsrc('{{ codigo.id_isrc }}')">Guardar Match</button>
-                            <br>
-                            <button class="delete-button" onclick="confirmarEliminarIsrc('{{ codigo.id_isrc }}')">Eliminar ISRC</button>
+                            <div class="action-buttons">
+                                <button class="action-btn success" onclick="guardarMatchIsrc('{{ codigo.id_isrc }}')">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                        <polyline points="7 3 7 8 15 8"></polyline>
+                                    </svg>
+                                    Guardar Match
+                                </button>
+                                <button class="action-btn danger" onclick="confirmarEliminarIsrc('{{ codigo.id_isrc }}')">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                                    </svg>
+                                    Eliminar ISRC
+                                </button>
+                            </div>
                         </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="11" class="empty-state">No se encontraron registros</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
 
-            <div class="pagination">
-                <span class="step-links">
-                    {% if page_obj.has_previous %}
-                        <a href="?page=1">&laquo; Primera</a>
-                        <a href="?page={{ page_obj.previous_page_number }}">Anterior</a>
-                    {% endif %}
+            <!-- Pagination -->
+            <nav class="pagination-container">
+                {% if page_obj.has_previous %}
+                    <a href="?page=1" class="pagination-btn">&laquo; Primera</a>
+                    <a href="?page={{ page_obj.previous_page_number }}" class="pagination-btn">Anterior</a>
+                {% else %}
+                    <span class="pagination-btn disabled">&laquo; Primera</span>
+                    <span class="pagination-btn disabled">Anterior</span>
+                {% endif %}
 
-                    <span class="current">
-                        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
-                    </span>
-
-                    {% if page_obj.has_next %}
-                        <a href="?page={{ page_obj.next_page_number }}">Siguiente</a>
-                        <a href="?page={{ page_obj.paginator.num_pages }}">Última &raquo;</a>
-                    {% endif %}
+                <span class="pagination-info">
+                    Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
                 </span>
-            </div>
+
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}" class="pagination-btn">Siguiente</a>
+                    <a href="?page={{ page_obj.paginator.num_pages }}" class="pagination-btn">Última &raquo;</a>
+                {% else %}
+                    <span class="pagination-btn disabled">Siguiente</span>
+                    <span class="pagination-btn disabled">Última &raquo;</span>
+                {% endif %}
+            </nav>
         </div>
     </div>
 
     <script>
+        // Floating particles animation
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = window.innerWidth < 768 ? 20 : 50;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                
+                // Random size between 5px and 15px
+                const size = Math.random() * 10 + 5;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                
+                // Random position
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${Math.random() * 100}%`;
+                
+                // Random animation duration between 10s and 30s
+                const duration = Math.random() * 20 + 10;
+                particle.style.animationDuration = `${duration}s`;
+                
+                // Random delay
+                particle.style.animationDelay = `${Math.random() * 5}s`;
+                
+                particlesContainer.appendChild(particle);
+            }
+        }
+        
+        // Initialize particles when DOM is loaded
+        document.addEventListener('DOMContentLoaded', createParticles);
+
         function guardarMatchIsrc(idIsrc) {
             const usosInput = document.getElementById(`usos_${idIsrc}`);
             const usos = usosInput.value;

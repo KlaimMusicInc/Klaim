@@ -1,8 +1,4 @@
-'''
-HTML PARA HISTORIAL MATCHING TOOL AMBAS TABLAS ISRC Y AUTORES
-
-'''
-
+<!--HTML TABLA ISRC & autores EN HISTORIAL MATCHINGTOOL-->
 
 <!DOCTYPE html>
 <html lang="en">
@@ -13,255 +9,462 @@ HTML PARA HISTORIAL MATCHING TOOL AMBAS TABLAS ISRC Y AUTORES
     <title>Matching Tool - Titles, Authors & ISRC</title>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <style>
-        body {
-            font-family: 'Arial', sans-serif;
+        :root {
+            --primary: #3a86ff;
+            --primary-dark: #2667cc;
+            --secondary: #3813df;
+            --accent: #ff006e;
+            --dark: #1a1b25;
+            --light: #f8f9fa;
+            --gray: #6c757d;
+            --light-gray: #e9ecef;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --glass: rgba(255, 255, 255, 0.15);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --border-radius: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
 
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #f5f7ff;
+            color: var(--dark);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header space */
+        .header-space {
+            height: 80px;
+        }
+
+        /* Main container */
         .container {
             display: flex;
             flex-direction: column;
-            height: 100vh;
-        }
-
-        .search-container {
-            flex: 0 0 10%;
-            background-color: #f4f4f4;
-            padding: 3px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: -50px;
-
-        }
-
-        .search-title {
-            text-align: center;
-            color: #112F6D;
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 100px;
-
-        }
-
-        .table-container {
             flex: 1;
-            overflow-y: auto;
-            padding: 20px;
+            padding: 0 5vw;
+            background: linear-gradient(135deg, #f5f7ff 0%, #f0f4ff 100%);
         }
 
-        .styled-table {
+        /* Section header */
+        .section-header {
+            margin: 2rem 0;
+            text-align: center;
+        }
+
+        .section-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 1.5rem;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        /* Search container */
+        .search-container {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 249, 250, 0.9) 100%);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+            border: 1px solid var(--glass-border);
+        }
+
+        .search-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Form inputs */
+        .form-input, .form-select {
             width: 100%;
-            border-collapse: collapse;
-            font-size: 16px;
-            text-align: left;
+            padding: 1rem 1.5rem;
+            font-size: 0.95rem;
+            border: none;
+            border-radius: var(--border-radius);
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.2);
+            background: white;
+            transform: translateY(-2px);
+        }
+
+        /* Action buttons */
+        .action-btn {
+            padding: 1rem 2.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 4px 15px rgba(58, 134, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(58, 134, 255, 0.4);
+        }
+
+        .action-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Tables container */
+        .tables-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Table wrapper */
+        .table-wrapper {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+            overflow: hidden;
+        }
+
+        .table-title {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            font-weight: 600;
+            padding: 1rem 1.5rem;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Data table */
+        .data-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
             min-width: 1200px;
         }
 
-        .styled-table th, .styled-table td {
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-        }
-
-        .styled-table th {
-            background-color: #112F6D;
-            color: white;
-        }
-
-        .pagination {
-            margin-top: 20px;
-            text-align: center;
-        }
-
-        .pagination a {
-            display: inline-block;
-            padding: 8px 15px;
-            margin: 0 5px;
-            background-color: #112F6D;
-            color: white;
-            text-decoration: none;
-            font-size: 14px;
-            border-radius: 4px;
-        }
-
-        .pagination a:hover {
-            background-color: #0d2450;
-        }
-
-        .pagination .current {
-            display: inline-block;
-            padding: 8px 15px;
-            margin: 0 5px;
-            background-color: #f4f4f4;
-            color: #112F6D;
-            border: 1px solid #ddd;
-            font-size: 14px;
-            font-weight: bold;
-        }
-
-        .modal {
-            display: none;  /* Ocultar el modal por defecto */
-            position: fixed;
-            z-index: 999;
-            left: 0;
+        .data-table th {
+            position: sticky;
             top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5); /* Fondo oscuro */
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            font-weight: 600;
+            padding: 1rem 1.5rem;
+            text-align: left;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .data-table td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--light-gray);
+            font-size: 0.9rem;
+            background: white;
+        }
+
+        .data-table tr:nth-child(even) td {
+            background-color: #f8f9fa;
+        }
+
+        .data-table tr:hover td {
+            transform: translateX(4px);
+            box-shadow: 4px 0 0 0 var(--primary) inset;
+        }
+
+        /* Status badges */
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-enviado {
+            background-color: rgba(255, 193, 7, 0.1);
+            color: #d39e00;
+        }
+
+        .status-aceptada {
+            background-color: rgba(40, 167, 69, 0.1);
+            color: var(--success);
+        }
+
+        .status-rechazada {
+            background-color: rgba(220, 53, 69, 0.1);
+            color: var(--danger);
+        }
+
+        /* Pagination */
+        .pagination-container {
+            display: flex;
             justify-content: center;
             align-items: center;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .pagination-btn,
+        .pagination-info {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .pagination-btn {
+            background: white;
+            color: var(--primary);
+            border: 1px solid var(--light-gray);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .pagination-btn:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(58, 134, 255, 0.2);
+        }
+
+        .pagination-btn.disabled {
+            background: var(--light-gray);
+            color: var(--gray);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .pagination-info {
+            background: var(--light-gray);
+            color: var(--gray);
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
         }
 
         .modal-content {
-            background-color: white;
-            padding: 30px;
-            border-radius: 8px;
-            width: 400px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            animation: fadeIn 0.3s ease-in-out;
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 500px;
+            padding: 2rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+            position: relative;
+        }
+
+        .modal.active .modal-content {
+            transform: translateY(0);
         }
 
         .modal-content h2 {
-            margin-bottom: 20px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 1.5rem;
+            text-align: center;
         }
 
-        .modal-content select, .modal-content button {
-            padding: 10px;
-            margin-top: 10px;
-            font-size: 16px;
+        .modal-select {
+            width: 100%;
+            padding: 1rem;
+            border: 1px solid var(--light-gray);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1rem;
         }
 
-        .modal-content button {
-            background-color: #0712aa;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-
-        .modal-content button:hover {
-            background-color: #0712aa;
+        .modal-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.2);
         }
 
         .close {
-            color: #aaa;
-            font-size: 24px;
+            color: var(--gray);
+            font-size: 1.75rem;
             font-weight: bold;
-            cursor: pointer;
             position: absolute;
-            right: 20px;
-            top: 20px;
-        }
-
-        .close:hover,
-        .close:focus {
-            color: black;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-            .search-row {
-                display: flex;
-                justify-content: center;
-                gap: 10px; /* Espacio entre los elementos */
-                margin-bottom: 105px;
-                margin-top: -50px;
-            }
-
-        /* Estilo para los campos de entrada */
-        .search-row input,
-        .search-row select {
-            width: 20%; /* Ajusta el ancho */
-            padding: 10px;
-            font-size: 16px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
-
-        }
-
-        /* Estilo para los botones */
-        .search-button-container {
-            display: flex;
-            justify-content: center;
-        }
-
-        .search-button {
-            padding: 10px 20px;
-            font-size: 20px;
-            background-color: #112F6D;
-            color: white;
-            border: none;
-            border-radius: 4px;
+            right: 1.5rem;
+            top: 1.5rem;
             cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: color 0.2s ease;
         }
 
-        .search-button:hover {
-            background-color: #0d2450;
+        .close:hover {
+            color: var(--dark);
         }
 
-        .search-button:active {
-            background-color: #0a1f4f;
-            transform: translateY(1px);
-        }
-
-        /* Mejora visual en dispositivos pequeños */
+        /* Responsive adjustments */
         @media (max-width: 768px) {
-            .search-row input,
-            .search-row select {
-                width: 40%; /* Ajusta el ancho para pantallas pequeñas */
+            .container {
+                padding: 0 3vw;
             }
 
-            .search-button {
-                padding: 8px 16px;
-                font-size: 14px;
+            .section-title {
+                font-size: 1.5rem;
             }
+
+            .search-container {
+                padding: 1.5rem;
+            }
+
+            .search-form {
+                grid-template-columns: 1fr;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 0.75rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .section-title {
+                font-size: 1.3rem;
+            }
+
+            .modal-content {
+                padding: 1.5rem;
+                width: 90%;
+            }
+        }
+
+        /* Animation classes */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); }
+            to { transform: translateY(0); }
+        }
+
+        .animate-fade {
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        .animate-slide {
+            animation: slideUp 0.3s ease forwards;
         }
     </style>
 </head>
 <body>
+    <!-- Floating Particles Background -->
+    
     {% include 'header.html' %}
-
+    
     <div class="container">
-        <!-- Título -->
-        <div class="search-container">
-            <h2 class="search-title">MATCHING TOOL - TITLES, AUTHORS & ISRC</h2>
+        <!-- Header Section -->
+        <div class="section-header">
+            <h1 class="section-title">MATCHING TOOL - TITLES, AUTHORS & ISRC</h1>
         </div>
+
+        <!-- Search Container -->
         <div class="search-container">
-            <form id="search-form" class="search-row">
-                <input type="text" id="work-title" name="work_title" placeholder="Work Title" value="{{ request.GET.work_title }}">
-                <input type="text" id="mlc-code" name="mlc_code" placeholder="MLC Code" value="{{ request.GET.mlc_code }}">
-                <input type="date" id="creation-date" name="creation_date" placeholder="Creation Date" value="{{ request.GET.creation_date }}">
-                <select id="status" name="status">
+            <form id="search-form" class="search-form">
+                <input type="text" id="work-title" name="work_title" class="form-input" placeholder="Work Title" value="{{ request.GET.work_title }}">
+                <input type="text" id="mlc-code" name="mlc_code" class="form-input" placeholder="MLC Code" value="{{ request.GET.mlc_code }}">
+                <input type="date" id="creation-date" name="creation_date" class="form-input" placeholder="Creation Date" value="{{ request.GET.creation_date }}">
+                <select id="status" name="status" class="form-select">
                     <option value="" {% if request.GET.status == "" %}selected{% endif %}>All Status</option>
                     <option value="Enviado" {% if request.GET.status == "Enviado" %}selected{% endif %}>Enviado</option>
                     <option value="Aceptada" {% if request.GET.status == "Aceptada" %}selected{% endif %}>Aceptada</option>
                     <option value="Rechazada" {% if request.GET.status == "Rechazada" %}selected{% endif %}>Rechazada</option>
                 </select>
-                <div class="search-button-container">
-                    <button type="button" class="search-button" onclick="search()">Search</button>
-                </div>
+                <button type="button" class="action-btn primary" onclick="search()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    Search
+                </button>
             </form>
-            
-        </div>
-        <!-- Tabla de Titles and Authors -->
-        <div class="table-container" id="table-titulo-autor-container">
-            {% include 'matching_tool_table_partial.html' with page_obj=titulo_autor_page_obj %}
         </div>
 
-        <!-- Tabla de ISRC -->
-        <div class="table-container" id="table-isrc-container">
-            {% include 'matching_tool_isrc_table_partial.html' with page_obj=isrc_page_obj %}
+        <!-- Tables Container -->
+        <div class="tables-container">
+            <!-- Titles and Authors Table -->
+            <div class="table-wrapper">
+                <h3 class="table-title">Titles and Authors</h3>
+                <div class="table-container" id="table-titulo-autor-container">
+                    {% include 'matching_tool_table_partial.html' with page_obj=titulo_autor_page_obj %}
+                </div>
+                <div class="pagination-container" id="pagination-titulo-autor"></div>
+            </div>
+
+            <!-- ISRC Table -->
+            <div class="table-wrapper">
+                <h3 class="table-title">ISRC Records</h3>
+                <div class="table-container" id="table-isrc-container">
+                    {% include 'matching_tool_isrc_table_partial.html' with page_obj=isrc_page_obj %}
+                </div>
+                <div class="pagination-container" id="pagination-isrc"></div>
+            </div>
         </div>
     </div>
 
@@ -270,18 +473,48 @@ HTML PARA HISTORIAL MATCHING TOOL AMBAS TABLAS ISRC Y AUTORES
         <div class="modal-content">
             <span class="close" onclick="closeModal()">&times;</span>
             <h2>Modify Status</h2>
-            <select id="estado-select">
+            <select id="estado-select" class="modal-select">
                 <option value="Enviado">Enviado</option>
                 <option value="Aceptada">Aceptada</option>
                 <option value="Rechazada">Rechazada</option>
             </select>
-            <br><br>
-            <button onclick="submitEstado()">Accept</button>
+            <button class="action-btn primary" onclick="submitEstado()">Accept</button>
         </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
+        // Floating particles animation
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = window.innerWidth < 768 ? 20 : 50;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                
+                // Random size between 5px and 15px
+                const size = Math.random() * 10 + 5;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                
+                // Random position
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${Math.random() * 100}%`;
+                
+                // Random animation duration between 10s and 30s
+                const duration = Math.random() * 20 + 10;
+                particle.style.animationDuration = `${duration}s`;
+                
+                // Random delay
+                particle.style.animationDelay = `${Math.random() * 5}s`;
+                
+                particlesContainer.appendChild(particle);
+            }
+        }
+        
+        // Initialize particles when DOM is loaded
+        document.addEventListener('DOMContentLoaded', createParticles);
 
         function search() {
             const workTitle = document.getElementById('work-title').value;
@@ -324,12 +557,12 @@ HTML PARA HISTORIAL MATCHING TOOL AMBAS TABLAS ISRC Y AUTORES
         function openModal(id, table) {
             recordId = id; // Asigna el ID del registro
             tableName = table; // Asigna la tabla correspondiente
-            document.getElementById('modal').style.display = 'flex'; // Muestra el modal
+            document.getElementById('modal').classList.add('active'); // Muestra el modal
         }
 
         // Función para cerrar el modal
         function closeModal() {
-            document.getElementById('modal').style.display = 'none'; // Oculta el modal
+            document.getElementById('modal').classList.remove('active'); // Oculta el modal
         }
 
         // Función para enviar el nuevo estado
@@ -371,45 +604,35 @@ HTML PARA HISTORIAL MATCHING TOOL AMBAS TABLAS ISRC Y AUTORES
             }
         };
 
-
         $(document).on('click', '.page-link-titulo-autor', function(event) {
-            event.preventDefault(); // Prevenir el comportamiento predeterminado del enlace
+            event.preventDefault();
             const page = $(this).data('page');
-
-            // Obtener los valores actuales de los filtros
             const workTitle = $('#work-title').val();
             const mlcCode = $('#mlc-code').val();
             const creationDate = $('#creation-date').val();
             const status = $('#status').val();
 
-            // Crear el query string
             const queryString = `work_title=${encodeURIComponent(workTitle)}&mlc_code=${encodeURIComponent(mlcCode)}&creation_date=${encodeURIComponent(creationDate)}&status=${encodeURIComponent(status)}&page=${page}`;
 
-            // Actualizar la tabla de título-autor
             $.get(`{% url 'matching_tool_table_titulo_autor' %}?${queryString}`, function(data) {
                 $('#table-titulo-autor-container').html(data);
             });
         });
 
         $(document).on('click', '.page-link-isrc', function(event) {
-            event.preventDefault(); // Prevenir el comportamiento predeterminado del enlace
+            event.preventDefault();
             const page = $(this).data('page');
-
-            // Obtener los valores actuales de los filtros
             const workTitle = $('#work-title').val();
             const mlcCode = $('#mlc-code').val();
             const creationDate = $('#creation-date').val();
             const status = $('#status').val();
 
-            // Crear el query string
             const queryString = `work_title=${encodeURIComponent(workTitle)}&mlc_code=${encodeURIComponent(mlcCode)}&creation_date=${encodeURIComponent(creationDate)}&status=${encodeURIComponent(status)}&page=${page}`;
 
-            // Actualizar la tabla de ISRC
             $.get(`{% url 'matching_tool_table_isrc' %}?${queryString}`, function(data) {
                 $('#table-isrc-container').html(data);
             });
         });
-
     </script>
 </body>
 </html>
