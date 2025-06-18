@@ -7,96 +7,486 @@
     <title>LyricFind</title>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <style>
-        /* === ESTILOS BASE (idénticos a los de tu plantilla ejemplo) === */
-        body {
-            font-family: 'Arial', sans-serif;
+        :root {
+            --primary: #3a86ff;
+            --primary-dark: #2667cc;
+            --secondary: #3813df;
+            --accent: #ff006e;
+            --dark: #1a1b25;
+            --light: #f8f9fa;
+            --gray: #6c757d;
+            --light-gray: #e9ecef;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --glass: rgba(255, 255, 255, 0.15);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
-        .container       { display:flex; flex-direction:column; height:100vh; }
-        .table-container { flex:1; overflow-y:auto; padding:20px; }
-        .styled-table    { width:100%; border-collapse:collapse; font-size:16px; text-align:left; min-width:1200px; }
-        .styled-table th,.styled-table td { padding:12px 15px; border:1px solid #ddd; }
-        .styled-table th { background:#112F6D; color:#fff; }
 
-        /* Botones acción */
-        .lyric-btn   { padding:8px 14px; font-size:14px; background:#112F6D; color:#fff; border:none; cursor:pointer; }
-        .lyric-btn:hover { background:#0d2450; }
-        .omit-btn    { background:#b30000; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #f5f7ff;
+            color: var(--dark);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header space */
+        .header-space {
+            height: 80px;
+        }
+
+        /* Main container */
+        .container {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            padding: 0 5vw;
+            background: linear-gradient(135deg, #f5f7ff 0%, #f0f4ff 100%);
+        }
+
+        /* Table container */
+        .table-container {
+            flex: 1;
+            padding: 2rem 0;
+        }
+
+        /* Section header */
+        .section-header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .section-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 1.5rem;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        /* Modern Data Table */
+        .data-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            min-width: 800px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+            overflow: hidden;
+        }
+
+        .data-table thead th {
+            position: sticky;
+            top: 0;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            font-weight: 600;
+            padding: 1rem 1.5rem;
+            text-align: left;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: none;
+        }
+
+        .data-table tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        .data-table tbody tr:hover {
+            transform: translateX(4px);
+            box-shadow: 4px 0 0 0 var(--primary) inset;
+        }
+
+        .data-table tbody td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--light-gray);
+            font-size: 0.9rem;
+            background: white;
+        }
+
+        .data-table tbody tr:nth-child(even) td {
+            background-color: #f8f9fa;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .action-btn {
+            padding: 0.75rem 1.25rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            min-width: 120px;
+        }
+
+        .action-btn.primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            box-shadow: 0 4px 15px rgba(58, 134, 255, 0.3);
+        }
+
+        .action-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(58, 134, 255, 0.4);
+        }
+
+        .action-btn.danger {
+            background: linear-gradient(135deg, var(--danger), #ff4757);
+            color: white;
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+        }
+
+        .action-btn.danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(220, 53, 69, 0.4);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--gray);
+            font-size: 1.1rem;
+        }
 
         /* Modal */
-        .modal { display:none; position:fixed; z-index:999; left:0; top:0; width:100%; height:100%;
-                 background:rgba(0,0,0,.5); justify-content:center; align-items:center; }
-        .modal-content { background:#fff; padding:30px; border-radius:8px; width:450px; text-align:center;
-                         box-shadow:0 5px 15px rgba(0,0,0,.3); animation:fadeIn .3s ease-in-out; }
-        .modal-content textarea { width:100%; height:150px; margin-top:10px; }
-        .close { color:#aaa; font-size:24px; font-weight:bold; cursor:pointer; position:absolute; right:20px; top:20px; }
-        .close:hover,.close:focus { color:#000; }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
 
-        @keyframes fadeIn { from{opacity:0; transform:translateY(-20px);} to{opacity:1; transform:translateY(0);} }
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 500px;
+            padding: 2rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-content h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .modal-content textarea {
+            width: 100%;
+            height: 200px;
+            padding: 1rem;
+            border: 1px solid var(--light-gray);
+            border-radius: 12px;
+            font-size: 1rem;
+            resize: vertical;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .modal-content textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.2);
+        }
+
+        .close {
+            color: var(--gray);
+            font-size: 1.75rem;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            right: 1.5rem;
+            top: 1.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .close:hover {
+            color: var(--dark);
+        }
+
+        /* Pagination */
+        .pagination-container {
+            margin-top: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .pagination-btn,
+        .pagination-info {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .pagination-btn {
+            background: white;
+            color: var(--primary);
+            border: 1px solid var(--light-gray);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .pagination-btn:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(58, 134, 255, 0.2);
+        }
+
+        .pagination-btn.disabled {
+            background: var(--light-gray);
+            color: var(--gray);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .pagination-info {
+            background: var(--light-gray);
+            color: var(--gray);
+            cursor: default;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 3vw;
+            }
+
+            .section-title {
+                font-size: 1.5rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .action-btn {
+                width: 100%;
+            }
+
+            .modal-content {
+                padding: 1.5rem;
+                width: 90%;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); }
+            to { transform: translateY(0); }
+        }
+
+        .animate-fade {
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        .animate-slide {
+            animation: slideUp 0.3s ease forwards;
+        }
     </style>
 </head>
 <body>
+    <!-- Floating Particles Background -->
+    
     {% include 'header.html' %}
-    <div class="container">
-
-        <!-- TABLA PENDIENTES -->
-        <div class="table-container">
-            <h2 style="color:#112F6D;">Unprocessed audios – LyricFind</h2>
-
-            <table class="styled-table">
-                <thead>
-                    <tr>
-                        <th>Klaim</th>
-                        <th>Title</th>
-                        <th>Artist</th>
-                        <th>ISRC</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for link in pendientes %}
-                    <tr>
-                        <td>{{ link.obra_id }}</td>
-                        <td>{{ link.obra.titulo }}</td>
-                        <td>{{ link.id_isrc.id_artista_unico.nombre_artista }}</td>
-                        <td>{{ link.codigo_isrc }}</td>
-                        <td>
-                            <button class="lyric-btn" onclick="openModal({{ link.id_isrc_link }})">Insert Lyric</button>
-                            <a class="lyric-btn omit-btn" href="{% url 'lyricfind_omitir' link.id_isrc_link %}">Omit</a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="6">No pending audios.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <div class="table-container">
+        <div class="section-header">
+            <h2 class="section-title">Unprocessed Audios – LyricFind</h2>
         </div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Klaim</th>
+                    <th>Title</th>
+                    <th>Artist</th>
+                    <th>ISRC</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for link in pendientes %}
+                <tr>
+                    <td>{{ link.obra_id }}</td>
+                    <td>{{ link.obra.titulo }}</td>
+                    <td>{{ link.id_isrc.id_artista_unico.nombre_artista }}</td>
+                    <td>{{ link.codigo_isrc }}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn primary" onclick="openModal({{ link.id_isrc_link }})">
+                                <!-- …icon… --> Insert Lyric
+                            </button>
+                            <a class="action-btn danger" href="{% url 'lyricfind_omitir' link.id_isrc_link %}">
+                                <!-- …icon… --> Omit
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="empty-state">
+                        <!-- …mensaje vacío… -->
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- PAGINATION (30 registros por página) -->
+        <nav class="pagination-container">
+            {% if page_obj.has_previous %}
+                <a class="pagination-btn" href="?page=1">&laquo;</a>
+                <a class="pagination-btn" href="?page={{ page_obj.previous_page_number }}">&lsaquo;</a>
+            {% else %}
+                <span class="pagination-btn disabled">&laquo;</span>
+                <span class="pagination-btn disabled">&lsaquo;</span>
+            {% endif %}
+
+            <span class="pagination-info">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+                <a class="pagination-btn" href="?page={{ page_obj.next_page_number }}">&rsaquo;</a>
+                <a class="pagination-btn" href="?page={{ page_obj.paginator.num_pages }}">&raquo;</a>
+            {% else %}
+                <span class="pagination-btn disabled">&rsaquo;</span>
+                <span class="pagination-btn disabled">&raquo;</span>
+            {% endif %}
+        </nav>
     </div>
 
     <!-- MODAL PEGAR LETRA -->
     <div id="lyricModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal()">&times;</span>
-            <h3>Paste lyric and confirm</h3>
+            <h3>Paste Lyric and Confirm</h3>
             <form id="lyricForm" method="post">
                 {% csrf_token %}
-                <textarea name="lyric_text" required></textarea><br>
-                <button type="submit" class="lyric-btn">Save</button>
+                <textarea name="lyric_text" placeholder="Paste the song lyrics here..." required></textarea>
+                <button type="submit" class="action-btn primary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                        <polyline points="7 3 7 8 15 8"></polyline>
+                    </svg>
+                    Save Lyrics
+                </button>
             </form>
         </div>
     </div>
 
     <script>
+        // Floating particles animation
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = window.innerWidth < 768 ? 20 : 50;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                
+                // Random size between 5px and 15px
+                const size = Math.random() * 10 + 5;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                
+                // Random position
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${Math.random() * 100}%`;
+                
+                // Random animation duration between 10s and 30s
+                const duration = Math.random() * 20 + 10;
+                particle.style.animationDuration = `${duration}s`;
+                
+                // Random delay
+                particle.style.animationDelay = `${Math.random() * 5}s`;
+                
+                particlesContainer.appendChild(particle);
+            }
+        }
+        
+        // Initialize particles when DOM is loaded
+        document.addEventListener('DOMContentLoaded', createParticles);
+
+        // Modal functions
         let currentLinkId = null;
-        function openModal(linkId){
+        function openModal(linkId) {
             currentLinkId = linkId;
             const form = document.getElementById("lyricForm");
             form.action = "{% url 'lyricfind_guardar' 0 %}".replace("0", linkId);
-            document.getElementById("lyricModal").style.display="flex";
+            document.getElementById("lyricModal").classList.add("active");
         }
-        function closeModal(){
-            document.getElementById("lyricModal").style.display="none";
+        
+        function closeModal() {
+            document.getElementById("lyricModal").classList.remove("active");
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('lyricModal');
+            if (event.target === modal) {
+                closeModal();
+            }
         }
     </script>
 </body>
