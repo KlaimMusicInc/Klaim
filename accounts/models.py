@@ -270,7 +270,7 @@ class LyricfindRegistro(models.Model):
         unique_together = ('obra', 'isrc', 'artista_unico')
         verbose_name = 'Registro LyricFind'
         verbose_name_plural = 'Registros LyricFind'
-        managed = False     
+        managed = True     
 
 class IsrcLinksAudios(models.Model):
     id_isrc_link = models.AutoField(primary_key=True, db_column='id_isrc_link')
@@ -297,7 +297,7 @@ class IsrcLinksAudios(models.Model):
     class Meta:
         db_table = 'isrc_links_audios'
         unique_together = ('id_isrc',)      # igual que el UNIQUE KEY uq_isrc
-        managed = False
+        managed = True
         verbose_name = 'Link de Audio (ISRC)'
         verbose_name_plural = 'Links de Audio (ISRC)'
 class MovimientoUsuario(models.Model):
@@ -365,7 +365,7 @@ class User(AbstractBaseUser):
     USERNAME_FIELD = 'username'
 
     def __str__(self):
-        return self.username
+        return self.username 
 
     def has_perm(self, perm, obj=None):
         return True
@@ -376,3 +376,4 @@ class User(AbstractBaseUser):
     @property
     def is_staff(self):
         return self.is_admin
+    # Modelo de usuario
