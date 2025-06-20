@@ -81,6 +81,9 @@ else:  # Modo desarrollo (usa una base de datos separada)
             'PORT': '3306',
         }
     }
+AUTHENTICATION_BACKENDS = [
+    'accounts.auth_backends.LegacyBackend',
+]
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -103,7 +106,17 @@ TIME_ZONE = 'America/Bogota'
 USE_TZ = True 
 
 USE_I18N = True
-AUTH_USER_MODEL = 'accounts.LegacyUser'  # Usar el modelo personalizado LegacyUser
+AUTH_USER_MODEL = 'accounts.User'  # Usar el modelo personalizado LegacyUser
+
+PASSWORD_HASHERS = [
+    # bcrypt con SHA256 (recomendado)
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+    # bcrypt “puro”
+    'django.contrib.auth.hashers.BCryptPasswordHasher',
+    # por defecto de Django
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+]
 USE_TZ = True
 
 # Configuración para archivos estáticos
