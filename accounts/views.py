@@ -47,7 +47,7 @@ from .models import (
     LegacyUser, Obras, Artistas, MatchingToolTituloAutor, MatchingToolISRC,
     CodigosISRC, ArtistasUnicos, Catalogos, SubidasPlataforma,
     ConflictosPlataforma, ObrasLiberadas, MovimientoUsuario, ObrasAutores,
-    AutoresUnicos, Clientes, IsrcLinksAudios, LyricfindRegistro
+    AutoresUnicos, Clientes, IsrcLinksAudios, LyricfindRegistro, AudiosISRC
 )
 
 
@@ -1212,64 +1212,82 @@ def update_estado_isrc(request):
 
 
 def lyricfind_pendientes(request):
-    # Query base (igual que antes)
+    """
+    Lista audios descargados con éxito y sin letra procesada.
+    Permite filtrar por id_isrc pasado como parámetro GET (?id_isrc=12345).
+    """
     pendientes_qs = (
-        IsrcLinksAudios.objects.annotate(
+        AudiosISRC.objects.filter(exito_descarga=True)
+        .annotate(
             ya_procesado=Exists(
-                LyricfindRegistro.objects.filter(isrc=OuterRef("id_isrc"))
+                LyricfindRegistro.objects.filter(isrc_id=OuterRef("id_isrc_id"))
             )
         )
-        .filter(ya_procesado=False, activo=True)
+        .filter(ya_procesado=False)
         .select_related(
-            "obra", "obra__catalogo__cliente", "id_isrc__id_artista_unico"
+            "obra",
+            "obra__catalogo__cliente",
+            "id_isrc__id_artista_unico",
         )
-        .order_by("-fecha_creacion")
+        .order_by("-id_audio")
     )
 
-    # ⬇️ paginamos a 30
+    # -------- filtro por id_isrc (si llega desde el drop-zone) ----------
+    id_isrc_param = request.GET.get("id_isrc")
+    if id_isrc_param and id_isrc_param.isdigit():
+        pendientes_qs = pendientes_qs.filter(id_isrc_id=id_isrc_param)
+
     paginator = Paginator(pendientes_qs, 30)
-    page_obj  = paginator.get_page(request.GET.get("page"))
+    page_obj = paginator.get_page(request.GET.get("page"))
 
     return render(
         request,
         "lyricfind_pendientes.html",
-        {
-            "pendientes": page_obj.object_list,  # filas de la página
-            "page_obj":  page_obj                # objeto de paginación
-        }
+        {"pendientes": page_obj.object_list, "page_obj": page_obj},
     )
 
-# ► Guardar la letra y crear registro
-def lyricfind_guardar(request, link_id):
-    if request.method == "POST":
-        link = get_object_or_404(IsrcLinksAudios, pk=link_id)
+# ──────────────────────────────────────────────────────────────────────────────
+#  GUARDAR LETRA
+# ──────────────────────────────────────────────────────────────────────────────
+def lyricfind_guardar(request, audio_id: int):
+    """
+    Guarda la letra pegada en el modal y crea LyricfindRegistro.
+    Luego elimina el registro en AudiosISRC (ya procesado).
+    """
+    if request.method != "POST":
+        return redirect("lyricfind_pendientes")
 
-        letra = request.POST.get("lyric_text", "").strip()
-        if not letra:
-            messages.error(request, "La letra no puede estar vacía.")
-            return redirect("lyricfind_pendientes")
+    audio = get_object_or_404(AudiosISRC, pk=audio_id)
 
-        # Crear registro
-        LyricfindRegistro.objects.create(
-            obra_id=link.obra_id,
-            isrc_id=link.id_isrc_id,
-            artista_unico_id = link.id_isrc.id_artista_unico_id,
-            lyric_text=letra,
-            estado="Procesado"
-        )
+    lyric_text = request.POST.get("lyric_text", "").strip()
+    if not lyric_text:
+        messages.error(request, "La letra no puede estar vacía.")
+        return redirect("lyricfind_pendientes")
 
-        # Eliminar link procesado
-        link.delete()
+    # Registro en lyricfind_registros
+    LyricfindRegistro.objects.create(
+        obra_id=audio.obra_id,
+        isrc_id=audio.id_isrc_id,
+        artista_unico_id=audio.id_isrc.id_artista_unico_id,
+        lyric_text=lyric_text,
+        estado="Procesado",
+    )
 
-        messages.success(request, "Letra guardada y audio procesado.")
+    # Audio ya procesado → lo quitamos de la cola
+    audio.delete()
+
+    messages.success(request, "Letra guardada y audio marcado como procesado.")
     return redirect("lyricfind_pendientes")
 
 
-# ► Omitir / eliminar audio erróneo
-def lyricfind_omitir(request, link_id):
-    link = get_object_or_404(IsrcLinksAudios, pk=link_id)
-    link.activo = False
-    link.save()
+# ──────────────────────────────────────────────────────────────────────────────
+#  OMITIR AUDIO
+# ──────────────────────────────────────────────────────────────────────────────
+def lyricfind_omitir(request, audio_id):       # <— renombrado aquí
+    audio = get_object_or_404(AudiosISRC, pk=audio_id)
+    audio.activo = False
+    audio.save()
+    messages.info(request, "Audio omitido.")
     return redirect('lyricfind_pendientes')
 
 def lyricfind_records(request):

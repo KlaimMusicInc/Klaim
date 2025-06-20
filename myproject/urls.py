@@ -29,9 +29,9 @@ urlpatterns = [
     path("reporte-pdf/", generar_reporte_pdf, name="generar_reporte_pdf"),
     path('obtener-info-isrc/<int:id_isrc>/', obtener_info_isrc, name='obtener_info_isrc'),
     path('eliminar-isrc/<int:id_isrc>/', eliminar_isrc, name='eliminar_isrc'),
-    path("lyricfind/pendientes/", lyricfind_pendientes, name="lyricfind_pendientes"),
-    path("lyricfind/guardar/<int:link_id>/", lyricfind_guardar, name="lyricfind_guardar"),
-    path("lyricfind/omitir/<int:link_id>/", lyricfind_omitir, name="lyricfind_omitir"),
+    path("lyricfind/pendientes/", lyricfind_pendientes,  name="lyricfind_pendientes"),
+    path("lyricfind/guardar/<int:audio_id>/", lyricfind_guardar, name="lyricfind_guardar"),
+    path("lyricfind/omitir/<int:audio_id>/",  lyricfind_omitir,  name="lyricfind_omitir"),
     path("lyricfind/records/", lyricfind_records, name="lyricfind_records"),
     path("reporte-avance/", reporte_avance_view, name="reporte_avance"),
 
