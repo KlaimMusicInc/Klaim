@@ -1,7 +1,8 @@
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 import bcrypt
 from datetime import date
+from django.utils import timezone
 from django.conf import settings
 
 class Clientes(models.Model):
@@ -358,71 +359,92 @@ class MovimientoUsuario(models.Model):
     class Meta:
         db_table = 'movimientos_usuario'
 
-# Gestión de usuarios
 class UserManager(BaseUserManager):
-    def create_user(self, username, password=None):
+    """
+    Manager para el modelo User.
+    Crea usuarios normales y superusuarios.
+    """
+    def create_user(self, username, password=None, **extra_fields):
         if not username:
-            raise ValueError('El usuario debe tener un nombre de usuario')
-        user = self.model(username=username)
+            raise ValueError('El usuario debe tener un username')
+        username = self.model.normalize_username(username)
+        user = self.model(username=username, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, username, password):
-        user = self.create_user(username=username, password=password)
-        user.is_admin = True
-        user.save(using=self._db)
-        return user
+    def create_superuser(self, username, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
 
-    def get_by_natural_key(self, username):
-        return self.get(username=username)
+        if not extra_fields.get('is_staff'):
+            raise ValueError('Superuser must have is_staff=True.')
+        if not extra_fields.get('is_superuser'):
+            raise ValueError('Superuser must have is_superuser=True.')
 
-# Modelo de usuario legado
-class LegacyUser(AbstractBaseUser):
+        return self.create_user(username, password, **extra_fields)
+
+
+class User(AbstractBaseUser, PermissionsMixin):
+    """
+    Modelo único de usuario para toda la app.
+    Mapea a la tabla `accounts_user` existente. 
+    Campos heredados de archivos de volcado:
+      - id
+      - username
+      - password
+      - last_login
+      - name
+      - is_active
+      - is_admin (se renombrará internamente a is_staff)
+    Campos nuevos (para compatibilidad con el auth de Django):
+      - is_staff
+      - is_superuser
+      - date_joined
+    """
     id = models.AutoField(primary_key=True)
-    username = models.CharField(max_length=100, unique=True, db_column='username')
-    password = models.CharField(max_length=255, db_column='password')
-    last_login = models.DateTimeField(auto_now=True)
+    username = models.CharField(max_length=150, unique=True)
+    name = models.CharField(max_length=150, null=True, blank=True)
 
-    USERNAME_FIELD = 'username'
+    # Para AbstractBaseUser
+    password = models.CharField(max_length=128)
+    last_login = models.DateTimeField(null=True, blank=True)
+
+    # Volcado legados
+    is_active = models.BooleanField(default=True)
+
+    # Se renombra el campo legadado `is_admin` a `is_staff`
+    is_admin = models.BooleanField(
+        default=False,
+        db_column='is_admin',
+        help_text='Indica si este usuario tiene permisos de administrador (staff).'
+    )
+
+    # Campos nuevos requeridos por PermissionsMixin y admin
+    is_staff = models.BooleanField(
+        default=False,
+        help_text='Puede acceder al sitio de administración.'
+    )
+    is_superuser = models.BooleanField(
+        default=False,
+        help_text='Para permisos totales, ignorando restricciones de grupos.'
+    )
+    date_joined = models.DateTimeField(
+        default=timezone.now,
+        help_text='Fecha en que se creó esta cuenta.'
+    )
 
     objects = UserManager()
 
-    def check_password(self, password):
-        if isinstance(self.password, str):
-            stored_password = self.password.encode('utf-8')
-        else:
-            stored_password = self.password
-        return bcrypt.checkpw(password.encode('utf-8'), stored_password)
+    USERNAME_FIELD = 'username'
+    REQUIRED_FIELDS = []  # sólo username es obligatorio
+
+    class Meta:
+        db_table = 'accounts_user'
+        verbose_name = 'Usuario'
+        verbose_name_plural = 'Usuarios'
 
     def __str__(self):
         return self.username
-
-    class Meta:
-        db_table = 'users'
-        managed = False
-
-# Modelo de usuario
-class User(AbstractBaseUser):
-    username = models.CharField(max_length=150, unique=True)
-    name = models.CharField(max_length=150, null=True, blank=True)
-    is_active = models.BooleanField(default=True)
-    is_admin = models.BooleanField(default=False)
-
-    objects = UserManager()
-
-    USERNAME_FIELD = 'username'
-
-    def __str__(self):
-        return self.username 
-
-    def has_perm(self, perm, obj=None):
-        return True
-
-    def has_module_perms(self, app_label):
-        return True
-
-    @property
-    def is_staff(self):
-        return self.is_admin
     # Modelo de usuario

@@ -44,7 +44,7 @@ from reportlab.platypus import (
 # 4. Modelos locales
 # ───────────────────────────────────────────────────────────────
 from .models import (
-    LegacyUser, Obras, Artistas, MatchingToolTituloAutor, MatchingToolISRC,
+    User, Obras, Artistas, MatchingToolTituloAutor, MatchingToolISRC,
     CodigosISRC, ArtistasUnicos, Catalogos, SubidasPlataforma,
     ConflictosPlataforma, ObrasLiberadas, MovimientoUsuario, ObrasAutores,
     AutoresUnicos, Clientes, IsrcLinksAudios, LyricfindRegistro, AudiosISRC
