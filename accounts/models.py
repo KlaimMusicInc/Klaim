@@ -300,6 +300,55 @@ class IsrcLinksAudios(models.Model):
         managed = True
         verbose_name = 'Link de Audio (ISRC)'
         verbose_name_plural = 'Links de Audio (ISRC)'
+
+
+
+class AudiosISRC(models.Model):
+    id_audio = models.AutoField(primary_key=True)
+
+    id_isrc = models.ForeignKey(
+        'CodigosISRC',
+        on_delete=models.CASCADE,
+        db_column='id_isrc',
+        related_name='audios'
+    )
+
+    obra = models.ForeignKey(
+        'Obras',
+        on_delete=models.CASCADE,
+        db_column='obra_id',
+        related_name='audios_isrc'
+    )
+
+    link_utilizado = models.URLField(max_length=255)
+    
+    fuente = models.CharField(
+        max_length=10,
+        choices=[('Spotify', 'Spotify'), ('Deezer', 'Deezer')]
+    )
+
+    exito_descarga = models.BooleanField()
+    
+    nombre_archivo = models.CharField(max_length=255, null=True, blank=True)
+    
+    mensaje_error = models.TextField(null=True, blank=True)
+
+    # ─── Nuevo campo para soft-delete ─────────────────────────────────────
+    activo = models.BooleanField(
+        default=True,
+        help_text="Marca si este audio sigue pendiente (True) o fue omitido (False)."
+    )
+
+    class Meta:
+        db_table = 'audios_isrc'
+        verbose_name = "Audio descargado"
+        verbose_name_plural = "Audios descargados"
+        ordering = ['-id_audio']
+
+    def __str__(self):
+        return f"{self.id_audio} – {self.id_isrc.codigo_isrc if self.id_isrc else 'N/A'}"
+
+
 class MovimientoUsuario(models.Model):
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, db_column='usuario_id')  # Ajuste para el modelo correcto
     obra = models.ForeignKey(Obras, on_delete=models.CASCADE, db_column='obra_id')
