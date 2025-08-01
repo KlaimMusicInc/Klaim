@@ -361,30 +361,46 @@ def update_estado(request):
 
 @login_required(login_url='login')
 def conflictos_view(request):
-    # Obtener las obras que tienen estado 'Conflicto' en MLC o ADREV en la tabla subidas_plataforma
-    conflictos_mlc = Obras.objects.using('default').filter(
-        subidasplataforma__estado_MLC='Conflicto'
-    ).select_related('catalogo__cliente').prefetch_related(
-        'obrasautores_set__autor', 
-        'subidasplataforma_set',
-        'conflictos'  # Usar el related_name para acceder a los conflictos
+    # ───── Querysets base ─────────────────────────────────────────────
+    qs_mlc = (
+        Obras.objects.filter(subidasplataforma__estado_MLC='Conflicto')
+        .select_related('catalogo__cliente')
+        .prefetch_related(
+            'obrasautores_set__autor',
+            'subidasplataforma_set',
+            'conflictos'
+        )
+        .distinct()
     )
 
-    conflictos_adrev = Obras.objects.using('default').filter(
-        subidasplataforma__estado_ADREV='Conflicto'
-    ).select_related('catalogo__cliente').prefetch_related(
-        'obrasautores_set__autor', 
-        'subidasplataforma_set',
-        'conflictos'  # Usar el related_name para acceder a los conflictos
+    qs_adrev = (
+        Obras.objects.filter(subidasplataforma__estado_ADREV='Conflicto')
+        .select_related('catalogo__cliente')
+        .prefetch_related(
+            'obrasautores_set__autor',
+            'subidasplataforma_set',
+            'conflictos'
+        )
+        .distinct()
     )
+
+    # ───── Paginadores (20 registros) ─────────────────────────────────
+    pag_mlc   = Paginator(qs_mlc,   20)
+    pag_adrev = Paginator(qs_adrev, 20)
+
+    num_mlc   = request.GET.get('page_mlc')
+    num_adrev = request.GET.get('page_adrev')
+
+    page_obj_mlc   = pag_mlc.get_page(num_mlc)
+    page_obj_adrev = pag_adrev.get_page(num_adrev)
 
     context = {
-        'conflictos_mlc': conflictos_mlc,
-        'conflictos_adrev': conflictos_adrev
+        'conflictos_mlc':   page_obj_mlc.object_list,
+        'conflictos_adrev': page_obj_adrev.object_list,
+        'page_obj_mlc':     page_obj_mlc,
+        'page_obj_adrev':   page_obj_adrev,
     }
-
     return render(request, 'conflictos.html', context)
-
 
 
 @csrf_exempt

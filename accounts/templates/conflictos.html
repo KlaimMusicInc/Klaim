@@ -1,909 +1,229 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conflictos</title>
-    <style>
-        /* ----- Variables y Estilos Base ----- */
-        :root {
-        --primary: #112F6D;
-        --primary-dark: #0d2450;
-        --primary-light: #1a4a9e;
-        --accent: #4fc3f7;
-        --white: #ffffff;
-        --light-bg: #f8fafc;
-        --gray-light: #e2e8f0;
-        --gray-medium: #94a3b8;
-        --gray-dark: #475569;
-        --success: #10b981;
-        --warning: #f59e0b;
-        --danger: #ef4444;
-        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-        --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-        --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
-        --border-radius: 12px;
-        }
+{% extends 'base.html' %}
+{% load static %}
 
-        body {
-        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        margin: 0;
-        padding: 0;
-        background-color: var(--light-bg);
-        color: var(--gray-dark);
-        line-height: 1.6;
-        }
+{% block title %}Manage Claims | KLAIM{% endblock %}
 
-        /* ----- Header Spacing ----- */
-        .container {
-        padding: 2rem 5%;
-        margin-top: 85px;
-        }
+{% block body_class %}conflicts-page{% endblock %}
 
-        /* ----- Títulos de Sección ----- */
-        h2 {
-        color: var(--primary);
-        font-size: 1.8rem;
-        margin-bottom: 1.5rem;
-        position: relative;
-        padding-bottom: 0.5rem;
-        font-weight: 600;
-        }
+{% block extra_css %}
+  <!-- Hoja específica de la página (los globales ya vienen en base) -->
+  <link rel="stylesheet" href="{% static 'css/pages/conflictos.css' %}">
+{% endblock %}
 
-        h2::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 60px;
-        height: 4px;
-        background: linear-gradient(90deg, var(--primary), var(--accent));
-        border-radius: 2px;
-        }
+{% block content %}
+<div class="main-container">
+<!-- Modal Estado para conflictos -->
+<!-- CORRECTO -->
+<div id="modal-estado" class="modal-overlay">
+  <div class="modal-container">
+    <button class="modal-close" onclick="closeModalEstado()" aria-label="Close modal">&times;</button>
+    <h2 class="modal-title">Modify Platform Status</h2>
 
-        .section-title {
-        margin-top: 3rem;
-        }
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
 
-        /* ----- Formulario de Conflictos ----- */
-        .conflict-form-container {
-        background: var(--white);
-        border-radius: var(--border-radius);
-        box-shadow: var(--shadow-lg);
-        padding: 2.5rem;
-        margin-bottom: 3rem;
-        border: 1px solid rgba(17, 47, 109, 0.1);
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
+    <select id="estado-select" class="modal-select" aria-label="Select new status">
+      <option value="OK">OK</option>
+      <option value="LIBERADA">LIBERADA</option>
+    </select>
 
-        .conflict-form-container:hover {
-        box-shadow: 0 12px 40px rgba(17, 47, 109, 0.15);
-        transform: translateY(-2px);
-        }
+    <button class="modal-button" onclick="submitEstadoConflicto()">CONFIRM&nbsp;UPDATE</button>
+  </div>
+</div>
 
-        .form-header {
-        margin-bottom: 2rem;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid rgba(17, 47, 109, 0.1);
-        }
-
-        .form-header h2 {
-        color: var(--primary);
-        font-size: 1.8rem;
-        margin: 0 0 0.5rem 0;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        }
-
-        .form-header p {
-        color: var(--gray-medium);
-        margin: 0;
-        font-size: 1rem;
-        }
-
-        /* ----- Grid de Formulario ----- */
-        .form-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 1.5rem;
-        }
-
-        /* ----- Grupos de Input ----- */
-        .input-group {
-        margin-bottom: 1.5rem;
-        position: relative;
-        }
-
-        .input-group label {
-        display: block;
-        margin-bottom: 0.75rem;
-        font-weight: 600;
-        color: var(--primary-dark);
-        font-size: 1rem;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        }
-
-        .input-wrapper {
-        position: relative;
-        }
-
-        .input-wrapper input {
-        width: 100%;
-        padding: 14px 16px 14px 48px;
-        font-size: 1rem;
-        border: 1px solid var(--gray-light);
-        border-radius: 10px;
-        background-color: rgba(241, 245, 249, 0.5);
-        transition: all 0.3s ease;
-        box-shadow: var(--shadow-sm);
-        }
-
-        .input-wrapper input:focus {
-        outline: none;
-        border-color: var(--accent);
-        background-color: var(--white);
-        box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.2);
-        }
-
-        .input-icon {
-        position: absolute;
-        left: 16px;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 20px;
-        height: 20px;
-        background-color: var(--gray-medium);
-        mask-size: contain;
-        mask-position: center;
-        mask-repeat: no-repeat;
-        }
-
-        .input-suffix {
-        position: absolute;
-        right: 16px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: var(--gray-medium);
-        font-weight: 500;
-        }
-
-        /* ----- Textarea Mejorado ----- */
-        .textarea-wrapper {
-        position: relative;
-        }
-
-        .textarea-wrapper textarea {
-        width: 100%;
-        min-height: 150px;
-        padding: 16px;
-        font-size: 1rem;
-        border: 1px solid var(--gray-light);
-        border-radius: 10px;
-        background-color: rgba(241, 245, 249, 0.5);
-        transition: all 0.3s ease;
-        resize: vertical;
-        box-shadow: var(--shadow-sm);
-        }
-
-        .textarea-wrapper textarea:focus {
-        outline: none;
-        border-color: var(--accent);
-        background-color: var(--white);
-        box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.2);
-        }
-
-        .textarea-footer {
-        display: flex;
-        justify-content: flex-end;
-        margin-top: 8px;
-        }
-
-        .char-counter {
-        font-size: 0.85rem;
-        color: var(--gray-medium);
-        }
-
-        /* ----- Botones ----- */
-        .form-actions {
-        display: flex;
-        gap: 1rem;
-        margin-top: 2rem;
-        flex-wrap: wrap;
-        }
-
-        .btn {
-        padding: 14px 28px;
-        font-size: 1rem;
-        font-weight: 600;
-        border: none;
-        border-radius: 10px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        box-shadow: var(--shadow-md);
-        }
-
-        .btn:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-        }
-
-        .btn:active {
-        transform: translateY(0);
-        }
-
-        .btn-primary {
-        background: linear-gradient(135deg, var(--primary), var(--primary-light));
-        color: var(--white);
-        }
-
-        .btn-primary:hover {
-        background: linear-gradient(135deg, var(--primary-dark), var(--primary));
-        }
-
-        .btn-success {
-        background: linear-gradient(135deg, var(--success), #34d399);
-        color: var(--white);
-        }
-
-        .btn-success:hover {
-        background: linear-gradient(135deg, #059669, var(--success));
-        }
-
-        .btn-danger {
-        background: linear-gradient(135deg, var(--danger), #f87171);
-        color: var(--white);
-        }
-
-        .btn-danger:hover {
-        background: linear-gradient(135deg, #dc2626, var(--danger));
-        }
-
-        /* ----- Tablas de Conflictos ----- */
-        .styled-table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-        font-size: 0.95rem;
-        text-align: left;
-        background-color: var(--white);
-        border-radius: var(--border-radius);
-        overflow: hidden;
-        box-shadow: var(--shadow-md);
-        margin-bottom: 2rem;
-        }
-
-        .styled-table th {
-        background: linear-gradient(135deg, var(--primary), var(--primary-light));
-        color: var(--white);
-        padding: 1.25rem 1.5rem;
-        font-weight: 600;
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        }
-
-        .styled-table td {
-        padding: 1rem 1.5rem;
-        border-bottom: 1px solid var(--gray-light);
-        vertical-align: middle;
-        }
-
-        .styled-table tr:not(:first-child):hover td {
-        background-color: rgba(79, 195, 247, 0.05);
-        }
-
-        .styled-table tr:nth-child(even) td {
-        background-color: var(--light-bg);
-        }
-
-        .styled-table input[type="checkbox"] {
-        width: 18px;
-        height: 18px;
-        accent-color: var(--primary);
-        cursor: pointer;
-        }
-
-        /* ----- Modal ----- */
-        .modal {
-        display: none;
-        position: fixed;
-        z-index: 9999;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.6);
-        backdrop-filter: blur(5px);
-        justify-content: center;
-        align-items: center;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        }
-
-        .modal.active {
-        opacity: 1;
-        display: flex;
-        }
-
-        .modal-content {
-        background: var(--white);
-        padding: 2.5rem;
-        border-radius: var(--border-radius);
-        width: 100%;
-        max-width: 450px;
-        text-align: center;
-        box-shadow: var(--shadow-lg);
-        transform: translateY(20px);
-        transition: transform 0.3s ease;
-        position: relative;
-        }
-
-        .modal.active .modal-content {
-        transform: translateY(0);
-        }
-
-        .modal-content h2 {
-        margin-bottom: 1.5rem;
-        font-size: 1.5rem;
-        }
-
-        .modal-content select {
-        width: 100%;
-        padding: 0.75rem 1rem;
-        font-size: 1rem;
-        border: 1px solid var(--gray-light);
-        border-radius: 8px;
-        margin-bottom: 1.5rem;
-        background-color: var(--white);
-        transition: all 0.3s ease;
-        }
-
-        .modal-content select:focus {
-        outline: none;
-        border-color: var(--accent);
-        box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.2);
-        }
-
-        .modal-content button {
-        padding: 0.75rem 1.5rem;
-        font-size: 1rem;
-        font-weight: 600;
-        background: linear-gradient(135deg, var(--primary), var(--primary-light));
-        color: var(--white);
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: var(--shadow-sm);
-        }
-
-        .modal-content button:hover {
-        background: linear-gradient(135deg, var(--primary-dark), var(--primary));
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-md);
-        }
-
-        .close {
-        color: var(--gray-medium);
-        font-size: 1.75rem;
-        font-weight: bold;
-        cursor: pointer;
-        position: absolute;
-        right: 1.5rem;
-        top: 1.5rem;
-        transition: color 0.2s ease;
-        }
-
-        .close:hover,
-        .close:focus {
-        color: var(--gray-dark);
-        }
-
-        /* ----- Responsive ----- */
-        @media (max-width: 768px) {
-        .container {
-            padding: 1.5rem;
-        }
-        
-        .form-grid {
-            grid-template-columns: 1fr;
-        }
-        
-        .form-actions {
-            flex-direction: column;
-        }
-        
-        .btn {
-            width: 100%;
-        }
-        
-        .styled-table {
-            font-size: 0.85rem;
-        }
-        
-        .styled-table th,
-        .styled-table td {
-            padding: 0.75rem;
-        }
-        }
-
-        @media (max-width: 480px) {
-        .conflict-form-container {
-            padding: 1.5rem;
-        }
-        
-        .form-header h2 {
-            font-size: 1.5rem;
-        }
-        
-        .modal-content {
-            padding: 1.5rem;
-        }
-        }
-
-        /* ----- Animaciones ----- */
-        @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        }
-
-    </style>
-</head>
-<body>
-    {% include 'header.html' %}
-    <script>
-    /* Django reemplaza estas expresiones por la URL real del endpoint */
-        const URL_ELIMINAR_CONFLICTO = "{% url 'eliminar_conflicto' %}";
-        const URL_UPDATE_ESTADO      = "{% url 'actualizar_estado_obra' %}";
-    </script>
-    <div id="modal-estado" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModalEstado()">&times;</span>
-            <h2>Modify Platform Status</h2>
-            <select id="estado-select">
-                <option value="OK">OK</option>
-                <option value="LIBERADA">LIBERADA</option>
-            </select>
-            <br>
-            <button onclick="submitEstado()">ACCEPT</button>
-        </div>
-    </div>
-    <div class="conflict-form-container">
-        <div class="form-header">
-            <h2><i class="icon-alert"></i> Manage Claims</h2>
-            <p>Complete the information to register or update a claim</p>
-        </div>
-        
-        <div class="form-grid">
-            <div class="input-group">
-                <label for="nombre-contraparte">
-                    <i class="icon-user"></i> Counterparty's name
-                </label>
-                <div class="input-wrapper">
-                    <input type="text" id="nombre-contraparte" placeholder="Enter counterparty name">
-                    <span class="input-icon"></span>
-                </div>
-            </div>
-            
-            <div class="input-group">
-                <label for="porcentaje-contraparte">
-                    <i class="icon-percent"></i> Counterparty's shares
-                </label>
-                <div class="input-wrapper">
-                    <input type="number" id="porcentaje-contraparte" placeholder="0.00" step="0.01">
-                    <span class="input-suffix">%</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="input-group full-width">
-            <label for="informacion-adicional">
-                <i class="icon-notes"></i> Actions Taken
-            </label>
-            <div class="textarea-wrapper">
-                <textarea id="informacion-adicional" placeholder="Describe the actions taken..."></textarea>
-                <div class="textarea-footer">
-                    <span class="char-counter">0/500</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="form-actions">
-            <button class="btn btn-danger" onclick="eliminarConflicto()">
-                <i class="icon-delete"></i> Delete Claim
-            </button>
-            <button class="btn btn-success" onclick="actualizarConflicto()">
-                <i class="icon-add"></i> Create Claim
-            </button>
-            <button class="btn btn-primary" onclick="insertarInformacionConflicto()">
-                <i class="icon-update"></i> Update Claim
-            </button>
-        </div>
-    </div>
-    <div class="container">
-        <h2>Overclaim works MLC</h2>
-        <form id="conflictos-mlc-form">
-            <table class="styled-table">
-                <thead>
-                    <tr>
-                        <th>Select</th>
-                        <th>Title</th>
-                        <th>SGS</th>
-                        <th>ISWC</th>
-                        <th>Authors</th>
-                        <th>Share</th>
-                        <th>Client</th>
-                        <th>Cod MLC</th>
-                        <th>Counterparty</th>
-                        <th>Share Counterparty</th>
-                        <th>Additional information</th>
-                    </tr>
-                </thead>
-                <tbody id="mlc-conflicts">
-                    {% for obra in conflictos_mlc %}
-                    <tr>
-                        <td>
-                            <input type="checkbox" name="obras" value="{{ obra.cod_klaim }}">
-                        </td>
-                        <td>{{ obra.titulo }}</td>
-                        <td>{{ obra.codigo_sgs }}</td>
-                        <td>{{ obra.codigo_iswc }}</td>
-                        <td>
-                            {% for obra_autor in obra.obrasautores_set.all %}
-                                {{ obra_autor.autor.nombre_autor }}<br>
-                            {% endfor %}
-                        </td>
-                        <td>
-                            {% for obra_autor in obra.obrasautores_set.all %}
-                                {{ obra_autor.porcentaje_autor }}%<br>
-                            {% endfor %}
-                        </td>
-                        <td>{{ obra.catalogo.cliente.nombre_cliente }}</td>
-                        <td>{{ obra.subidasplataforma_set.first.codigo_MLC|default:"N/A" }}</td>
-                
-                        <!-- Mostrar solo si el último conflicto es "vigente" -->
-                        {% with ultimo_conflicto=obra.conflictos.last %}
-                            {% if ultimo_conflicto and ultimo_conflicto.estado_conflicto == 'vigente' %}
-                                <td>{{ ultimo_conflicto.nombre_contraparte|default:"N/A" }}</td>
-                                <td>{{ ultimo_conflicto.porcentaje_contraparte|default:"N/A" }}</td>
-                                <td>{{ ultimo_conflicto.informacion_adicional|default:"N/A" }}</td>
-                            {% else %}
-                                <td>N/A</td>
-                                <td>N/A</td>
-                                <td>N/A</td>
-                            {% endif %}
-                        {% endwith %}
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </form>
-        
-        <h2 class="section-title">Overclaims works ADREV</h2>
-        <form id="conflictos-adrev-form">
-            <table class="styled-table">
-                <thead>
-                    <tr>
-                        <th>Select</th>
-                        <th>Title</th>
-                        <th>SGS</th>
-                        <th>ISWC</th>
-                        <th>Authors</th>
-                        <th>Share</th>
-                        <th>Client</th>
-                        <th>Cod ADREV</th>
-                        <th>Counterparty</th>
-                        <th>Share Counterparty</th>
-                        <th>Additional information</th>
-                    </tr>
-                </thead>
-                <tbody id="adrev-conflicts">
-                    {% for obra in conflictos_adrev %}
-                    <tr>
-                        <td>
-                            <input type="checkbox" name="obras" value="{{ obra.cod_klaim }}">
-                        </td>
-                        <td>{{ obra.titulo }}</td>
-                        <td>{{ obra.codigo_sgs }}</td>
-                        <td>{{ obra.codigo_iswc }}</td>
-                        <td>
-                            {% for obra_autor in obra.obrasautores_set.all %}
-                                {{ obra_autor.autor.nombre_autor }}<br>
-                            {% endfor %}
-                        </td>
-                        <td>
-                            {% for obra_autor in obra.obrasautores_set.all %}
-                                {{ obra_autor.porcentaje_autor }}%<br>
-                            {% endfor %}
-                        </td>
-                        <td>{{ obra.catalogo.cliente.nombre_cliente }}</td>
-                        <td>{{ obra.subidasplataforma_set.first.codigo_ADREV|default:"N/A" }}</td>
-                
-                        <!-- Mostrar solo si el último conflicto es "vigente" -->
-                        {% with ultimo_conflicto=obra.conflictos.last %}
-                            {% if ultimo_conflicto and ultimo_conflicto.estado_conflicto == 'vigente' %}
-                                <td>{{ ultimo_conflicto.nombre_contraparte|default:"N/A" }}</td>
-                                <td>{{ ultimo_conflicto.porcentaje_contraparte|default:"N/A" }}</td>
-                                <td>{{ ultimo_conflicto.informacion_adicional|default:"N/A" }}</td>
-                            {% else %}
-                                <td>N/A</td>
-                                <td>N/A</td>
-                                <td>N/A</td>
-                            {% endif %}
-                        {% endwith %}
-                    </tr>
-                    {% endfor %}
-                </tbody>                
-            </table>
-        </form>
-    </div>
-    
-
+  {# ----------  FORMULARIO PRINCIPAL  ---------- #}
+  <div class="conflict-form-container">
+    <div class="form-header">
+      <h2><i class="icon-alert"></i> Manage Claims</h2>
+      <p>Complete the information to register or update a claim</p>
     </div>
 
-    <script>
-        function actualizarConflicto() {
-            const obrasSeleccionadasMLC = document.querySelectorAll('#conflictos-mlc-form input[type="checkbox"]:checked');
-            const obrasSeleccionadasADREV = document.querySelectorAll('#conflictos-adrev-form input[type="checkbox"]:checked');
-            
-            let obrasSeleccionadas = [];
-            let plataforma = null;
+    <div class="form-grid">
+      <div class="input-group">
+        <label for="nombre-contraparte"><i class="icon-user"></i> Counterparty's name</label>
+        <div class="input-wrapper">
+          <i class="icon-user input-icon"></i>
+          <input type="text" id="nombre-contraparte" class="form-control" placeholder="Enter counterparty name">
+        </div>
+      </div>
 
-            if (obrasSeleccionadasMLC.length > 0) {
-                plataforma = "MLC";
-                obrasSeleccionadasMLC.forEach((checkbox) => obrasSeleccionadas.push(checkbox.value));
-            }
+      <div class="input-group">
+        <label for="porcentaje-contraparte"><i class="icon-percent"></i> Counterparty's shares</label>
+        <div class="input-wrapper">
+          <input type="number" id="porcentaje-contraparte" class="form-control" placeholder="0.00" step="0.01">
+          <span class="input-suffix">%</span>
+        </div>
+      </div>
+    </div>
 
-            if (obrasSeleccionadasADREV.length > 0) {
-                plataforma = "ADREV";
-                obrasSeleccionadasADREV.forEach((checkbox) => obrasSeleccionadas.push(checkbox.value));
-            }
+    <div class="input-group full-width">
+      <label for="informacion-adicional"><i class="icon-notes"></i> Actions Taken</label>
+      <div class="textarea-wrapper">
+        <textarea id="informacion-adicional" class="form-textarea" placeholder="Describe the actions taken..."></textarea>
+        <div class="textarea-footer"><span class="char-counter">0/500</span></div>
+      </div>
+    </div>
 
-            if (obrasSeleccionadas.length === 0) {
-                alert("Seleccione al menos una obra en conflicto.");
-                return;
-            }
+    <div class="form-actions">
+      <button class="btn btn--danger" onclick="eliminarConflicto()"><i class="icon-delete"></i> Delete Claim</button>
+      <button class="btn btn--success" onclick="actualizarConflicto()"><i class="icon-add"></i> Create Claim</button>
+      <button class="btn btn--primary" onclick="insertarInformacionConflicto()"><i class="icon-update"></i> Update Claim</button>
+    </div>
+  </div>
 
-            const nombre_contraparte = document.getElementById('nombre-contraparte').value;
-            const porcentaje_contraparte = document.getElementById('porcentaje-contraparte').value;
-            const informacion_adicional = document.getElementById('informacion-adicional').value;
+  {# ----------  TABLA MLC  ---------- #}
+  <h2 class="section-title">Overclaim works MLC</h2>
+  <section class="table-section">
+    <div class="table-responsive">
+      <form id="conflictos-mlc-form">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="select-col">Select</th>
+              <th>Title</th>
+              <th>SGS</th>
+              <th>ISWC</th>
+              <th>Authors</th>
+              <th>Share</th>
+              <th>Client</th>
+              <th>Cod MLC</th>
+              <th>Counterparty</th>
+              <th>Share Counterparty</th>
+              <th>Additional information</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for obra in conflictos_mlc %}
+            <tr>
+              <td class="select-col"><input type="checkbox" name="obras" value="{{ obra.cod_klaim }}"></td>
+              <td>{{ obra.titulo }}</td>
+              <td>{{ obra.codigo_sgs }}</td>
+              <td>{{ obra.codigo_iswc }}</td>
+              <td>
+                {% for oa in obra.obrasautores_set.all %}
+                  {{ oa.autor.nombre_autor }}<br>
+                {% endfor %}
+              </td>
+              <td>
+                {% for oa in obra.obrasautores_set.all %}
+                  {{ oa.porcentaje_autor }}%<br>
+                {% endfor %}
+              </td>
+              <td>{{ obra.catalogo.cliente.nombre_cliente }}</td>
+              <td>{{ obra.subidasplataforma_set.first.codigo_MLC|default:"N/A" }}</td>
 
-            // Preguntar al usuario si desea enviar el correo
-            const enviarCorreo = confirm("¿Desea enviar un correo notificando el conflicto?");
-            const csrfToken = '{{ csrf_token }}';
+              {% with c=obra.conflictos.last %}
+                {% if c and c.estado_conflicto == 'vigente' %}
+                  <td>{{ c.nombre_contraparte|default:"N/A" }}</td>
+                  <td>{{ c.porcentaje_contraparte|default:"N/A" }}</td>
+                  <td>{{ c.informacion_adicional|default:"N/A" }}</td>
+                {% else %}
+                  <td>N/A</td><td>N/A</td><td>N/A</td>
+                {% endif %}
+              {% endwith %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </form>
+    </div>
 
-            fetch('/actualizar-conflicto/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                },
-                body: JSON.stringify({
-                    obras: obrasSeleccionadas,
-                    nombre_contraparte: nombre_contraparte,
-                    porcentaje_contraparte: porcentaje_contraparte,
-                    informacion_adicional: informacion_adicional,
-                    plataforma: plataforma,
-                    enviar_correo: enviarCorreo // Enviar esta decisión al backend
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert("Conflicto creado correctamente.");
-                    location.reload();
-                } else {
-                    alert(data.error); 
-                }
-            })
-            .catch(error => {
-                console.error("Error en la solicitud:", error);
-                alert("Error al crear el conflicto.");
-            });
-        }
+    {# ---------- PAGINACIÓN MLC ---------- #}
+    <div class="pagination" role="navigation" aria-label="Pagination MLC">
+      {% if page_obj_mlc.has_previous %}
+        <a href="?page_mlc=1{% if page_obj_adrev.number %}&page_adrev={{ page_obj_adrev.number }}{% endif %}">&laquo;</a>
+        <a href="?page_mlc={{ page_obj_mlc.previous_page_number }}{% if page_obj_adrev.number %}&page_adrev={{ page_obj_adrev.number }}{% endif %}">Anterior</a>
+      {% endif %}
 
-    </script>
-    <script>
-        let obraIdForUpdate;
-        let plataformaForUpdate;
+      <span class="current">Page {{ page_obj_mlc.number }} of {{ page_obj_mlc.paginator.num_pages }}</span>
 
-        function eliminarConflicto() {
-            const obrasSeleccionadasMLC = document.querySelectorAll('#conflictos-mlc-form input[type="checkbox"]:checked');
-            const obrasSeleccionadasADREV = document.querySelectorAll('#conflictos-adrev-form input[type="checkbox"]:checked');
-            
-            let obrasSeleccionadas = [];
-            
-            // Detectamos las obras seleccionadas en cada plataforma y asignamos la plataforma correspondiente
-            if (obrasSeleccionadasMLC.length > 0) {
-                plataformaForUpdate = "MLC";
-                obrasSeleccionadasMLC.forEach((checkbox) => obrasSeleccionadas.push(checkbox.value));
-            }
-            if (obrasSeleccionadasADREV.length > 0) {
-                plataformaForUpdate = "ADREV";
-                obrasSeleccionadasADREV.forEach((checkbox) => obrasSeleccionadas.push(checkbox.value));
-            }
+      {% if page_obj_mlc.has_next %}
+        <a href="?page_mlc={{ page_obj_mlc.next_page_number }}{% if page_obj_adrev.number %}&page_adrev={{ page_obj_adrev.number }}{% endif %}">Siguiente</a>
+        <a href="?page_mlc={{ page_obj_mlc.paginator.num_pages }}{% if page_obj_adrev.number %}&page_adrev={{ page_obj_adrev.number }}{% endif %}">&raquo;</a>
+      {% endif %}
+    </div>
+  </section>
 
-            if (obrasSeleccionadas.length === 0) {
-                alert("Seleccione al menos una obra en conflicto para eliminar.");
-                return;
-            }
+  {# ----------  TABLA ADREV  ---------- #}
+  <h2 class="section-title">Overclaim works ADREV</h2>
+  <section class="table-section">
+    <div class="table-responsive">
+      <form id="conflictos-adrev-form">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="select-col">Select</th>
+              <th>Title</th>
+              <th>SGS</th>
+              <th>ISWC</th>
+              <th>Authors</th>
+              <th>Share</th>
+              <th>Client</th>
+              <th>Cod ADREV</th>
+              <th>Counterparty</th>
+              <th>Share Counterparty</th>
+              <th>Additional information</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for obra in conflictos_adrev %}
+            <tr>
+              <td class="select-col"><input type="checkbox" name="obras" value="{{ obra.cod_klaim }}"></td>
+              <td>{{ obra.titulo }}</td>
+              <td>{{ obra.codigo_sgs }}</td>
+              <td>{{ obra.codigo_iswc }}</td>
+              <td>
+                {% for oa in obra.obrasautores_set.all %}
+                  {{ oa.autor.nombre_autor }}<br>
+                {% endfor %}
+              </td>
+              <td>
+                {% for oa in obra.obrasautores_set.all %}
+                  {{ oa.porcentaje_autor }}%<br>
+                {% endfor %}
+              </td>
+              <td>{{ obra.catalogo.cliente.nombre_cliente }}</td>
+              <td>{{ obra.subidasplataforma_set.first.codigo_ADREV|default:"N/A" }}</td>
 
-            if (confirm("¿Está seguro de que desea eliminar los conflictos seleccionados?")) {
-                const csrfToken = '{{ csrf_token }}';
+              {% with c=obra.conflictos.last %}
+                {% if c and c.estado_conflicto == 'vigente' %}
+                  <td>{{ c.nombre_contraparte|default:"N/A" }}</td>
+                  <td>{{ c.porcentaje_contraparte|default:"N/A" }}</td>
+                  <td>{{ c.informacion_adicional|default:"N/A" }}</td>
+                {% else %}
+                  <td>N/A</td><td>N/A</td><td>N/A</td>
+                {% endif %}
+              {% endwith %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </form>
+    </div>
 
-                fetch(URL_ELIMINAR_CONFLICTO, { 
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken
-                    },
-                    body: JSON.stringify({
-                        obras: obrasSeleccionadas
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        obraIdForUpdate = obrasSeleccionadas[0];  // Asignamos la primera obra seleccionada para actualizar el estado
-                        openModalEstado();  // Abrir el modal para seleccionar el nuevo estado
-                    } else {
-                        alert("Error al eliminar los conflictos.");
-                    }
-                })
-                .catch(error => {
-                    console.error("Error en la solicitud:", error);
-                    alert("Error al eliminar los conflictos.");
-                });
-            }
-        }
+    {# ---------- PAGINACIÓN ADREV ---------- #}
+    <div class="pagination" role="navigation" aria-label="Pagination ADREV">
+      {% if page_obj_adrev.has_previous %}
+        <a href="?page_adrev=1{% if page_obj_mlc.number %}&page_mlc={{ page_obj_mlc.number }}{% endif %}">&laquo;</a>
+        <a href="?page_adrev={{ page_obj_adrev.previous_page_number }}{% if page_obj_mlc.number %}&page_mlc={{ page_obj_mlc.number }}{% endif %}">Anterior</a>
+      {% endif %}
 
-        function openModalEstado() {
-            const modal = document.getElementById('modal-estado');
-            modal.classList.add('active');        // ← muestra el modal con la animación
-        }
-        function closeModalEstado() {
-            const modal = document.getElementById('modal-estado');
-            modal.classList.remove('active');     // ← lo oculta de nuevo
-        }
-        function submitEstado() {
-            const estado = document.getElementById('estado-select').value; // Estado seleccionado
-            const csrfToken = '{{ csrf_token }}'; // Token CSRF
-            const fechaLiberacion = new Date().toISOString().split('T')[0]; // Fecha actual
+      <span class="current">Page {{ page_obj_adrev.number }} of {{ page_obj_adrev.paginator.num_pages }}</span>
 
-            // Determinar el mensaje adicional basado en el estado seleccionado
-            let mensaje;
-            if (estado === "LIBERADA") {
-                mensaje = `Obra liberada ${fechaLiberacion}`;
-            } else if (estado === "OK") {
-                mensaje = `Conflicto ganado ${fechaLiberacion}`;
-            } else {
-                alert("Estado no válido.");
-                return;
-            }
+      {% if page_obj_adrev.has_next %}
+        <a href="?page_adrev={{ page_obj_adrev.next_page_number }}{% if page_obj_mlc.number %}&page_mlc={{ page_obj_mlc.number }}{% endif %}">Siguiente</a>
+        <a href="?page_adrev={{ page_obj_adrev.paginator.num_pages }}{% if page_obj_mlc.number %}&page_mlc={{ page_obj_mlc.number }}{% endif %}">&raquo;</a>
+      {% endif %}
+    </div>
+  </section>
 
-            // Log para verificar datos enviados
-            console.log("Enviando datos al backend:", {
-                obra_id: obraIdForUpdate,
-                estado: estado,
-                plataforma: plataformaForUpdate,
-                informacion_adicional: mensaje
-            });
+</div>
+{% endblock %}
 
-            fetch('/update-estado-conflicto/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                },
-                body: JSON.stringify({
-                    'obra_id': obraIdForUpdate,
-                    'estado': estado,
-                    'plataforma': plataformaForUpdate,
-                    'informacion_adicional': mensaje
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log("Respuesta del servidor:", data); // Verificar respuesta del backend
-                if (data.success) {
-                    closeModalEstado();  // Cierra el modal
-                    location.reload();   // Recarga la página para reflejar los cambios
-                } else {
-                    alert(data.error);
-                }
-            })
-            .catch(error => {
-                console.error("Error en la solicitud:", error);
-                alert("Error al actualizar el estado.");
-            });
-        }
-
-
-
-        window.onclick = function(event) {
-            const modal = document.getElementById('modal-estado');
-            if (event.target == modal) {
-                closeModalEstado();
-            }
-        }
-
-
-    </script>
-    <script>
-        function insertarInformacionConflicto() {
-            // Obtenemos las obras seleccionadas del formulario
-            const obrasSeleccionadasMLC = document.querySelectorAll('#conflictos-mlc-form input[type="checkbox"]:checked');
-            const obrasSeleccionadasADREV = document.querySelectorAll('#conflictos-adrev-form input[type="checkbox"]:checked');
-            
-            // Arreglo para almacenar los IDs de las obras seleccionadas
-            let obrasSeleccionadas = [];
-        
-            // Recorremos las obras seleccionadas en MLC
-            obrasSeleccionadasMLC.forEach((checkbox) => {
-                obrasSeleccionadas.push(checkbox.value);
-            });
-        
-            // Recorremos las obras seleccionadas en ADREV
-            obrasSeleccionadasADREV.forEach((checkbox) => {
-                obrasSeleccionadas.push(checkbox.value);
-            });
-        
-            // Confirmar selección de obras
-            if (obrasSeleccionadas.length === 0) {
-                alert("Seleccione al menos una obra en conflicto.");
-                return;
-            }
-    
-            // Obtener el texto ingresado en el campo de información adicional
-            const informacionAdicional = document.getElementById('informacion-adicional').value.trim();
-            
-            // Verificar que el campo no esté vacío
-            if (!informacionAdicional) {
-                alert("El campo 'Información Adicional' no puede estar vacío.");
-                return;
-            }
-    
-            const csrfToken = '{{ csrf_token }}';
-    
-            fetch('/insertar-informacion-conflicto/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                },
-                body: JSON.stringify({
-                    obras: obrasSeleccionadas,
-                    informacion_adicional: informacionAdicional
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert("Información agregada correctamente.");
-                    location.reload(); // Recargar la página para mostrar los cambios
-                } else {
-                    alert(data.error);
-                }
-            })
-            .catch(error => {
-                console.error("Error en la solicitud:", error);
-                alert("Error al agregar información.");
-            });
-        }
-    </script>
-</body>
-</html>
+{% block scripts %}
+  <script>
+    const URL_ELIMINAR_CONFLICTO   = "{% url 'eliminar_conflicto' %}";
+    const URL_UPDATE_ESTADO_OBRA   = "{% url 'actualizar_estado_obra' %}";
+  </script>
+  <script src="{% static 'js/conflictos.js' %}"></script>
+  <script src="{% static 'js/modals.js' %}"></script>
+{% endblock %}
