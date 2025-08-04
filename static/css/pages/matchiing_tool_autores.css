@@ -1,0 +1,73 @@
+/* pages/matching_tool.css
+   --------------------------------------------------------------
+   Sólo lo que NO existe ya en button.css, tables.css o forms.css
+-------------------------------------------------------------- */
+
+/* ╭─ 1) Contenedor principal y título de sección ──────────────╮ */
+.container{
+  background:linear-gradient(135deg,#f5f7ff 0%,#f0f4ff 100%);
+  padding:0 5vw;
+  flex:1;                    /* crece para ocupar la altura total */
+}
+
+/* Encabezado “Uploads to Platform …” */
+.section-header{ margin-bottom:2rem }
+.section-title{
+  font-family:'Space Grotesk',sans-serif;
+  font-size:2rem;
+  font-weight:700;
+  background:linear-gradient(90deg,var(--primary),var(--secondary));
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+  letter-spacing:-0.5px;
+}
+
+/* ╭─ 2) Insumos específicos (inputs dentro de la tabla) ───────╮ */
+.isrc-input-group{           /* apila los campos dentro de la celda */
+  display:flex;
+  flex-direction:column;
+  gap:0.75rem;
+}
+
+/* Ajuste para inputs que viven dentro de celdas angostas */
+.table-container .form-control{
+  width:100%;
+  padding:0.75rem 1rem;
+}
+
+/* ╭─ 3) Estado vacío ──────────────────────────────────────────╮ */
+.empty-state{
+  text-align:center;
+  padding:2rem;
+  color:var(--gray);
+  font-size:1.1rem;
+}
+
+/* ╭─ 4) Botones de paginación (reutilizan .pagination-btn) ────╮ */
+.pagination-btn:hover{
+  background:var(--primary);
+  color:#fff;
+  transform:translateY(-2px);
+  box-shadow:0 4px 8px rgba(58,134,255,.2);
+}
+.pagination-btn.disabled{
+  background:rgba(0,0,0,.05);
+  color:var(--gray);
+  cursor:not-allowed;
+  box-shadow:none;
+}
+
+/* ╭─ 5) Status badge exclusivos (true / false) ────────────────╮ */
+.status-badge.true  { background:rgba(40,167,69,.1);  color:var(--success);}
+.status-badge.false { background:rgba(255,193,7,.1);  color:#d39e00;     }
+
+/* ╭─ 6) Responsivo extra para esta vista ──────────────────────╮ */
+@media(max-width:768px){
+  .container           { padding:0 3vw; }
+  .section-title       { font-size:1.5rem; }
+  .table-container .data-table{ font-size:.85rem; }
+  .table-container .data-table th,
+  .table-container .data-table td{ padding:.75rem; }
+  .isrc-input-group .btn{ width:100%; }
+}

@@ -4,59 +4,58 @@
 
 
 
+
 <table class="data-table">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Work Title</th>
-            <th>Author Name</th>
-            <th>MLC Code</th>
-            <th>Usages</th>
-            <th>Creation Date</th>
-            <th>Status</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for record in page_obj %}
-        <tr>
-            <td>{{ record.id }}</td>
-            <td>{{ record.obra.titulo }}</td>
-            <td>{{ record.autor.nombre_autor }}</td>
-            <td>{{ record.codigo_mlc.codigo_MLC }}</td>
-            <td>{{ record.usos }}</td>
-            <td>{{ record.fecha_creacion|date:"Y-m-d H:i:s" }}</td>
-            <td onclick="openModal('{{ record.id }}', 'matching_tool_titulo_autor')">
-                <span class="status-badge status-{{ record.estado|lower }}">
-                    {{ record.estado }}
-                </span>
-            </td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="7" class="empty-state">No records found</td>
-        </tr>
-        {% endfor %}
-    </tbody>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Work Title</th>
+      <th>Author Name</th>
+      <th>MLC Code</th>
+      <th>Usages</th>
+      <th>Creation Date</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    {% for record in page_obj %}
+    <tr>
+      <td>{{ record.id }}</td>
+      <td>{{ record.obra.titulo }}</td>
+      <td>{{ record.autor.nombre_autor }}</td>
+      <td>{{ record.codigo_mlc.codigo_MLC }}</td>
+      <td>{{ record.usos }}</td>
+      <td>{{ record.fecha_creacion|date:"Y-m-d H:i:s" }}</td>
+
+      <td onclick="openModal('{{ record.id }}','matching_tool_titulo_autor')">
+        <span class="status-badge status-{{ record.estado|lower }}">{{ record.estado }}</span>
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="7" class="empty-state">No records found</td></tr>
+    {% endfor %}
+  </tbody>
 </table>
 
-<nav class="pagination-container">
-    {% if page_obj.has_previous %}
-        <a href="#" class="pagination-btn page-link-titulo-autor" data-page="1">&laquo; First</a>
-        <a href="#" class="pagination-btn page-link-titulo-autor" data-page="{{ page_obj.previous_page_number }}">Previous</a>
-    {% else %}
-        <span class="pagination-btn disabled">&laquo; First</span>
-        <span class="pagination-btn disabled">Previous</span>
-    {% endif %}
+<nav class="pagination">
+  {% if page_obj.has_previous %}
+    <a href="#" class="page-link-titulo-autor" data-page="1">&laquo; First</a>
+    <a href="#" class="page-link-titulo-autor" data-page="{{ page_obj.previous_page_number }}">Previous</a>
+  {% else %}
+    <span class="disabled">&laquo; First</span>
+    <span class="disabled">Previous</span>
+  {% endif %}
 
-    <span class="pagination-info">
-        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-    </span>
+  <span class="current">
+    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+  </span>
 
-    {% if page_obj.has_next %}
-        <a href="#" class="pagination-btn page-link-titulo-autor" data-page="{{ page_obj.next_page_number }}">Next</a>
-        <a href="#" class="pagination-btn page-link-titulo-autor" data-page="{{ page_obj.paginator.num_pages }}">Last &raquo;</a>
-    {% else %}
-        <span class="pagination-btn disabled">Next</span>
-        <span class="pagination-btn disabled">Last &raquo;</span>
-    {% endif %}
+  {% if page_obj.has_next %}
+    <a href="#" class="page-link-titulo-autor" data-page="{{ page_obj.next_page_number }}">Next</a>
+    <a href="#" class="page-link-titulo-autor" data-page="{{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+  {% else %}
+    <span class="disabled">Next</span>
+    <span class="disabled">Last &raquo;</span>
+  {% endif %}
 </nav>

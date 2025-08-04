@@ -1,0 +1,76 @@
+/* ======================
+   Animaciones - Header
+   Variables usadas: --accent
+   ====================== */
+
+@keyframes circuitLines {
+  0%   { background-position: 0 0; }
+  100%{ background-position: 0 5px; }
+}
+
+@keyframes neonGlow {
+  from { box-shadow: 0 0 5px var(--accent); }
+  to   { box-shadow: 0 0 20px var(--accent), 0 0 30px var(--accent); }
+}
+
+@keyframes neonPulse {
+  from { 
+    opacity: 0.6;
+    box-shadow: 0 0 5px var(--accent), 0 0 10px var(--accent);
+  }
+  to {
+    opacity: 1;
+    box-shadow: 0 0 15px var(--accent), 0 0 30px var(--accent);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50%       { opacity: 1; }
+}
+
+
+/* ======================
+   Animaciones - Login
+   Variables usadas: --
+     (usa las variables de base.css)
+   ====================== */
+
+@keyframes gradientBG {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes shine {
+  0%   { transform: rotate(30deg) translate(-20%, -20%); }
+  100% { transform: rotate(30deg) translate(20%, 20%); }
+}
+
+@keyframes float {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 0; }
+  10%  { opacity: 0.8; }
+  100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+}
+
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60%       { transform: translate3d(4px, 0, 0); }
+}
+
+/* INDEX */
+/* CONFLICTOS */
+/* LIBERADAS */
+/* MATCHINGTOOL_TITULO */
+/* MATCHINGTOOL_ISRC */
+/* HISTORIAL_MATCHINGTOOL */
+/* LYRICFIND_PENDIENTES */
+/* LYRICFIND_HISTORIAL */
+/* REPORTE */

@@ -1,475 +1,100 @@
+{# templates/lyricfind_records.html #}
+{% extends "base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LyricFind Records</title>
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-    <style>
-        :root {
-            --primary: #112F6D;
-            --primary-dark: #0d2450;
-            --secondary: #1a4a9e;
-            --accent: #ff006e;
-            --dark: #1a1b25;
-            --light: #f8f9fa;
-            --gray: #6c757d;
-            --light-gray: #e9ecef;
-            --success: #28a745;
-            --warning: #ffc107;
-            --danger: #dc3545;
-            --glass: rgba(255, 255, 255, 0.15);
-            --glass-border: rgba(255, 255, 255, 0.2);
-        }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+{% block title %}LyricFind · Records | KLAIM{% endblock %}
+{% block body_class %}lyricfind-records-page{% endblock %}
 
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: #f5f7ff;
-            color: var(--dark);
-            line-height: 1.6;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
+{# ——— CSS exclusivo de la vista ——— #}
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/pages/lyricfind_records.css' %}">
+{% endblock %}
 
-        /* Header space */
-        .header-space {
-            height: 80px;
-        }
+{# ——— CONTENIDO ——— #}
+{% block content %}
+<div class="container">
+  {# FILTROS + CONTADOR #}
+  <form class="filter-bar" method="get">
+    <strong>Total records: {{ total_registros }}</strong>
 
-        /* Main container */
-        .container {
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            padding: 0 5vw;
-            background: linear-gradient(135deg, #f5f7ff 0%, #f0f4ff 100%);
-        }
+    <label>
+      From
+      <input type="date" name="from" value="{{ from }}">
+    </label>
 
-        /* Filter section - Glassmorphism design */
-        .filter-bar {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 249, 250, 0.9) 100%);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 1.5rem 2rem;
-            margin: 2rem 0 1rem;
-            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
-            border: 1px solid var(--glass-border);
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 1.5rem;
-        }
+    <label>
+      To
+      <input type="date" name="to" value="{{ to }}">
+    </label>
 
-        .filter-bar strong {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 1.1rem;
-            color: var(--primary);
-            font-weight: 600;
-        }
+    <button type="submit" class="btn btn--primary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2" stroke-linecap="round"
+           stroke-linejoin="round">
+        <path d="M21 3v18c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V3c0-1.1.9-2 2-2h7l2 2h7c1.1 0 2 .9 2 2z"/>
+        <circle cx="9" cy="9" r="2"/>
+        <path d="M15 13a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/>
+      </svg>
+      Filter
+    </button>
+  </form>
 
-        .filter-bar label {
-            position: relative;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.9rem;
-            color: var(--gray);
-        }
-
-        .filter-bar input[type="date"] {
-            padding: 0.75rem 1rem;
-            font-size: 0.9rem;
-            border: none;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.8);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s ease;
-            border: 1px solid rgba(0, 0, 0, 0.05);
-        }
-
-        .filter-bar input[type="date"]:focus {
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.2);
-            background: white;
-            transform: translateY(-2px);
-        }
-
-        .filter-bar button {
-            padding: 0.75rem 1.5rem;
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: white;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            box-shadow: 0 4px 15px rgba(58, 134, 255, 0.3);
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .filter-bar button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(58, 134, 255, 0.4);
-        }
-
-        .filter-bar button svg {
-            width: 16px;
-            height: 16px;
-        }
-
-        /* Table container */
-        .table-container {
-            flex: 1;
-            padding: 0;
-            margin-bottom: 2rem;
-        }
-
-        /* Section header */
-        .section-header {
-            margin-bottom: 1.5rem;
-        }
-
-        .section-title {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--dark);
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            letter-spacing: -0.5px;
-            position: relative;
-            padding-bottom: 0.5rem;
-        }
-
-        .section-title::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 60px;
-            height: 3px;
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
-            border-radius: 3px;
-        }
-
-        /* Modern Data Table */
-        .data-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
-            overflow: hidden;
-        }
-
-        .data-table thead th {
-            position: sticky;
-            top: 0;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            font-weight: 600;
-            padding: 1rem 1.5rem;
-            text-align: left;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .data-table tbody tr {
-            transition: all 0.2s ease;
-        }
-
-        .data-table tbody tr:hover {
-            transform: translateX(4px);
-            box-shadow: 4px 0 0 0 var(--primary) inset;
-        }
-
-        .data-table tbody td {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--light-gray);
-            font-size: 0.9rem;
-            background: white;
-        }
-
-        .data-table tbody tr:nth-child(even) td {
-            background-color: #f8f9fa;
-        }
-
-        /* Status badges */
-        .status-badge {
-            display: inline-block;
-            padding: 0.35rem 0.75rem;
-            border-radius: 50px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        /* Empty state */
-        .empty-state {
-            text-align: center;
-            padding: 2rem;
-            color: var(--gray);
-            font-size: 1rem;
-        }
-
-        /* Pagination */
-        .pagination-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 0.5rem;
-            margin-top: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .pagination-btn, .pagination-info {
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            text-decoration: none;
-            transition: all 0.2s ease;
-        }
-
-        .pagination-btn {
-            background: white;
-            color: var(--primary);
-            border: 1px solid var(--light-gray);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
-
-        .pagination-btn:hover {
-            background: var(--primary);
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(58, 134, 255, 0.2);
-        }
-
-        .pagination-btn.disabled {
-            background: var(--light-gray);
-            color: var(--gray);
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-
-        .pagination-info {
-            background: var(--light-gray);
-            color: var(--gray);
-            cursor: default;
-        }
-
-        /* Animation classes */
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(20px); }
-            to { transform: translateY(0); }
-        }
-
-        .animate-fade {
-            animation: fadeIn 0.3s ease forwards;
-        }
-
-        .animate-slide {
-            animation: slideUp 0.3s ease forwards;
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .container {
-                padding: 0 3vw;
-            }
-
-            .filter-bar {
-                padding: 1rem;
-                gap: 1rem;
-            }
-
-            .section-title {
-                font-size: 1.5rem;
-            }
-
-            .data-table thead th,
-            .data-table tbody td {
-                padding: 0.75rem;
-            }
-
-            .pagination-container {
-                gap: 0.25rem;
-            }
-
-            .pagination-btn, .pagination-info {
-                padding: 0.5rem 0.75rem;
-                font-size: 0.8rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .filter-bar {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .filter-bar label {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .filter-bar input[type="date"] {
-                width: 100%;
-            }
-
-            .pagination-container {
-                flex-direction: column;
-            }
-        }
-    </style>
-</head>
-<body>
-    <!-- Floating Particles Background -->
-    
-    {% include 'header.html' %}
-    
-    <div class="container">
-        <!-- FILTROS + CONTADOR -->
-        <form class="filter-bar" method="get">
-            <strong>Total records: {{ total_registros }}</strong>
-
-            <label>
-                From
-                <input type="date" name="from" value="{{ from }}">
-            </label>
-
-            <label>
-                To
-                <input type="date" name="to" value="{{ to }}">
-            </label>
-
-            <button type="submit">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 3v18c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V3c0-1.1.9-2 2-2h7l2 2h7c1.1 0 2 .9 2 2z"></path>
-                    <circle cx="9" cy="9" r="2"></circle>
-                    <path d="M15 13c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"></path>
-                </svg>
-                Filter
-            </button>
-        </form>
-
-        <!-- TABLA -->
-        <div class="table-container">
-            <div class="section-header">
-                <h2 class="section-title">LyricFind Records</h2>
-            </div>
-
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Klaim</th>
-                        <th>Title</th>
-                        <th>Artist</th>
-                        <th>ISRC</th>
-                        <th>Status</th>
-                        <th>Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {% for reg in page_obj %}
-                    <tr>
-                        <td>{{ reg.obra_id }}</td>
-                        <td>{{ reg.obra.titulo }}</td>
-                        <td>{{ reg.artista_unico.nombre_artista }}</td>
-                        <td>{{ reg.isrc.codigo_isrc }}</td>
-                        <td>
-                            <span class="status-badge" style="background: {% if reg.estado == 'Completed' %}rgba(74, 222, 128, 0.2); color: #16a34a;{% else %}rgba(251, 191, 36, 0.2); color: #d97706;{% endif %}">
-                                {{ reg.estado }}
-                            </span>
-                        </td>
-                        <td>{{ reg.fecha_proceso|date:"Y-m-d" }}</td>
-                    </tr>
-                {% empty %}
-                    <tr>
-                        <td colspan="6" class="empty-state">
-                            No records found.
-                        </td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-
-            <!-- PAGINACIÓN -->
-            <nav class="pagination-container">
-                {% if page_obj.has_previous %}
-                    <a class="pagination-btn" href="?{% if from %}from={{from}}&{% endif %}{% if to %}to={{to}}&{% endif %}page=1">&laquo;</a>
-                    <a class="pagination-btn" href="?{% if from %}from={{from}}&{% endif %}{% if to %}to={{to}}&{% endif %}page={{ page_obj.previous_page_number }}">&lsaquo;</a>
-                {% else %}
-                    <span class="pagination-btn disabled">&laquo;</span>
-                    <span class="pagination-btn disabled">&lsaquo;</span>
-                {% endif %}
-
-                <span class="pagination-info">
-                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-                </span>
-
-                {% if page_obj.has_next %}
-                    <a class="pagination-btn" href="?{% if from %}from={{from}}&{% endif %}{% if to %}to={{to}}&{% endif %}page={{ page_obj.next_page_number }}">&rsaquo;</a>
-                    <a class="pagination-btn" href="?{% if from %}from={{from}}&{% endif %}{% if to %}to={{to}}&{% endif %}page={{ page_obj.paginator.num_pages }}">&raquo;</a>
-                {% else %}
-                    <span class="pagination-btn disabled">&rsaquo;</span>
-                    <span class="pagination-btn disabled">&raquo;</span>
-                {% endif %}
-            </nav>
-        </div>
+  {# TABLA #}
+  <div class="table-container">
+    <div class="section-header">
+      <h2 class="section-title">LyricFind Records</h2>
     </div>
 
-    <script>
-        // Floating particles animation
-        function createParticles() {
-            const particlesContainer = document.getElementById('particles');
-            const particleCount = window.innerWidth < 768 ? 20 : 50;
-            
-            for (let i = 0; i < particleCount; i++) {
-                const particle = document.createElement('div');
-                particle.classList.add('particle');
-                
-                // Random size between 5px and 15px
-                const size = Math.random() * 10 + 5;
-                particle.style.width = `${size}px`;
-                particle.style.height = `${size}px`;
-                
-                // Random position
-                particle.style.left = `${Math.random() * 100}%`;
-                particle.style.top = `${Math.random() * 100}%`;
-                
-                // Random animation duration between 10s and 30s
-                const duration = Math.random() * 20 + 10;
-                particle.style.animationDuration = `${duration}s`;
-                
-                // Random delay
-                particle.style.animationDelay = `${Math.random() * 5}s`;
-                
-                particlesContainer.appendChild(particle);
-            }
-        }
-        
-        // Initialize particles when DOM is loaded
-        document.addEventListener('DOMContentLoaded', createParticles);
-    </script>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Klaim</th><th>Title</th><th>Artist</th><th>ISRC</th>
+          <th>Status</th><th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for reg in page_obj %}
+        <tr>
+          <td>{{ reg.obra_id }}</td>
+          <td>{{ reg.obra.titulo }}</td>
+          <td>{{ reg.artista_unico.nombre_artista }}</td>
+          <td>{{ reg.isrc.codigo_isrc }}</td>
+          <td>
+            <span class="status-badge {% if reg.estado == 'Completed' %}success{% else %}warning{% endif %}">
+              {{ reg.estado }}
+            </span>
+          </td>
+          <td>{{ reg.fecha_proceso|date:"Y-m-d" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="empty-state">No records found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {# PAGINACIÓN – usamos .pagination para heredar estilos globales #}
+    <nav class="pagination">
+      {% if page_obj.has_previous %}
+        <a href="?{% if from %}from={{from}}&{% endif %}{% if to %}to={{to}}&{% endif %}page=1">&laquo;</a>
+        <a href="?{% if from %}from={{from}}&{% endif %}{% if to %}to={{to}}&{% endif %}page={{ page_obj.previous_page_number }}">&lsaquo;</a>
+      {% else %}
+        <span class="disabled">&laquo;</span><span class="disabled">&lsaquo;</span>
+      {% endif %}
+
+      <span class="current">
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+      </span>
+
+      {% if page_obj.has_next %}
+        <a href="?{% if from %}from={{from}}&{% endif %}{% if to %}to={{to}}&{% endif %}page={{ page_obj.next_page_number }}">&rsaquo;</a>
+        <a href="?{% if from %}from={{from}}&{% endif %}{% if to %}to={{to}}&{% endif %}page={{ page_obj.paginator.num_pages }}">&raquo;</a>
+      {% else %}
+        <span class="disabled">&rsaquo;</span><span class="disabled">&raquo;</span>
+      {% endif %}
+    </nav>
+  </div>
+</div>
+{% endblock %}
+
 </body>
 </html>

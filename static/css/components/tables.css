@@ -1,0 +1,332 @@
+/* components/tables.css */
+
+/* ============================================================================
+   TABLAS UNIVERSALES – SE APLICAN A TODAS LAS PÁGINAS
+============================================================================ */
+
+/* ==========================
+   Contenedor de Tabla
+   ========================== */
+.table-container {
+  padding: 2rem;
+  background-color: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+  margin-bottom: 2rem;
+}
+
+/* ==========================
+   Encabezado de Sección
+   ========================== */
+.section-header {
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--primary-dark, #1d3557);
+  text-transform: uppercase;
+}
+
+
+/* ==========================
+   Tabla Base
+   ========================== */
+.table-section {
+  background: #ffffff;
+  border-radius: 20px;
+  padding-bottom: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+  overflow-x: auto;
+}
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.95rem;
+  min-width: 1200px;
+}
+
+/* Estilo mejorado para <thead> */
+.data-table thead th {
+  position: sticky;
+  top: 0;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  font-weight: 600;
+  padding: 1rem 1.5rem;
+  text-align: left;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: none;
+}
+
+.data-table thead th:first-child {
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
+}
+
+.data-table thead th:last-child {
+  border-top-right-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+.data-table th,
+.data-table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* td mejorado */
+.data-table tbody td {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--light-gray);
+  font-size: 0.9rem;
+  background: white;
+}
+
+.data-table tbody tr:nth-child(even) td {
+  background-color: #f8f9fa;
+}
+
+.data-table tr {
+  transition: background-color 0.3s ease;
+}
+
+.data-table tbody tr:hover {
+  transform: translateX(4px);
+  box-shadow: 4px 0 0 0 var(--primary) inset;
+  cursor: pointer;
+}
+
+/* ===== Rediseño Moderno de Paginación ===== */
+.pagination,
+.table-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 2rem 0;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.pagination a,
+.table-pagination a,
+.pagination span.current,
+.table-pagination span.current {
+  padding: 0.65rem 1rem;
+  border-radius: 10px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 0.9rem;
+  min-width: 40px;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.pagination a,
+.table-pagination a {
+  background: rgba(255, 255, 255, 0.8);
+  color: #4a5568;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.03),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(4px);
+}
+
+.pagination a:hover,
+.table-pagination a:hover {
+  background: rgba(102, 126, 234, 0.1);
+  color: #667eea;
+  transform: translateY(-2px);
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.05),
+    0 1px 2px rgba(102, 126, 234, 0.2);
+  border-color: rgba(102, 126, 234, 0.3);
+}
+
+.pagination a:active,
+.table-pagination a:active {
+  transform: translateY(0);
+  background: rgba(102, 126, 234, 0.2);
+}
+
+.pagination span.current,
+.table-pagination span.current {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  font-weight: 600;
+}
+
+/* Flechas de navegación */
+.pagination a:first-child,
+.table-pagination a:first-child,
+.pagination a:last-child,
+.table-pagination a:last-child {
+  padding: 0.65rem 1.25rem;
+  background: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+}
+
+.pagination a:first-child:hover,
+.table-pagination a:first-child:hover,
+.pagination a:last-child:hover,
+.table-pagination a:last-child:hover {
+  background: rgba(102, 126, 234, 0.15);
+}
+
+/* Estado desactivado */
+.pagination a.disabled,
+.table-pagination a.disabled,
+.pagination a[aria-disabled="true"],
+.table-pagination a[aria-disabled="true"] {
+  opacity: 0.5;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.05);
+  color: #718096;
+}
+
+/* Efecto para dispositivos móviles */
+@media (max-width: 768px) {
+  .pagination,
+  .table-pagination {
+    gap: 0.3rem;
+  }
+
+  .pagination a,
+  .table-pagination a,
+  .pagination span.current,
+  .table-pagination span.current {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.85rem;
+    min-width: 36px;
+  }
+
+  .pagination a:first-child,
+  .table-pagination a:first-child,
+  .pagination a:last-child,
+  .table-pagination a:last-child {
+    padding: 0.5rem 1rem;
+  }
+}
+
+/* ==========================
+   Columnas específicas (opcional)
+   ========================== */
+.data-table td.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.data-table td.status-ok {
+  color: green;
+  font-weight: bold;
+}
+
+.data-table td.status-conflict {
+  color: red;
+  font-weight: bold;
+}
+
+/* === Status Cell y Badges === */
+.status-cell {
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.status-cell:hover {
+  background-color: #e7f1ff !important;
+}
+
+.status-cell::after {
+  content: "✎";
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--primary);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.status-cell:hover::after {
+  opacity: 1;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 50px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-ok {
+  background-color: rgba(40, 167, 69, 0.1);
+  color: var(--success);
+}
+
+.status-conflicto {
+  background-color: rgba(220, 53, 69, 0.1);
+  color: var(--danger);
+}
+
+.status-no-cargada {
+  background-color: rgba(255, 193, 7, 0.1);
+  color: #d39e00;
+}
+
+.status-liberada {
+  background-color: rgba(108, 117, 125, 0.1);
+  color: var(--gray);
+}
+.status-active {
+  background-color: rgba(16, 185, 129, 0.10);  /* verde suave */
+  color: var(--success);
+}
+
+.status-inactive {
+  background-color: rgba(239, 68, 68, 0.10);   /* rojo suave */
+  color: var(--danger);
+}
+/* === Badges para la vista Matching Tool === */
+.status-badge.true  {
+  background-color: rgba(40, 167, 69, 0.1);  /* verde suave */
+  color: var(--success);                     /* usa token global */
+}
+
+.status-badge.false {
+  background-color: rgba(255, 193, 7, 0.1);  /* amarillo suave */
+  color: #d39e00;                            /* tono ámbar */
+}
+
+/* =========================================================================
+   NUEVO  ·  Columna de selección (checkbox)
+   ========================================================================= */
+.data-table th.select-col,
+.data-table td.select-col {
+  width: 56px;
+  text-align: center;
+}
+
+.data-table input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}

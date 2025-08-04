@@ -1,0 +1,33 @@
+/* layout.css */
+
+/* ==========================
+   Layout global
+   ========================== */
+
+/* Uso general para estructurar páginas */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  font-family: 'Inter', sans-serif;
+  background-color: var(--light);
+  color: var(--dark);
+  overflow-x: hidden;
+  margin: 0;
+}
+
+/* Asegura que el <main> crezca para ocupar el espacio disponible */
+main {
+  flex: 1;
+}
+
+/* HEADER */
+/* INDEX */
+/* CONFLICTOS */
+/* LIBERADAS */
+/* MATCHINGTOOL_TITULO */
+/* MATCHINGTOOL_ISRC */
+/* HISTORIAL_MATCHINGTOOL */
+/* LYRICFIND_PENDIENTES */
+/* LYRICFIND_HISTORIAL */
+/* REPORTE */

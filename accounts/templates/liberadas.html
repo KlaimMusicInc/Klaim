@@ -1,463 +1,134 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    {% load static %}
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Obras Liberadas</title>
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-    <style>
-        :root {
-            --primary: #112F6D;
-            --primary-dark: #0d2450;
-            --primary-light: #1a4a9e;
-            --accent: #4fc3f7;
-            --white: #ffffff;
-            --light-bg: #f8fafc;
-            --gray-light: #e2e8f0;
-            --gray-medium: #94a3b8;
-            --gray-dark: #475569;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
-            --border-radius: 12px;
-        }
+{# templates/obras_liberadas.html #}
+{% extends 'base.html' %}
+{% load static %}
 
-        body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: var(--light-bg);
-            color: var(--gray-dark);
-            line-height: 1.6;
-        }
+{% block title %}Obras Liberadas | KLAIM{% endblock %}
+{% block body_class %}liberadas-page{% endblock %}
 
-        /* ----- Layout Container ----- */
-        .container {
-            display: flex;
-            flex-direction: column;
-            min-height: calc(100vh - 85px);
-            padding: 0;
-        }
+{% block extra_css %}
+  <!-- Hoja de estilos específica de la vista -->
+  <link rel="stylesheet" href="{% static 'css/pages/obras_liberadas.css' %}">
+{% endblock %}
 
-        /* ----- Search Panel ----- */
-        .search-panel {
-            background: linear-gradient(145deg, #ffffff 0%, #f1f5f9 100%);
-            padding: 2rem 5%;
-            box-shadow: var(--shadow-md);
-            border-bottom: 1px solid var(--gray-light);
-        }
-
-        .search-header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        .search-header h2 {
-            color: var(--primary);
-            font-size: 1.8rem;
-            margin: 0 0 0.5rem 0;
-            position: relative;
-            display: inline-block;
-        }
-
-        .search-header h2::after {
-            content: '';
-            position: absolute;
-            bottom: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80px;
-            height: 4px;
-            background: linear-gradient(90deg, var(--primary), var(--accent));
-            border-radius: 2px;
-        }
-
-        .search-header p {
-            color: var(--gray-medium);
-            font-size: 1rem;
-            margin: 0;
-        }
-
-        /* ----- Search Grid ----- */
-        .search-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .search-group {
-            position: relative;
-        }
-
-        .search-group input {
-            width: 100%;
-            padding: 14px 20px;
-            font-size: 1rem;
-            border: 1px solid var(--gray-light);
-            border-radius: var(--border-radius);
-            background-color: var(--white);
-            transition: all 0.3s ease;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .search-group input:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.2);
-        }
-
-        .search-group input::placeholder {
-            color: var(--gray-medium);
-        }
-
-        /* ----- Search Actions ----- */
-        .search-actions {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            margin-top: 1.5rem;
-        }
-
-        .search-button {
-            padding: 14px 32px;
-            font-size: 1rem;
-            font-weight: 600;
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            color: var(--white);
-            border: none;
-            border-radius: var(--border-radius);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: var(--shadow-md);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .search-button:hover {
-            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        .search-button.delete {
-            background: linear-gradient(135deg, var(--danger), #f87171);
-        }
-
-        .search-button.delete:hover {
-            background: linear-gradient(135deg, #dc2626, var(--danger));
-        }
-
-        /* ----- Table Container ----- */
-        .table-container {
-            flex: 1;
-            padding: 2rem 5%;
-            overflow-y: auto;
-            background-color: var(--white);
-        }
-
-        /* ----- Modern Table ----- */
-        .data-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            font-size: 0.95rem;
-            text-align: left;
-            background-color: var(--white);
-            border-radius: var(--border-radius);
-            overflow: hidden;
-            box-shadow: var(--shadow-md);
-            margin-bottom: 2rem;
-        }
-
-        .data-table th {
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            color: var(--white);
-            padding: 1.25rem 1.5rem;
-            font-weight: 600;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        .data-table td {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--gray-light);
-            vertical-align: middle;
-        }
-
-        .data-table tr:not(:first-child):hover td {
-            background-color: rgba(79, 195, 247, 0.05);
-        }
-
-        .data-table tr:nth-child(even) td {
-            background-color: var(--light-bg);
-        }
-
-        .data-table input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            accent-color: var(--primary);
-            cursor: pointer;
-        }
-
-        /* Status Badges */
-        .status-badge {
-            display: inline-block;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
-
-        .status-active {
-            background-color: rgba(16, 185, 129, 0.1);
-            color: var(--success);
-        }
-
-        .status-inactive {
-            background-color: rgba(239, 68, 68, 0.1);
-            color: var(--danger);
-        }
-
-        /* ----- Pagination ----- */
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 0.5rem;
-            margin-top: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .pagination a {
-            padding: 8px 16px;
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            color: var(--white);
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .pagination a:hover {
-            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .pagination .current {
-            padding: 8px 16px;
-            background-color: var(--white);
-            color: var(--primary);
-            border: 1px solid var(--gray-light);
-            border-radius: 8px;
-            font-weight: 500;
-        }
-
-        /* ----- Responsive Adjustments ----- */
-        @media (max-width: 768px) {
-            .search-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .search-actions {
-                flex-direction: column;
-            }
-            
-            .search-button {
-                width: 100%;
-                justify-content: center;
-            }
-            
-            .data-table {
-                font-size: 0.85rem;
-            }
-            
-            .data-table th,
-            .data-table td {
-                padding: 0.75rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .search-panel,
-            .table-container {
-                padding: 1.5rem;
-            }
-            
-            .search-header h2 {
-                font-size: 1.5rem;
-            }
-            
-            .pagination {
-                gap: 0.3rem;
-            }
-            
-            .pagination a,
-            .pagination .current {
-                padding: 6px 12px;
-                font-size: 0.85rem;
-            }
-        }
-    </style>
-</head>
-<body>
-    {% include 'header.html' %}
-    <div class="container">
-        <div class="search-panel">
-            <div class="search-header">
-                <h2>SEARCH RELEASED WORKS</h2>
-                <p>Find and manage released works in Klaim Music</p>
-            </div>
-            
-            <div class="search-grid">
-                <div class="search-group">
-                    <input type="text" id="titulo" placeholder="Type Title">
-                </div>
-                <div class="search-group">
-                    <input type="text" id="codigo_iswc" placeholder="Type ISWC Code">
-                </div>
-                <div class="search-group">
-                    <input type="text" id="nombre_autor" placeholder="Author's Name">
-                </div>
-                <div class="search-group">
-                    <input type="text" id="id_cliente" placeholder="Client ID">
-                </div>
-            </div>
-            
-            <div class="search-actions">
-                <button class="search-button" onclick="buscar()">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                    </svg>
-                    SEARCH
-                </button>
-                <button class="search-button delete" onclick="eliminarLiberaciones()">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="3 6 5 6 21 6"></polyline>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    </svg>
-                    DELETE SELECTED
-                </button>
-            </div>
-        </div>
-        
-        <div class="table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Select</th>
-                        <th>Released ID</th>
-                        <th>Cod Klaim</th>
-                        <th>Title</th>
-                        <th>SGS Code</th>
-                        <th>ISWC Code</th>
-                        <th>Client</th>
-                        <th>Author</th>
-                        <th>Share</th>
-                        <th>Release Date</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for obra in liberadas %}
-                    <tr>
-                        <td><input type="checkbox" class="select-checkbox" value="{{ obra.id_liberada }}"></td>
-                        <td>{{ obra.id_liberada }}</td>
-                        <td>{{ obra.cod_klaim.cod_klaim }}</td>
-                        <td>{{ obra.titulo }}</td>
-                        <td>{{ obra.codigo_sgs }}</td>
-                        <td>{{ obra.codigo_iswc }}</td>
-                        <td>{{ obra.id_cliente.nombre_cliente }}</td>
-                        <td>{{ obra.nombre_autor }}</td>
-                        <td>{{ obra.porcentaje_autor }}%</td>
-                        <td>{{ obra.fecha_creacion }}</td>
-                        <td>
-                            <span class="status-badge {% if obra.estado_liberacion == 'ACTIVE' %}status-active{% else %}status-inactive{% endif %}">
-                                {{ obra.estado_liberacion }}
-                            </span>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-
-            <div class="pagination">
-                <span class="step-links">
-                    {% if page_obj.has_previous %}
-                        <a href="?page=1">&laquo; first</a>
-                        <a href="?page={{ page_obj.previous_page_number }}">back</a>
-                    {% endif %}
-
-                    <span class="current">
-                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-                    </span>
-
-                    {% if page_obj.has_next %}
-                        <a href="?page={{ page_obj.next_page_number }}">Next page</a>
-                        <a href="?page={{ page_obj.paginator.num_pages }}">Last page &raquo;</a>
-                    {% endif %}
-                </span>
-            </div>
-        </div>
+{% block content %}
+<div class="container">
+  <!-- ─── Panel de búsqueda ─── -->
+  <div class="search-panel">
+    <div class="search-header">
+      <h2>SEARCH RELEASED WORKS</h2>
+      <p>Find and manage released works in Klaim Music</p>
     </div>
 
-    <script>
-        function buscar() {
-            const titulo = document.getElementById('titulo').value;
-            const codigo_iswc = document.getElementById('codigo_iswc').value;
-            const nombre_autor = document.getElementById('nombre_autor').value;
-            const id_cliente = document.getElementById('id_cliente').value;
+    <div class="search-grid">
+      <div class="search-group">
+        <input type="text" id="titulo" placeholder="Type Title"
+               value="{{ request.GET.titulo }}">
+      </div>
+      <div class="search-group">
+        <input type="text" id="codigo_iswc" placeholder="Type ISWC Code"
+               value="{{ request.GET.codigo_iswc }}">
+      </div>
+      <div class="search-group">
+        <input type="text" id="nombre_autor" placeholder="Author's Name"
+               value="{{ request.GET.nombre_autor }}">
+      </div>
+      <div class="search-group">
+        <input type="text" id="id_cliente" placeholder="Client ID"
+               value="{{ request.GET.id_cliente }}">
+      </div>
+    </div>
 
-            let url = `/liberadas/?titulo=${encodeURIComponent(titulo)}&codigo_iswc=${encodeURIComponent(codigo_iswc)}&nombre_autor=${encodeURIComponent(nombre_autor)}&id_cliente=${encodeURIComponent(id_cliente)}`;
-            window.location.href = url;
-        }
+    <div class="search-actions">
+      <button class="btn btn--primary" onclick="buscar()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        SEARCH
+      </button>
+      <button class="btn btn--danger" onclick="eliminarLiberaciones()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4
+                     a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+        DELETE SELECTED
+      </button>
+    </div>
+  </div>
 
-        function eliminarLiberaciones() {
-            const checkboxes = document.querySelectorAll('.select-checkbox:checked');
-            const obrasSeleccionadas = Array.from(checkboxes).map(checkbox => checkbox.value);
+  <!-- ─── Tabla ─── -->
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th class="select-col">Select</th>
+          <th>Released&nbsp;ID</th>
+          <th>Cod&nbsp;Klaim</th>
+          <th>Title</th>
+          <th>SGS&nbsp;Code</th>
+          <th>ISWC&nbsp;Code</th>
+          <th>Client</th>
+          <th>Author</th>
+          <th>Share</th>
+          <th>Release&nbsp;Date</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for obra in liberadas %}
+        <tr>
+          <td class="select-col">
+            <input type="checkbox" class="select-checkbox"
+                   value="{{ obra.id_liberada }}">
+          </td>
+          <td>{{ obra.id_liberada }}</td>
+          <td>{{ obra.cod_klaim.cod_klaim }}</td>
+          <td>{{ obra.titulo }}</td>
+          <td>{{ obra.codigo_sgs }}</td>
+          <td>{{ obra.codigo_iswc }}</td>
+          <td>{{ obra.id_cliente.nombre_cliente }}</td>
+          <td>{{ obra.nombre_autor }}</td>
+          <td>{{ obra.porcentaje_autor }}%</td>
+          <td>{{ obra.fecha_creacion }}</td>
+          <td>
+            <span class="status-badge
+              {% if obra.estado_liberacion == 'ACTIVE' %}
+                status-active{% else %}status-inactive{% endif %}">
+              {{ obra.estado_liberacion }}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
 
-            if (obrasSeleccionadas.length === 0) {
-                alert("Seleccione al menos una obra para eliminar.");
-                return;
-            }
+    <!-- Paginación estándar -->
+    <div class="table-pagination">
+      <span class="step-links">
+        {% if page_obj.has_previous %}
+          <a href="?page=1">&laquo; first</a>
+          <a href="?page={{ page_obj.previous_page_number }}">back</a>
+        {% endif %}
 
-            if (!confirm("¿Está seguro que desea eliminar las obras seleccionadas? Esta acción no se puede deshacer.")) {
-                return;
-            }
+        <span class="current">
+          Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </span>
 
-            const csrfToken = '{{ csrf_token }}';
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}">next</a>
+          <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+        {% endif %}
+      </span>
+    </div>
+  </div>
+</div>
+{% endblock %}
 
-            fetch('/eliminar-liberaciones/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                },
-                body: JSON.stringify({ obras: obrasSeleccionadas })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert("Obras liberadas eliminadas correctamente.");
-                    location.reload();
-                } else {
-                    alert(data.error);
-                }
-            })
-            .catch(error => {
-                console.error("Error en la solicitud:", error);
-                alert("Error al eliminar las obras liberadas.");
-            });
-        }
-    </script>
-</body>
-</html>
+{% block scripts %}
+  <script src="{% static 'js/obras_liberadas.js' %}" defer></script>
+{% endblock %}

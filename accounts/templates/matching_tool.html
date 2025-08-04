@@ -1,567 +1,101 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    {% load static %}
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matching Tool</title>
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-    <style>
-        :root {
-            --primary: #3a86ff;
-            --primary-dark: #2667cc;
-            --secondary: #3813df;
-            --accent: #ff006e;
-            --dark: #1a1b25;
-            --light: #f8f9fa;
-            --gray: #6c757d;
-            --light-gray: #e9ecef;
-            --success: #28a745;
-            --warning: #ffc107;
-            --danger: #dc3545;
-            --glass: rgba(255, 255, 255, 0.15);
-            --glass-border: rgba(255, 255, 255, 0.2);
-        }
+    <!-- MATCHING_TOOL_AUTORES_PRIMER_BOTON -->
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
 
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: #f5f7ff;
-            color: var(--dark);
-            line-height: 1.6;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
+{# templates/matching_tool.html #}
+{% extends 'base.html' %}
+{% load static %}
 
-        /* Header space */
-        .header-space {
-            height: 80px;
-        }
+{% block title %}Matching Tool | KLAIM{% endblock %}
+{% block body_class %}matching-page{% endblock %}
 
-        /* Main container */
-        .container {
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            padding: 0 5vw;
-            background: linear-gradient(135deg, #f5f7ff 0%, #f0f4ff 100%);
-        }
+{# ---------- CSS específico ---------- #}
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/pages/matching_tool.css' %}">
+{% endblock %}
 
-        /* Table container */
-        .table-container {
-            flex: 1;
-            padding: 2rem 0;
-        }
-
-        /* Section header */
-        .section-header {
-            margin-bottom: 2rem;
-        }
-
-        .section-title {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--dark);
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            letter-spacing: -0.5px;
-        }
-
-        /* Modern Data Table */
-        .data-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            min-width: 1200px;
-            background: white;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
-        }
-
-        .data-table th {
-            position: sticky;
-            top: 0;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            font-weight: 600;
-            padding: 1rem 1.5rem;
-            text-align: left;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .data-table td {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--light-gray);
-            font-size: 0.9rem;
-            background: white;
-        }
-
-        .data-table tr:nth-child(even) td {
-            background-color: #f8f9fa;
-        }
-
-        .data-table tbody tr {
-            transition: all 0.2s ease;
-        }
-
-        .data-table tbody tr:hover {
-            transform: translateX(4px);
-            box-shadow: 4px 0 0 0 var(--primary) inset;
-        }
-
-        /* Form Inputs */
-        .form-input {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            font-size: 0.95rem;
-            border: none;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.8);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s ease;
-            border: 1px solid rgba(0, 0, 0, 0.05);
-        }
-
-        .form-input:focus {
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.2);
-            background: white;
-        }
-
-        .form-input::placeholder {
-            color: #adb5bd;
-        }
-
-        /* Action Buttons */
-        .action-buttons {
-            display: flex;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-        }
-
-        .action-btn {
-            padding: 0.75rem 1.25rem;
-            font-size: 0.9rem;
-            font-weight: 600;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            min-width: 120px;
-        }
-
-        .action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(58, 134, 255, 0.4);
-        }
-
-        .action-btn:active {
-            transform: translateY(0);
-        }
-
-        .action-btn.primary {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            box-shadow: 0 4px 15px rgba(58, 134, 255, 0.3);
-        }
-
-        .action-btn.success {
-            background: linear-gradient(135deg, var(--success), #86efac);
-            color: white;
-            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-        }
-
-        /* Status Badges */
-        .status-badge {
-            display: inline-block;
-            padding: 0.35rem 0.75rem;
-            border-radius: 50px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .status-badge.true {
-            background-color: rgba(40, 167, 69, 0.1);
-            color: var(--success);
-        }
-
-        .status-badge.false {
-            background-color: rgba(255, 193, 7, 0.1);
-            color: #d39e00;
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 2rem;
-            color: var(--gray);
-            font-size: 1.1rem;
-        }
-
-        /* ISRC Input Group */
-        .isrc-input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-
-        /* Pagination */
-        .pagination-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 0.5rem;
-            margin-top: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .pagination-btn, 
-        .pagination-info {
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            text-decoration: none;
-            transition: all 0.2s ease;
-        }
-
-        .pagination-btn {
-            background: white;
-            color: var(--primary);
-            border: 1px solid var(--light-gray);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
-
-        .pagination-btn:hover {
-            background: var(--primary);
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(58, 134, 255, 0.2);
-        }
-
-        .pagination-btn.disabled {
-            background: var(--light-gray);
-            color: var(--gray);
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-
-        .pagination-info {
-            background: var(--light-gray);
-            color: var(--gray);
-            cursor: default;
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .container {
-                padding: 0 3vw;
-            }
-            
-            .section-title {
-                font-size: 1.5rem;
-            }
-            
-            .data-table {
-                font-size: 0.85rem;
-            }
-            
-            .data-table th,
-            .data-table td {
-                padding: 0.75rem;
-            }
-            
-            .action-buttons {
-                flex-direction: column;
-                gap: 0.5rem;
-            }
-            
-            .action-btn {
-                width: 100%;
-                min-width: auto;
-            }
-        }
-
-        /* Animation classes */
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(20px); }
-            to { transform: translateY(0); }
-        }
-
-        .animate-fade {
-            animation: fadeIn 0.3s ease forwards;
-        }
-
-        .animate-slide {
-            animation: slideUp 0.3s ease forwards;
-        }
-    </style>
-</head>
-<body>
-    <!-- Floating Particles Background -->
-    
-    {% include 'header.html' %}
-    
-    <div class="container">
-        <div class="table-container">
-            <div class="section-header">
-                <h2 class="section-title">Uploads to Platform with MLC Code and Authors</h2>
-            </div>
-
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Work</th>
-                        <th>Cod MLC</th>
-                        <th>Author</th>
-                        <th>Artists</th>
-                        <th>Matching Tool</th>
-                        <th>Uses</th>
-                        <th>Action</th>
-                        <th>ISRC's found</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for subida in subidas %}
-                    <tr>
-                        <td class="obra" data-id="{{ subida.obra_id }}">{{ subida.obra }}</td>
-                        <td class="codigo-mlc" data-id="{{ subida.id_subida }}">{{ subida.codigo_MLC }}</td>
-                        <td class="autor" data-id="{{ subida.autor_id }}">{{ subida.autor }}</td>
-                        <td class="artistas" data-ids="{{ subida.artistas_ids|default:'' }}">{{ subida.artistas|default:'No artistas' }}</td>
-                        <td>
-                            <span class="status-badge {{ subida.matching_tool|yesno:'true,false' }}">
-                                {{ subida.matching_tool|yesno:"Sí,No" }}
-                            </span>
-                        </td>
-                        <td>
-                            <input
-                                type="number"
-                                class="form-input usos-input"
-                                name="usos_{{ forloop.counter }}"
-                                min="0"
-                                max="999"
-                                placeholder="0">
-                        </td>
-                        <td>
-                            <button class="action-btn success" onclick="guardarMatch(this)">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                                    <polyline points="7 3 7 8 15 8"></polyline>
-                                </svg>
-                                Guardar Match
-                            </button>
-                        </td>
-                        <td>
-                            <div class="isrc-input-group">
-                                <input
-                                    type="text"
-                                    class="form-input isrc-input"
-                                    name="isrc_{{ forloop.counter }}"
-                                    placeholder="Ingresar ISRC">
-                                <input
-                                    type="text"
-                                    class="form-input artist-input"
-                                    name="artist_{{ forloop.counter }}"
-                                    placeholder="Ingresar Interprete">
-                                <button class="action-btn primary" onclick="insertarISRC(this)">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                                    </svg>
-                                    Insertar ISRC
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="8" class="empty-state">
-                            No records found.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-
-            <!-- Pagination -->
-            <nav class="pagination-container">
-                {% if page_obj.has_previous %}
-                    <a class="pagination-btn" href="?page=1">&laquo; First</a>
-                    <a class="pagination-btn" href="?page={{ page_obj.previous_page_number }}">Previous</a>
-                {% else %}
-                    <span class="pagination-btn disabled">&laquo; First</span>
-                    <span class="pagination-btn disabled">Previous</span>
-                {% endif %}
-
-                <span class="pagination-info">
-                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-                </span>
-
-                {% if page_obj.has_next %}
-                    <a class="pagination-btn" href="?page={{ page_obj.next_page_number }}">Next</a>
-                    <a class="pagination-btn" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
-                {% else %}
-                    <span class="pagination-btn disabled">Next</span>
-                    <span class="pagination-btn disabled">Last &raquo;</span>
-                {% endif %}
-            </nav>
-        </div>
+{# ---------- CONTENIDO ---------- #}
+{% block content %}
+<div class="container">
+  <div class="table-container">
+    <div class="section-header">
+      <h2 class="section-title">Uploads to Platform with MLC Code and Authors</h2>
     </div>
 
-    <script>
-        // Floating particles animation
-        function createParticles() {
-            const particlesContainer = document.getElementById('particles');
-            const particleCount = window.innerWidth < 768 ? 20 : 50;
-            
-            for (let i = 0; i < particleCount; i++) {
-                const particle = document.createElement('div');
-                particle.classList.add('particle');
-                
-                // Random size between 5px and 15px
-                const size = Math.random() * 10 + 5;
-                particle.style.width = `${size}px`;
-                particle.style.height = `${size}px`;
-                
-                // Random position
-                particle.style.left = `${Math.random() * 100}%`;
-                particle.style.top = `${Math.random() * 100}%`;
-                
-                // Random animation duration between 10s and 30s
-                const duration = Math.random() * 20 + 10;
-                particle.style.animationDuration = `${duration}s`;
-                
-                // Random delay
-                particle.style.animationDelay = `${Math.random() * 5}s`;
-                
-                particlesContainer.appendChild(particle);
-            }
-        }
-        
-        // Initialize particles when DOM is loaded
-        document.addEventListener('DOMContentLoaded', createParticles);
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Work</th><th>Cod&nbsp;MLC</th><th>Author</th><th>Artists</th>
+          <th>Matching&nbsp;Tool</th><th>Uses</th><th>Action</th><th>ISRC's&nbsp;found</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for subida in subidas %}
+        <tr>
+          <td class="obra"        data-id="{{ subida.obra_id }}">{{ subida.obra }}</td>
+          <td class="codigo-mlc"  data-id="{{ subida.id_subida }}">{{ subida.codigo_MLC }}</td>
+          <td class="autor"       data-id="{{ subida.autor_id }}">{{ subida.autor }}</td>
+          <td class="artistas"    data-ids="{{ subida.artistas_ids|default:'' }}">
+            {{ subida.artistas|default:'No artistas' }}
+          </td>
+          <td>
+            <span class="status-badge {{ subida.matching_tool|yesno:'true,false' }}">
+              {{ subida.matching_tool|yesno:"Sí,No" }}
+            </span>
+          </td>
+          <td>
+            <input type="number" class="form-control usos-input"
+                   min="0" max="999" placeholder="0">
+          </td>
+          <td>
+            <button class="btn btn--success" onclick="guardarMatch(this)">
+              Guardar&nbsp;Match
+            </button>
+          </td>
+          <td>
+            <div class="isrc-input-group">
+              <input type="text"  class="form-control isrc-input"
+                     placeholder="Ingresar ISRC">
+              <input type="text"  class="form-control artist-input"
+                     placeholder="Ingresar Interprete">
+              <button class="btn btn--primary" onclick="insertarISRC(this)">
+                Insertar&nbsp;ISRC
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="empty-state">No records found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
 
-        function guardarMatch(button) {
-            const fila = button.closest('tr');
-            const obra_id = fila.querySelector('.obra')?.dataset.id;
-            const codigo_mlc_id = parseInt(fila.querySelector('.codigo-mlc')?.dataset.id, 10);
-            const autor_id = fila.querySelector('.autor')?.dataset.id;
-            const artista_ids_raw = fila.querySelector('.artistas')?.dataset.ids || "";
-            const artista_ids = artista_ids_raw ? artista_ids_raw.split(',') : [];
-            const usos = fila.querySelector('.usos-input')?.value.trim();
+    {# ---------- Paginación usando clases globales ---------- #}
+    <nav class="pagination">
+      {% if page_obj.has_previous %}
+        <a href="?page=1">&laquo; First</a>
+        <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+      {% else %}
+        <span class="disabled">&laquo; First</span>
+        <span class="disabled">Previous</span>
+      {% endif %}
 
-            console.log('Depuración de valores obtenidos:', {
-                obra_id,
-                codigo_mlc_id,
-                autor_id,
-                artista_ids,
-                usos,
-            });
+      <span class="current">
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+      </span>
 
-            if (!obra_id || !codigo_mlc_id || !autor_id || !usos) {
-                alert(`Error: Todos los campos deben estar completos.`);
-                return;
-            }
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}">Next</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+      {% else %}
+        <span class="disabled">Next</span>
+        <span class="disabled">Last &raquo;</span>
+      {% endif %}
+    </nav>
+  </div>
+</div>
+{% endblock %}
 
-            fetch('/guardar-match/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken'),
-                },
-                body: JSON.stringify({ obra_id, codigo_mlc_id, autor_id, artista_ids, usos }),
-            })
-            .then(response => {
-                if (response.ok) {
-                    alert('Registro guardado exitosamente.');
-                    window.location.reload();
-                } else {
-                    return response.json().then(data => {
-                        throw new Error(data.error || 'Error desconocido.');
-                    });
-                }
-            })
-            .catch(error => {
-                alert(`Error al guardar el registro: ${error.message}`);
-            });
-        }
-
-        function insertarISRC(button) {
-            const fila = button.closest('tr');
-            const isrcInput = fila.querySelector('.isrc-input')?.value.trim();
-            const artistInput = fila.querySelector('.artist-input')?.value.trim();
-            const cod_klaim = fila.querySelector('.obra')?.dataset.id;
-
-            if (!isrcInput || !artistInput) {
-                alert('Por favor, complete todos los campos (ISRC e intérprete).');
-                return;
-            }
-
-            // Validar formato alfanumérico sin espacios ni caracteres especiales
-            const isrcRegex = /^[a-zA-Z0-9]+$/;
-            if (!isrcRegex.test(isrcInput)) {
-                alert('El código ISRC debe ser alfanumérico, sin espacios ni caracteres especiales.');
-                return;
-            }
-
-            fetch('/insertar-isrc/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken'),
-                },
-                body: JSON.stringify({ isrc: isrcInput, artista: artistInput, cod_klaim }),
-            })
-            .then(response => {
-                if (response.ok) {
-                    alert('ISRC registrado exitosamente.');
-                    window.location.reload();
-                } else {
-                    return response.json().then(data => {
-                        throw new Error(data.error || 'Error desconocido.');
-                    });
-                }
-            })
-            .catch(error => {
-                alert(`Error al registrar el ISRC: ${error.message}`);
-            });
-        }
-
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === name + '=') {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
-    </script>
-</body>
-</html>
+{# ---------- JS ---------- #}
+{% block scripts %}
+  <script src="{% static 'js/pages/matching_tool.js' %}" defer></script>
+{% endblock %}
