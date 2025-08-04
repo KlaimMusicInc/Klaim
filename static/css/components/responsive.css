@@ -1,0 +1,25 @@
+/* responsive.css */
+
+/* ==========================
+   Responsivo – Header & Navegación
+   ========================== */
+@media (max-width: 480px) {
+  /* Header */
+  .header {
+    height: 70px;
+  }
+
+  .header .logo {
+    height: 50px;
+  }
+
+  .header .burger {
+    left: 16px;
+    padding: 8px;
+  }
+
+  /* Navegación lateral */
+  #sideNav {
+    width: 280px;
+  }
+}

@@ -1,0 +1,35 @@
+/* components/loader.css */
+
+/* Contenedor del loader (Header) */
+.loader-container {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 47, 109, 0.9);
+  backdrop-filter: blur(5px);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 3000;
+  flex-direction: column;
+}
+
+/* Estado activo: se muestra con fadeIn */
+.loader-container.active {
+  display: flex;
+  animation: fadeIn 0.3s ease;
+}
+
+/* Imagen del loader con sombra dinámica */
+.loader-image {
+  width: 120px;
+  filter: drop-shadow(0 0 10px rgba(79, 195, 247, 0.7));
+}
+
+/* Texto del loader con animación pulse */
+.loader-text {
+  color: var(--white);
+  margin-top: 20px;
+  font-size: 18px;
+  letter-spacing: 1px;
+  animation: pulse 1.5s infinite;
+}

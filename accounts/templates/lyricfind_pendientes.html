@@ -1,672 +1,112 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    {% load static %}
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LyricFind</title>
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-    <style>
-        :root {
-            --primary: #112F6D;
-            --primary-dark: #0d2450;
-            --secondary: #1a4a9e;
-            --accent: #ff006e;
-            --dark: #1a1b25;
-            --light: #f8f9fa;
-            --gray: #6c757d;
-            --light-gray: #e9ecef;
-            --success: #28a745;
-            --warning: #ffc107;
-            --danger: #dc3545;
-            --glass: rgba(255, 255, 255, 0.15);
-            --glass-border: rgba(255, 255, 255, 0.2);
-        }
+{# templates/lyricfind_pendientes.html #}
+{% extends "base.html" %}
+{% load static %}
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+{% block title %}LyricFind · Pendientes | KLAIM{% endblock %}
+{% block body_class %}lyricfind-page{% endblock %}
 
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: #f5f7ff;
-            color: var(--dark);
-            line-height: 1.6;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/pages/lyricfind_pendientes.css' %}">
+{% endblock %}
 
-        /* Header space */
-        .header-space {
-            height: 80px;
-        }
+{% block content %}
+<div class="container">
+  <div class="section-header">
+    <h2 class="section-title">Unprocessed Audios – LyricFind</h2>
+  </div>
 
-        /* Main container */
-        .container {
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            padding: 0 5vw;
-            background: linear-gradient(135deg, #f5f7ff 0%, #f0f4ff 100%);
-        }
+  {# ───────── Drop-zone ───────── #}
+  <div id="dropZone" class="drop-zone">
+    <div class="drop-zone-content">
+      <svg class="upload-icon" viewBox="0 0 24 24">
+        <path fill="currentColor"
+              d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M13.5,16V19H10.5V16H8L12,12L16,16H13.5M13,9V3.5L18.5,9H13Z"/>
+      </svg>
+      <h3 class="drop-title">Suelta tu archivo MP3 aquí</h3>
+      <div class="drop-details">Soporte para archivos .mp3 con metadatos ISRC</div>
+    </div>
+    <div class="drop-progress"></div>
+    <div class="drop-particles"></div>
+  </div>
 
-        /* Table container */
-        .table-container {
-            flex: 1;
-            padding: 2rem 0;
-        }
-
-        /* Section header */
-        .section-header {
-            margin-bottom: 2rem;
-            text-align: center;
-        }
-
-        .section-title {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--dark);
-            margin-bottom: 1.5rem;
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            letter-spacing: -0.5px;
-        }
-
-        /* Modern Data Table */
-        .data-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            min-width: 800px;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
-            overflow: hidden;
-        }
-
-        .data-table thead th {
-            position: sticky;
-            top: 0;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            font-weight: 600;
-            padding: 1rem 1.5rem;
-            text-align: left;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border: none;
-        }
-
-        .data-table tbody tr {
-            transition: all 0.2s ease;
-        }
-
-        .data-table tbody tr:hover {
-            transform: translateX(4px);
-            box-shadow: 4px 0 0 0 var(--primary) inset;
-        }
-
-        .data-table tbody td {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--light-gray);
-            font-size: 0.9rem;
-            background: white;
-        }
-
-        .data-table tbody tr:nth-child(even) td {
-            background-color: #f8f9fa;
-        }
-
-        /* Action Buttons */
-        .action-buttons {
-            display: flex;
-            gap: 0.75rem;
-        }
-
-        .action-btn {
-            padding: 0.75rem 1.25rem;
-            font-size: 0.9rem;
-            font-weight: 600;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            min-width: 120px;
-        }
-
-        .action-btn.primary {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            box-shadow: 0 4px 15px rgba(58, 134, 255, 0.3);
-        }
-
-        .action-btn.primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(58, 134, 255, 0.4);
-        }
-
-        .action-btn.danger {
-            background: linear-gradient(135deg, var(--danger), #ff4757);
-            color: white;
-            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
-        }
-
-        .action-btn.danger:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(220, 53, 69, 0.4);
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 2rem;
-            color: var(--gray);
-            font-size: 1.1rem;
-        }
-
-        /* Modal */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(8px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .modal.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 16px;
-            width: 100%;
-            max-width: 500px;
-            padding: 2rem;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            transform: translateY(20px);
-            transition: transform 0.3s ease;
-        }
-
-        .modal.active .modal-content {
-            transform: translateY(0);
-        }
-
-        .modal-content h3 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--dark);
-            margin-bottom: 1.5rem;
-            text-align: center;
-        }
-
-        .modal-content textarea {
-            width: 100%;
-            height: 200px;
-            padding: 1rem;
-            border: 1px solid var(--light-gray);
-            border-radius: 12px;
-            font-size: 1rem;
-            resize: vertical;
-            margin-bottom: 1.5rem;
-            transition: all 0.3s ease;
-        }
-
-        .modal-content textarea:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.2);
-        }
-
-        .close {
-            color: var(--gray);
-            font-size: 1.75rem;
-            font-weight: bold;
-            cursor: pointer;
-            position: absolute;
-            right: 1.5rem;
-            top: 1.5rem;
-            transition: all 0.2s ease;
-        }
-
-        .close:hover {
-            color: var(--dark);
-        }
-
-        /* Pagination */
-        .pagination-container {
-            margin-top: 2rem;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        .pagination-btn,
-        .pagination-info {
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            text-decoration: none;
-            transition: all 0.2s ease;
-        }
-
-        .pagination-btn {
-            background: white;
-            color: var(--primary);
-            border: 1px solid var(--light-gray);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
-
-        .pagination-btn:hover {
-            background: var(--primary);
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(58, 134, 255, 0.2);
-        }
-
-        .pagination-btn.disabled {
-            background: var(--light-gray);
-            color: var(--gray);
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-
-        .pagination-info {
-            background: var(--light-gray);
-            color: var(--gray);
-            cursor: default;
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .container {
-                padding: 0 3vw;
-            }
-
-            .section-title {
-                font-size: 1.5rem;
-            }
-
-            .action-buttons {
-                flex-direction: column;
-            }
-
-            .action-btn {
-                width: 100%;
-            }
-
-            .modal-content {
-                padding: 1.5rem;
-                width: 90%;
-            }
-        }
-
-        /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(20px); }
-            to { transform: translateY(0); }
-        }
-
-        .animate-fade {
-            animation: fadeIn 0.3s ease forwards;
-        }
-
-        .animate-slide {
-            animation: slideUp 0.3s ease forwards;
-        }
-                /* Estilos para drop-zone */
-        .drop-zone {
-            position: relative;
-            border: 2px solid transparent;
-            padding: 3rem 2rem;
-            margin: 2rem auto;
-            text-align: center;
-            border-radius: 20px;
-            color: var(--dark);
-            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-            background: var(--light);
-            overflow: hidden;
-            max-width: 500px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(108, 92, 231, 0.05) 0%, transparent 20%),
-                radial-gradient(circle at 90% 80%, rgba(0, 206, 201, 0.05) 0%, transparent 20%);
-        }
-
-        .drop-zone::before {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            z-index: -1;
-            border-radius: 22px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .drop-zone.hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 30px rgba(108, 92, 231, 0.2);
-        }
-
-        .drop-zone.hover::before {
-            opacity: 1;
-        }
-
-        .drop-zone.hover .upload-icon {
-            transform: scale(1.1) translateY(-5px);
-            color: var(--primary);
-        }
-
-        .drop-zone-content {
-            position: relative;
-            z-index: 2;
-        }
-
-        .upload-icon {
-            width: 60px;
-            height: 60px;
-            margin-bottom: 1.5rem;
-            color: var(--primary-light);
-            transition: all 0.3s ease;
-        }
-
-        .drop-title {
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            color: var(--dark);
-        }
-
-        .drop-subtitle {
-            font-size: 1rem;
-            color: var(--primary);
-            margin-bottom: 1.5rem;
-            font-weight: 500;
-        }
-
-        .drop-details {
-            font-size: 0.85rem;
-            color: #666;
-            padding: 0.5rem 1rem;
-            background: rgba(0, 0, 0, 0.03);
-            border-radius: 50px;
-            display: inline-block;
-        }
-
-        .drop-progress {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            height: 4px;
-            background: var(--success);
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-
-        .drop-particles {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        /* Animación de partículas (se activaría con JavaScript) */
-        .drop-zone.hover .drop-particles::before {
-            content: '';
-            position: absolute;
-            width: 10px;
-            height: 10px;
-            background: var(--primary);
-            border-radius: 50%;
-            animation: float 3s infinite ease-in-out;
-        }
-
-        @keyframes float {
-            0% { transform: translateY(0) translateX(0); opacity: 1; }
-            100% { transform: translateY(-100px) translateX(20px); opacity: 0; }
-        }
-
-        /* Efecto de onda al soltar */
-        @keyframes wave {
-            0% { transform: scale(0.8); opacity: 0.8; }
-            100% { transform: scale(1.5); opacity: 0; }
-        }
-
-        .drop-zone.active {
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(108, 92, 231, 0.4); }
-            70% { box-shadow: 0 0 0 15px rgba(108, 92, 231, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(108, 92, 231, 0); }
-        }
-    </style>
-</head>
-<body>
-    {% include 'header.html' %}
-
-    <div class="table-container">
-        <div class="section-header">
-            <h2 class="section-title">Unprocessed Audios – LyricFind</h2>
-        </div>
-        <!-- ═══ Drop-zone para filtrar por MP3 ════════════════════════════════════ -->
-        <div id="dropZone" class="drop-zone">
-            <div class="drop-zone-content">
-                <svg class="upload-icon" viewBox="0 0 24 24">
-                    <path fill="currentColor" d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M13.5,16V19H10.5V16H8L12,12L16,16H13.5M13,9V3.5L18.5,9H13Z"/>
-                </svg>
-                <h3 class="drop-title">Suelta tu archivo MP3 aquí</h3>
-
-                <div class="drop-details">Soporte para archivos .mp3 con metadatos ISRC</div>
+  {# ───────── Tabla principal ───────── #}
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Klaim</th><th>Title</th><th>Artist</th><th>ISRC</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for link in pendientes %}
+        <tr>
+          <td>{{ link.obra_id }}</td>
+          <td>{{ link.obra.titulo }}</td>
+          <td>{{ link.id_isrc.id_artista_unico.nombre_artista }}</td>
+          <td>{{ link.id_isrc.codigo_isrc }}</td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn btn--primary" onclick="window.openLyricModal({{ link.pk }})">
+                Insert&nbsp;Lyric
+              </button>
+              <a class="btn btn--danger" href="{% url 'lyricfind_omitir' link.pk %}">
+                Omit
+              </a>
             </div>
-            <div class="drop-progress"></div>
-            <div class="drop-particles"></div>
-        </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="empty-state">Sin audios pendientes.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {# ───────── Paginación global ───────── #}
+    <nav class="pagination">
+      {% if page_obj.has_previous %}
+        <a href="?page=1">&laquo;</a>
+        <a href="?page={{ page_obj.previous_page_number }}">&lsaquo;</a>
+      {% else %}
+        <span class="disabled">&laquo;</span>
+        <span class="disabled">&lsaquo;</span>
+      {% endif %}
+
+      <span class="current">
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+      </span>
+
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}">&rsaquo;</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}">&raquo;</a>
+      {% else %}
+        <span class="disabled">&rsaquo;</span>
+        <span class="disabled">&raquo;</span>
+      {% endif %}
+    </nav>
+  </div>
+</div>
 
 
+{# ───────── Modal oculto ───────── #}
+<div id="lyricModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="window.closeLyricModal()">&times;</span>
+    <h3>Paste Lyric and Confirm</h3>
 
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Klaim</th>
-                    <th>Title</th>
-                    <th>Artist</th>
-                    <th>ISRC</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for link in pendientes %}
-                <tr>
-                    <td>{{ link.obra_id }}</td>
-                    <td>{{ link.obra.titulo }}</td>
-                    <td>{{ link.id_isrc.id_artista_unico.nombre_artista }}</td>
-                    <td>{{ link.id_isrc.codigo_isrc }}</td>
-                    <td>
-                        <div class="action-buttons">
-                            <button class="action-btn primary"
-                                    onclick="openModal({{ link.pk }})">
-                                Insert&nbsp;Lyric
-                            </button>
-                            <a class="action-btn danger"
-                               href="{% url 'lyricfind_omitir' link.pk %}">
-                                Omit
-                            </a>
-                        </div>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="5" class="empty-state">Sin audios pendientes.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    {#  ←↓↓ NUEVO atributo data-action-template ↓↓→  #}
+    <form  id="lyricForm"  method="post"
+           data-action-template="{% url 'lyricfind_guardar' 0 %}">
+      {% csrf_token %}
+      <textarea name="lyric_text" placeholder="Paste the song lyrics here…" required></textarea>
+      <button type="submit" class="btn btn--primary">Save&nbsp;Lyrics</button>
+    </form>
 
-        <!-- Pagination -->
-        <nav class="pagination-container">
-            {% if page_obj.has_previous %}
-                <a class="pagination-btn" href="?page=1">&laquo;</a>
-                <a class="pagination-btn" href="?page={{ page_obj.previous_page_number }}">&lsaquo;</a>
-            {% else %}
-                <span class="pagination-btn disabled">&laquo;</span>
-                <span class="pagination-btn disabled">&lsaquo;</span>
-            {% endif %}
+  </div>
+</div>
 
-            <span class="pagination-info">
-                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-            </span>
 
-            {% if page_obj.has_next %}
-                <a class="pagination-btn" href="?page={{ page_obj.next_page_number }}">&rsaquo;</a>
-                <a class="pagination-btn" href="?page={{ page_obj.paginator.num_pages }}">&raquo;</a>
-            {% else %}
-                <span class="pagination-btn disabled">&rsaquo;</span>
-                <span class="pagination-btn disabled">&raquo;</span>
-            {% endif %}
-        </nav>
-    </div>
+{% endblock %}
 
-    <!-- ─────────────────────────── MODAL Lyric ─────────────────────────── -->
-    <div id="lyricModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal()">&times;</span>
-            <h3>Paste Lyric and Confirm</h3>
-            <form id="lyricForm" method="post">
-                {% csrf_token %}
-                <textarea name="lyric_text" placeholder="Paste the song lyrics here…" required></textarea>
-                <button type="submit" class="action-btn primary">
-                    Save&nbsp;Lyrics
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        // ─── Drop-zone logic ────────────────────────────────────────────────
-        (function(){
-            const dz = document.getElementById('dropZone');
-
-            ['dragover','dragenter'].forEach(evt => {
-                dz.addEventListener(evt, e => {
-                    e.preventDefault();
-                    dz.classList.add('hover');
-                });
-            });
-            ['dragleave','drop'].forEach(evt => {
-                dz.addEventListener(evt, e => {
-                    e.preventDefault();
-                    dz.classList.remove('hover');
-                });
-            });
-
-            dz.addEventListener('drop', e => {
-                const files = e.dataTransfer.files;
-                if (!files.length) return;
-
-                const name = files[0].name.replace(/\.mp3$/i, '');
-                const parts = name.split(' - ');
-                if (parts.length < 2) {
-                    alert('Nombre de archivo no reconocido');
-                    return;
-                }
-
-                const id_isrc = parts[0].trim();
-                if (!/^\d+$/.test(id_isrc)) {
-                    alert('El primer elemento no parece un id_isrc numérico');
-                    return;
-                }
-
-                const url = new URL(window.location);
-                url.searchParams.set('id_isrc', id_isrc);
-                url.searchParams.delete('page');
-                window.location = url.toString();
-            });
-        })();
-
-        // ─── Modal helpers ────────────────────────────────────────────────
-        function openModal(linkId) {
-            const form = document.getElementById('lyricForm');
-            form.action = "{% url 'lyricfind_guardar' 0 %}".replace("0", linkId);
-            document.getElementById('lyricModal').classList.add('active');
-        }
-
-        function closeModal() {
-            document.getElementById('lyricModal').classList.remove('active');
-        }
-
-        window.onclick = function (e) {
-            if (e.target.id === 'lyricModal') closeModal();
-        };
-            // JavaScript para manejar los efectos (opcional)
-        const dropZone = document.getElementById('dropZone');
-        
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, (e) => {
-                e.preventDefault();
-                dropZone.classList.add('hover');
-            });
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, (e) => {
-                e.preventDefault();
-                dropZone.classList.remove('hover');
-                
-                // Efecto de onda
-                if(eventName === 'drop') {
-                    const wave = document.createElement('div');
-                    wave.style.position = 'absolute';
-                    wave.style.borderRadius = '20px';
-                    wave.style.background = 'rgba(108, 92, 231, 0.3)';
-                    wave.style.width = '100%';
-                    wave.style.height = '100%';
-                    wave.style.top = '0';
-                    wave.style.left = '0';
-                    wave.style.animation = 'wave 1s forwards';
-                    wave.style.pointerEvents = 'none';
-                    dropZone.appendChild(wave);
-                    
-                    setTimeout(() => wave.remove(), 1000);
-                }
-            });
-        });
-    </script>
-</body>
-</html>
+{% block scripts %}
+  <script src="{% static 'js/lyricfind_pendientes.js' %}" defer></script>
+{% endblock %}

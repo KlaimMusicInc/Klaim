@@ -29,3 +29,14 @@ db.sqlite3
 .DS_Store
 Thumbs.db
 staticfiles/
+# util-scripts y logs
+ARREGLAR_*.py
+CORREGIR_*.py
+INSERTAR_*.py
+OBTENER_*.py
+REVISAR_*.py
+backups/
+*.log
+
+log_*.txt
+actualizar_catalogo_existente.py

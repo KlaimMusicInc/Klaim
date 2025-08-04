@@ -1,0 +1,31 @@
+/* components/particles.css */
+
+/* ==========================
+   Partículas – Login
+   ========================== */
+
+/* Contenedor de partículas: ocupa toda la pantalla */
+#particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none; /* evita que bloquee clics debajo */
+}
+
+/* Estilo individual de cada partícula */
+#particles .particle {
+    position: absolute;
+    width: 40px; /* o el tamaño que uses en tu login.js */
+    height: 40px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    animation: float linear infinite;
+    opacity: 0.8;
+    transition: all 0.5s ease;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}

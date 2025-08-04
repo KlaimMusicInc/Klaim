@@ -1,0 +1,43 @@
+/* components/navigation.css */
+
+/* ==========================
+   Navegación Lateral – Header
+   ========================== */
+#sideNav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 320px;
+  height: 100vh;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--dark) 100%);
+  padding: 100px 0 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transform: translateX(-100%);
+  transition: transform 0.5s cubic-bezier(0.77, 0.2, 0.05, 1);
+  z-index: 2050;
+  overflow-y: auto;
+}
+
+#sideNav.open {
+  transform: translateX(0);
+  box-shadow: 10px 0 30px rgba(0, 0, 0, 0.4);
+}
+
+#sideNav::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 2px;
+  background: var(--secondary);
+  opacity: 0;
+  transition: opacity 0.3s 0.2s ease;
+}
+
+#sideNav.open::after {
+  opacity: 1;
+  animation: neonGlow 2s infinite alternate;
+}

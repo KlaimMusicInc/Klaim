@@ -1,793 +1,197 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    {% load static %}
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Obras Musicales | Klaim Music</title>
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
-    <style>
-        :root {
-            --primary: #112F6D;
-            --primary-dark: #0d2450;
-            --secondary: #1a4a9e;
-            --accent: #ff006e;
-            --dark: #1a1b25;
-            --light: #f8f9fa;
-            --gray: #6c757d;
-            --light-gray: #e9ecef;
-            --success: #28a745;
-            --warning: #ffc107;
-            --danger: #dc3545;
-            --glass: rgba(255, 255, 255, 0.15);
-            --glass-border: rgba(255, 255, 255, 0.2);
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: #f5f7ff;
-            color: var(--dark);
-            line-height: 1.6;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Header space (preserved for Django include) */
-        .header-space {
-            height: 80px;
-        }
-
-        /* Main container */
-        .main-container {
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            padding: 0 5vw;
-            background: linear-gradient(135deg, #f5f7ff 0%, #f0f4ff 100%);
-        }
-
-        /* Search section - Glassmorphism design */
-        .search-section {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 249, 250, 0.9) 100%);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 2rem;
-            margin: 2rem 0;
-            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
-            border: 1px solid var(--glass-border);
-        }
-
-        .search-title {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--dark);
-            margin-bottom: 1.5rem;
-            text-align: center;
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            letter-spacing: -0.5px;
-        }
-
-        .search-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .search-input-group {
-            position: relative;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 1rem 1.5rem;
-            font-size: 0.95rem;
-            border: none;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.8);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s ease;
-            border: 1px solid rgba(0, 0, 0, 0.05);
-        }
-
-        .search-input:focus {
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.2);
-            background: white;
-            transform: translateY(-2px);
-        }
-
-        .search-input::placeholder {
-            color: #adb5bd;
-        }
-
-        .search-label {
-            position: absolute;
-            left: 1rem;
-            top: -0.6rem;
-            background: white;
-            padding: 0 0.5rem;
-            font-size: 0.75rem;
-            color: var(--primary);
-            font-weight: 500;
-            border-radius: 4px;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-        }
-
-        /* Checkbox styling */
-        .checkbox-container {
-            display: flex;
-            align-items: center;
-            margin: 1.5rem 0;
-            justify-content: center;
-        }
-
-        .checkbox-label {
-            position: relative;
-            padding-left: 2rem;
-            cursor: pointer;
-            font-size: 0.95rem;
-            color: var(--gray);
-            user-select: none;
-        }
-
-        .checkbox-label input {
-            position: absolute;
-            opacity: 0;
-            cursor: pointer;
-            height: 0;
-            width: 0;
-        }
-
-        .checkmark {
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 1.25rem;
-            width: 1.25rem;
-            background-color: white;
-            border-radius: 6px;
-            border: 1px solid #dee2e6;
-            transition: all 0.2s ease;
-        }
-
-        .checkbox-label:hover .checkmark {
-            border-color: var(--primary);
-        }
-
-        .checkbox-label input:checked ~ .checkmark {
-            background-color: var(--primary);
-            border-color: var(--primary);
-        }
-
-        .checkmark:after {
-            content: "";
-            position: absolute;
-            display: none;
-        }
-
-        .checkbox-label input:checked ~ .checkmark:after {
-            display: block;
-        }
-
-        .checkbox-label .checkmark:after {
-            left: 7px;
-            top: 3px;
-            width: 5px;
-            height: 10px;
-            border: solid white;
-            border-width: 0 2px 2px 0;
-            transform: rotate(45deg);
-        }
-
-        /* Search button */
-        .search-button {
-            display: block;
-            margin: 0 auto;
-            padding: 1rem 2.5rem;
-            font-size: 1rem;
-            font-weight: 600;
-            color: white;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            box-shadow: 0 4px 15px rgba(58, 134, 255, 0.3);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .search-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(58, 134, 255, 0.4);
-        }
-
-        .search-button:active {
-            transform: translateY(0);
-        }
-
-        .search-button::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0));
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .search-button:hover::after {
-            opacity: 1;
-        }
-
-        /* Table section */
-        .table-section {
-            background: white;
-            border-radius: 20px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
-            overflow-x: auto;
-        }
-
-        .data-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            min-width: 1200px;
-        }
-
-        .data-table thead th {
-            position: sticky;
-            top: 0;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            font-weight: 600;
-            padding: 1rem 1.5rem;
-            text-align: left;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border: none;
-        }
-
-        .data-table thead th:first-child {
-            border-top-left-radius: 12px;
-            border-bottom-left-radius: 12px;
-        }
-
-        .data-table thead th:last-child {
-            border-top-right-radius: 12px;
-            border-bottom-right-radius: 12px;
-        }
-
-        .data-table tbody tr {
-            transition: all 0.2s ease;
-        }
-
-        .data-table tbody tr:hover {
-            transform: translateX(4px);
-            box-shadow: 4px 0 0 0 var(--primary) inset;
-        }
-
-        .data-table tbody td {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--light-gray);
-            font-size: 0.9rem;
-            background: white;
-        }
-
-        .data-table tbody tr:nth-child(even) td {
-            background-color: #f8f9fa;
-        }
-
-        /* Status cells with interactive effect */
-        .status-cell {
-            position: relative;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-weight: 500;
-        }
-
-        .status-cell:hover {
-            background-color: #e7f1ff !important;
-        }
-
-        .status-cell::after {
-            content: "✎";
-            position: absolute;
-            right: 8px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--primary);
-            opacity: 0;
-            transition: opacity 0.2s ease;
-        }
-
-        .status-cell:hover::after {
-            opacity: 1;
-        }
-
-        /* Status badges */
-        .status-badge {
-            display: inline-block;
-            padding: 0.25rem 0.5rem;
-            border-radius: 50px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .status-ok {
-            background-color: rgba(40, 167, 69, 0.1);
-            color: var(--success);
-        }
-
-        .status-conflicto {
-            background-color: rgba(220, 53, 69, 0.1);
-            color: var(--danger);
-        }
-
-        .status-no-cargada {
-            background-color: rgba(255, 193, 7, 0.1);
-            color: #d39e00;
-        }
-
-        .status-liberada {
-            background-color: rgba(108, 117, 125, 0.1);
-            color: var(--gray);
-        }
-
-        /* Pagination */
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 0.5rem;
-            margin-top: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .pagination a, .pagination span.current {
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            text-decoration: none;
-            transition: all 0.2s ease;
-        }
-
-        .pagination a {
-            background: white;
-            color: var(--primary);
-            border: 1px solid var(--light-gray);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
-
-        .pagination a:hover {
-            background: var(--primary);
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(58, 134, 255, 0.2);
-        }
-
-        .pagination span.current {
-            background: var(--light-gray);
-            color: var(--gray);
-        }
-
-        /* Modal styles */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(8px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .modal-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .modal-container {
-            background: white;
-            border-radius: 16px;
-            width: 100%;
-            max-width: 400px;
-            padding: 2rem;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            transform: translateY(20px);
-            transition: transform 0.3s ease;
-        }
-
-        .modal-overlay.active .modal-container {
-            transform: translateY(0);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .modal-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--dark);
-        }
-
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: var(--gray);
-            transition: color 0.2s ease;
-        }
-
-        .modal-close:hover {
-            color: var(--dark);
-        }
-
-        .modal-select {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 1px solid var(--light-gray);
-            border-radius: 8px;
-            font-size: 0.95rem;
-            margin-bottom: 1.5rem;
-            appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 0.75rem center;
-            background-size: 1rem;
-        }
-
-        .modal-select:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.2);
-        }
-
-        .modal-button {
-            width: 100%;
-            padding: 0.75rem;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .modal-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(58, 134, 255, 0.3);
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .main-container {
-                padding: 0 3vw;
-            }
-
-            .search-section {
-                padding: 1.5rem;
-            }
-
-            .search-title {
-                font-size: 1.5rem;
-            }
-
-            .search-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .table-section {
-                padding: 1rem;
-            }
-
-            .data-table thead th,
-            .data-table tbody td {
-                padding: 0.75rem;
-            }
-
-            .pagination {
-                gap: 0.25rem;
-            }
-
-            .pagination a, .pagination span.current {
-                padding: 0.5rem 0.75rem;
-                font-size: 0.8rem;
-            }
-        }
-
-        /* Animation classes */
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(20px); }
-            to { transform: translateY(0); }
-        }
-
-        .animate-fade {
-            animation: fadeIn 0.3s ease forwards;
-        }
-
-        .animate-slide {
-            animation: slideUp 0.3s ease forwards;
-        }
-    </style>
-</head>
-<body>
-    <!-- Space for Django header include -->
-    <div class="header-space">{% include 'header.html' %}</div>
-    
-    <div class="main-container animate-fade">
-        <!-- Search Section -->
-        <section class="search-section animate-slide">
-            <h1 class="search-title">Music Works Catalog</h1>
-            <form method="get">
-                <div class="search-grid">
-                    <div class="search-input-group">
-                        <span class="search-label">Title</span>
-                        <input type="text" id="titulo" class="search-input" placeholder="Search by title..." name="titulo" value="{{ request.GET.titulo }}">
-                    </div>
-                    
-                    <div class="search-input-group">
-                        <span class="search-label">SGS Code</span>
-                        <input type="text" id="codigo_sgs" class="search-input" placeholder="Search by SGS code..." name="codigo_sgs" value="{{ request.GET.codigo_sgs }}">
-                    </div>
-                    
-                    <div class="search-input-group">
-                        <span class="search-label">ISWC Code</span>
-                        <input type="text" id="codigo_iswc" class="search-input" placeholder="Search by ISWC code..." name="codigo_iswc" value="{{ request.GET.codigo_iswc }}">
-                    </div>
-                    
-                    <div class="search-input-group">
-                        <span class="search-label">Author</span>
-                        <input type="text" id="autor" class="search-input" placeholder="Search by author..." name="autor" value="{{ request.GET.autor }}">
-                    </div>
-                    
-                    <div class="search-input-group">
-                        <span class="search-label">Catalog ID</span>
-                        <input type="text" id="id_catalogo" class="search-input" placeholder="Search by catalog ID..." name="id_catalogo" value="{{ request.GET.id_catalogo }}">
-                    </div>
-                    
-                    <div class="search-input-group">
-                        <span class="search-label">Klaim Code</span>
-                        <input type="text" id="codigo_klaim" class="search-input" placeholder="Search by Klaim code..." name="codigo_klaim" value="{{ request.GET.codigo_klaim }}">
-                    </div>
-                </div>
-                
-                <div class="checkbox-container">
-                    <label class="checkbox-label">
-                        Include released works
-                        <input type="checkbox" id="incluir_liberadas" name="incluir_liberadas" {% if incluir_liberadas == 'on' %}checked{% endif %}>
-                        <span class="checkmark"></span>
-                    </label>
-                </div>
-                
-                <button type="submit" class="search-button">
-                    Search Works
-                </button>
-            </form>
-        </section>
-
-        <!-- Table Section -->
-        <section class="table-section animate-slide">
-            <div class="table-responsive">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Klaim</th>
-                            <th>Title</th>
-                            <th>SGS</th>
-                            <th>ISWC</th>
-                            <th>Authors</th>
-                            <th>Share</th>
-                            <th>Artists</th>
-                            <th>Client</th>
-                            <th>MLC Code</th>
-                            <th>ADREV Code</th>
-                            <th>MLC Status</th>
-                            <th>ADREV Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for obra in obras %}
-                        <tr>
-                            <td>{{ obra.cod_klaim }}</td>
-                            <td>{{ obra.titulo }}</td>
-                            <td>{{ obra.codigo_sgs }}</td>
-                            <td>{{ obra.codigo_iswc }}</td>
-                            <td>
-                                {% for autor in obra.autores_prefetched %}
-                                    {{ autor.autor.nombre_autor }}<br>
-                                {% endfor %}
-                            </td>
-                            <td>
-                                {% for autor in obra.autores_prefetched %}
-                                    {{ autor.porcentaje_autor }}%<br>
-                                {% endfor %}
-                            </td>
-                            <td>
-                                {% if obra.artistas_prefetched %}
-                                    {% for artista in obra.artistas_prefetched %}
-                                        {{ artista.artista_unico.nombre_artista }}{% if not forloop.last %}; {% endif %}
-                                    {% endfor %}
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
-                            <td>{{ obra.catalogo.cliente.nombre_cliente }}</td>
-                            <td>
-                                {% if obra.subidasplataforma_set.all %}
-                                    {{ obra.subidasplataforma_set.first.codigo_MLC }}
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if obra.subidasplataforma_set.all %}
-                                    {{ obra.subidasplataforma_set.first.codigo_ADREV }}
-                                {% endif %}
-                            </td>
-                            <td class="status-cell" onclick="openModal('{{ obra.cod_klaim }}', 'estado_MLC')">
-                                {% if obra.subidasplataforma_set.all %}
-                                    {% with status=obra.subidasplataforma_set.first.estado_MLC %}
-                                        <span class="status-badge status-{% if status == 'OK' %}ok{% elif status == 'Conflicto' %}conflicto{% elif status == 'NO CARGADA' %}no-cargada{% elif status == 'LIBERADA' %}liberada{% endif %}">
-                                            {{ status }}
-                                        </span>
-                                    {% endwith %}
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
-                            <td class="status-cell" onclick="openModal('{{ obra.cod_klaim }}', 'estado_ADREV')">
-                                {% if obra.subidasplataforma_set.all %}
-                                    {% with status=obra.subidasplataforma_set.first.estado_ADREV %}
-                                        <span class="status-badge status-{% if status == 'OK' %}ok{% elif status == 'Conflicto' %}conflicto{% elif status == 'NO CARGADA' %}no-cargada{% elif status == 'LIBERADA' %}liberada{% endif %}">
-                                            {{ status }}
-                                        </span>
-                                    {% endwith %}
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Pagination -->
-            <div class="pagination">
-                <span class="step-links">
-                    {% if page_obj.has_previous %}
-                        <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page=1">&laquo; First</a>
-                        <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>
-                    {% endif %}
-            
-                    <span class="current">
-                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-                    </span>
-            
-                    {% if page_obj.has_next %}
-                        <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a>
-                        <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
-                    {% endif %}
-                </span>
-            </div>
-        </section>
-    </div>
-
-    <!-- Status Update Modal -->
-    <div id="modal" class="modal-overlay">
-        <div class="modal-container">
-            <div class="modal-header">
-                <h2 class="modal-title">Update Status</h2>
-                <button class="modal-close" onclick="closeModal()">&times;</button>
-            </div>
-            <select id="estado-select" class="modal-select">
-                <option value="OK">OK</option>
-                <option value="Conflicto">CLAIM</option>
-                <option value="NO CARGADA">NOT ID</option>
-                <option value="LIBERADA">REMOVE WORK</option>
-            </select>
-            <button class="modal-button" onclick="submitEstado()">CONFIRM UPDATE</button>
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Music Works Catalog | KLAIM{% endblock %}
+
+{% block body_class %}catalog-page{% endblock %}
+
+{% block extra_css %}
+  <!-- Fuentes (si las usas en base.css o similares) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Base y estructura -->
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+
+  <!-- Página catálogo -->
+  <link rel="stylesheet" href="{% static 'css/pages/catalogo.css' %}">
+  <link rel="stylesheet" href="{% static 'css/pages/index.css' %}">
+
+  <!-- Componentes reutilizables -->
+  <link rel="stylesheet" href="{% static 'css/components/tables.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/button.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/alert.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="main-container animate-fade">
+
+  <!-- Sección de Búsqueda -->
+  <section class="search-section animate-slide">
+    <h1 class="search-title">Music Works Catalog</h1>
+    <form method="get">
+      <div class="search-grid">
+        <div class="search-input-group">
+          <span class="search-label">Title</span>
+          <input type="text" name="titulo" class="search-input" placeholder="Search by Title..." value="{{ request.GET.titulo }}">
+        </div>
+
+        <div class="search-input-group">
+          <span class="search-label">SGS Code</span>
+          <input type="text" name="codigo_sgs" class="search-input" placeholder="Search by SGS Code..." value="{{ request.GET.codigo_sgs }}">
+        </div>
+
+        <div class="search-input-group">
+          <span class="search-label">ISWC Code</span>
+          <input type="text" name="codigo_iswc" class="search-input" placeholder="Search by ISWC Code..." value="{{ request.GET.codigo_iswc }}">
+        </div>
+
+        <div class="search-input-group">
+          <span class="search-label">Author</span>
+          <input type="text" name="autor" class="search-input" placeholder="Search by Author..." value="{{ request.GET.autor }}">
+        </div>
+
+        <div class="search-input-group">
+          <span class="search-label">Catalog ID</span>
+          <input type="text" name="id_catalogo" class="search-input" placeholder="Search by Catalog ID..." value="{{ request.GET.id_catalogo }}">
+        </div>
+
+        <div class="search-input-group">
+          <span class="search-label">Klaim Code</span>
+          <input type="text" name="codigo_klaim" class="search-input" placeholder="Search by Klaim Code..." value="{{ request.GET.codigo_klaim }}">
+        </div>
+      </div>
+
+      <div class="checkbox-container">
+        <label class="checkbox-label">
+          Include released works
+          <input type="checkbox" id="incluir_liberadas" name="incluir_liberadas" {% if incluir_liberadas == 'on' %}checked{% endif %}>
+          <span class="checkmark"></span>
+        </label>
+      </div>
+
+      <button type="submit" class="search-button">Search Works</button>
+    </form>
+  </section>
+
+  <!-- Tabla -->
+  <section class="table-section animate-slide">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Klaim</th>
+            <th>Title</th>
+            <th>SGS</th>
+            <th>ISWC</th>
+            <th>Authors</th>
+            <th>Share</th>
+            <th>Artists</th>
+            <th>Client</th>
+            <th>MLC Code</th>
+            <th>ADREV Code</th>
+            <th>MLC Status</th>
+            <th>ADREV Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for obra in obras %}
+          <tr>
+            <td>{{ obra.cod_klaim }}</td>
+            <td>{{ obra.titulo }}</td>
+            <td>{{ obra.codigo_sgs }}</td>
+            <td>{{ obra.codigo_iswc }}</td>
+            <td>
+              {% for autor in obra.autores_prefetched %}
+                {{ autor.autor.nombre_autor }}<br>
+              {% endfor %}
+            </td>
+            <td>
+              {% for autor in obra.autores_prefetched %}
+                {{ autor.porcentaje_autor }}%<br>
+              {% endfor %}
+            </td>
+            <td>
+              {% if obra.artistas_prefetched %}
+                {% for artista in obra.artistas_prefetched %}
+                  {{ artista.artista_unico.nombre_artista }}{% if not forloop.last %}; {% endif %}
+                {% endfor %}
+              {% else %}-{% endif %}
+            </td>
+            <td>{{ obra.catalogo.cliente.nombre_cliente }}</td>
+            <td>{{ obra.subidasplataforma_set.first.codigo_MLC }}</td>
+            <td>{{ obra.subidasplataforma_set.first.codigo_ADREV }}</td>
+            <td class="status-cell" onclick="openModal('{{ obra.cod_klaim }}', 'estado_MLC')">
+              {% with status=obra.subidasplataforma_set.first.estado_MLC %}
+                {% if status %}
+                  <span class="status-badge status-{% if status == 'OK' %}ok{% elif status == 'Conflicto' %}conflicto{% elif status == 'NO CARGADA' %}no-cargada{% elif status == 'LIBERADA' %}liberada{% endif %}">
+                    {{ status }}
+                  </span>
+                {% else %}-{% endif %}
+              {% endwith %}
+            </td>
+            <td class="status-cell" onclick="openModal('{{ obra.cod_klaim }}', 'estado_ADREV')">
+              {% with status=obra.subidasplataforma_set.first.estado_ADREV %}
+                {% if status %}
+                  <span class="status-badge status-{% if status == 'OK' %}ok{% elif status == 'Conflicto' %}conflicto{% elif status == 'NO CARGADA' %}no-cargada{% elif status == 'LIBERADA' %}liberada{% endif %}">
+                    {{ status }}
+                  </span>
+                {% else %}-{% endif %}
+              {% endwith %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+        <div class="pagination" role="navigation" aria-label="Pagination">
+            {% if page_obj.has_previous %}
+            <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page=1" aria-label="First page">&laquo;</a>
+            <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}" aria-label="Previous page">Anterior</a>
+            {% endif %}
+
+            <span class="current" aria-current="page">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+            {% if page_obj.has_next %}
+            <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}" aria-label="Next page">Siguiente</a>
+            <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.paginator.num_pages }}" aria-label="Last page">&raquo;</a>
+            {% endif %}
         </div>
     </div>
+  </section>
 
-    <script>
-        let obraId, campoEstado;
 
-        function openModal(id, campo) {
-            obraId = id;
-            campoEstado = campo;
-            document.getElementById('modal').classList.add('active');
-            console.log(`Modal opened for work ID: ${obraId}, field: ${campoEstado}`);
-        }
 
-        function closeModal() {
-            document.getElementById('modal').classList.remove('active');
-        }
+  <!-- Modal -->
+  <!-- Modal -->
+  <div id="modal" class="modal-overlay">
+      <div class="modal-container">
+      <div class="modal-header">
+        <h2 class="modal-title">Update Status</h2>
+        <button class="modal-close" onclick="closeModal()" aria-label="Close modal">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
 
-        function submitEstado() {
-            const estado = document.getElementById('estado-select').value;
-            const csrfToken = '{{ csrf_token }}';
+      <!-- CSRF token oculto para JS -->
+      <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
 
-            console.log(`Selected status: ${estado}`);
-            console.log(`Submitting status: ${estado} for work ID: ${obraId}, field: ${campoEstado}`);
+      <select id="estado-select" class="modal-select" aria-label="Select status">
+        <option value="OK">OK</option>
+        <option value="Conflicto">CLAIM</option>
+        <option value="NO CARGADA">NOT ID</option>
+        <option value="LIBERADA">REMOVE WORK</option>
+      </select>
 
-            if (!estado) {
-                console.error("Error: Status cannot be empty.");
-                return;
-            }
+      <button class="modal-button" onclick="submitEstado()">
+        CONFIRM UPDATE
+      </button>
+    </div>
+  </div>
 
-            fetch(`/update-estado/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                },
-                body: JSON.stringify({
-                    'obra_id': obraId,
-                    'campo': campoEstado,
-                    'estado': estado
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    console.log("Status updated successfully.");
-                    closeModal();
-                    window.location.reload(true);
-                } else {
-                    alert(data.error);
-                    console.error("Server error:", data.error);
-                }
-            })
-            .catch(error => {
-                console.error("Request error:", error);
-            });
-        }
 
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const modal = document.getElementById('modal');
-            if (event.target === modal) {
-                closeModal();
-            }
-        }
-    </script>
-</body>
-</html>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/index.js' %}"></script>
+  <script src="{% static 'js/modals.js' %}"></script>
+{% endblock %}

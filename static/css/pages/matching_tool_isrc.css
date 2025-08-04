@@ -1,0 +1,80 @@
+/* pages/matching_tool_isrc.css
+   ----------------------------------------------------------------------
+   Diferencial de estilos para la vista “Matching Tool · ISRC”.
+   Reutilizamos btn, form-control, tables y paginación globales.
+---------------------------------------------------------------------- */
+
+/* ╭─ 1) Contenedor general y título de sección ───────────────────────╮ */
+.container{
+  background:linear-gradient(135deg,var(--light) 0%,#e6f0fa 100%);
+  padding:0;               /* el padding lateral lo aporta .table-container */
+}
+
+.section-header{ margin-bottom:2rem; padding-bottom:1rem; border-bottom:1px solid rgba(17,47,109,.1); }
+.section-title{
+  font-size:1.8rem;
+  font-weight:600;
+  color:var(--primary);
+  text-align:center;
+  position:relative;
+}
+.section-title::after{
+  content:"";
+  position:absolute;left:50%;bottom:-10px;transform:translateX(-50%);
+  width:60px;height:4px;
+  background:linear-gradient(90deg,var(--primary),var(--accent));
+  border-radius:2px;
+}
+
+/* ╭─ 2) Filtros (barra superior) ─────────────────────────────────────╮ */
+.filter-section{
+  background:var(--white);
+  padding:1.5rem;
+  margin:0 5% 2rem;
+  border-radius:12px;
+  box-shadow:var(--shadow-sm);
+  display:flex;gap:1.5rem;flex-wrap:wrap;justify-content:center;
+}
+.filter-label{ font-weight:500;color:var(--gray-dark); }
+
+/* usamos .form-control de forms.css — solo ancho mínimo */
+.filter-section .form-control,
+.filter-section .form-select{ min-width:200px; }
+
+/* ╭─ 3) Ajustes de tabla exclusivos ──────────────────────────────────╮ */
+.data-table td:nth-child(10),        /* columna “Uses” */
+.data-table th:nth-child(10){
+  width:80px;min-width:80px;max-width:80px;
+  padding-left:.5rem;padding-right:.5rem;
+  text-align:center;
+}
+@media(max-width:768px){
+  .data-table td:nth-child(10),
+  .data-table th:nth-child(10){ width:60px;min-width:60px;max-width:60px; }
+}
+
+/* input de usos */
+.usos-input{
+  width:50px;
+  padding:.5rem;
+  margin:0 auto;
+  text-align:center;
+  border:1px solid var(--gray-light);
+  border-radius:12px;
+}
+
+/* ╭─ 4) Botones en la celda “Action” ─────────────────────────────────╮ */
+.action-buttons{ display:flex;flex-direction:column;gap:.5rem;min-width:150px; }
+
+/* ╭─ 5) Badges “true / false” (ya globales) ──────────────────────────╮ */
+.status-badge.true  { background:rgba(40,167,69,.1); color:var(--success); }
+.status-badge.false { background:rgba(255,193,7,.1); color:#d39e00; }
+
+/* ╭─ 6) Partículas de fondo ──────────────────────────────────────────╮ */
+.particles{ position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;overflow:hidden; }
+.particle { position:absolute;background:rgba(79,195,247,.15);border-radius:50%;
+            animation:float linear infinite; }
+@keyframes float{
+  from{ transform:translateY(0) rotate(0deg); }
+  to  { transform:translateY(-100vh) rotate(360deg); }
+}

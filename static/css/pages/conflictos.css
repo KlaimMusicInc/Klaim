@@ -1,0 +1,101 @@
+/* pages/conflictos.css
+   ===================================================================== */
+
+/* ----- Contenedor principal del formulario de conflictos ----- */
+.conflict-form-container {
+  background: var(--white);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-lg);
+  padding: 2.5rem;
+  margin-bottom: 3rem;
+  border: 1px solid rgba(17, 47, 109, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.conflict-form-container:hover {
+  box-shadow: 0 12px 40px rgba(17, 47, 109, 0.15);
+  transform: translateY(-2px);
+}
+
+/* ----- Encabezado dentro de la tarjeta ----- */
+.form-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(17, 47, 109, 0.1);
+}
+
+.form-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--primary);
+  font-size: 1.8rem;
+  margin: 0 0 0.5rem 0;
+  position: relative;
+  padding-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.form-header h2::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 60px;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  border-radius: 2px;
+}
+
+.form-header p {
+  color: var(--gray-medium);
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* ----- Grid del formulario ----- */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Alineación de inputs de ancho completo */
+.input-group.full-width {
+  grid-column: 1 / -1;
+}
+
+/* ----- Acciones ----- */
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+/* ----- Responsive tweaks ----- */
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .conflict-form-container {
+    padding: 1.5rem;
+  }
+  .form-header h2 {
+    font-size: 1.5rem;
+  }
+}
+
+/* ----- Contenedor general de la página ----- */
+.main-container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 2rem;
+}

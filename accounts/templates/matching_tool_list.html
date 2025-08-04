@@ -1,638 +1,105 @@
-<!--HTML TABLA ISRC & autores EN HISTORIAL MATCHINGTOOL-->
+<!--HTML HISTORIAL MATCHINGTOOL-->
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    {% load static %}
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matching Tool - Titles, Authors & ISRC</title>
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-    <style>
-        :root {
-            --primary: #112F6D;
-            --primary-dark: #0d2450;
-            --secondary: #1a4a9e;
-            --accent: #ff006e;
-            --dark: #1a1b25;
-            --light: #f8f9fa;
-            --gray: #6c757d;
-            --light-gray: #e9ecef;
-            --success: #28a745;
-            --warning: #ffc107;
-            --danger: #dc3545;
-            --glass: rgba(255, 255, 255, 0.15);
-            --glass-border: rgba(255, 255, 255, 0.2);
-            --border-radius: 12px;
-        }
+{# templates/matching_tool_historial.html #}
+{% extends 'base.html' %}
+{% load static %}
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+{% block title %}Matching Tool · Historial&nbsp;|&nbsp;KLAIM{% endblock %}
+{% block body_class %}matching-historial-page{% endblock %}
 
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: #f5f7ff;
-            color: var(--dark);
-            line-height: 1.6;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
+{# ────────────────────────────────  CSS propio  ─────────────────────────────── #}
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/pages/matching_tool_historial.css' %}">
+{% endblock %}
 
-        /* Header space */
-        .header-space {
-            height: 80px;
-        }
+{# ────────────────────────────────  CONTENIDO  ──────────────────────────────── #}
+{% block content %}
+<div class="particles" id="particles"></div>
 
-        /* Main container */
-        .container {
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            padding: 0 5vw;
-            background: linear-gradient(135deg, #f5f7ff 0%, #f0f4ff 100%);
-        }
+<div class="container">
+  <!-- Cabecera -->
+  <div class="section-header">
+    <h1 class="section-title">MATCHING TOOL – TITLES, AUTHORS &amp; ISRC</h1>
+  </div>
 
-        /* Section header */
-        .section-header {
-            margin: 2rem 0;
-            text-align: center;
-        }
+  <!-- Buscador -->
+  <div class="search-container">
+    <form id="search-form" class="search-form">
+      <input  id="work-title"    name="work_title"    class="form-control"
+              type="text"  placeholder="Work Title"
+              value="{{ request.GET.work_title|default_if_none:'' }}">
 
-        .section-title {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--dark);
-            margin-bottom: 1.5rem;
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            letter-spacing: -0.5px;
-        }
+      <input  id="mlc-code"      name="mlc_code"      class="form-control"
+              type="text"  placeholder="MLC Code"
+              value="{{ request.GET.mlc_code|default_if_none:'' }}">
 
-        /* Search container */
-        .search-container {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 249, 250, 0.9) 100%);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 2rem;
-            margin: 2rem 0;
-            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
-            border: 1px solid var(--glass-border);
-        }
+      <input  id="creation-date" name="creation_date" class="form-control"
+              type="date"  placeholder="Creation Date"
+              value="{{ request.GET.creation_date|default_if_none:'' }}">
 
-        .search-form {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
+      <select id="status" name="status" class="form-select">
+        <option value=""         {% if request.GET.status == "" %}selected{% endif %}>All Status</option>
+        <option value="Enviado"  {% if request.GET.status == "Enviado"  %}selected{% endif %}>Enviado</option>
+        <option value="Aceptada" {% if request.GET.status == "Aceptada" %}selected{% endif %}>Aceptada</option>
+        <option value="Rechazada"{% if request.GET.status == "Rechazada"%}selected{% endif %}>Rechazada</option>
+      </select>
 
-        /* Form inputs */
-        .form-input, .form-select {
-            width: 100%;
-            padding: 1rem 1.5rem;
-            font-size: 0.95rem;
-            border: none;
-            border-radius: var(--border-radius);
-            background: rgba(255, 255, 255, 0.8);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s ease;
-            border: 1px solid rgba(0, 0, 0, 0.05);
-        }
+      <button type="button" class="btn btn--primary" onclick="search()">Buscar</button>
+    </form>
+  </div>
 
-        .form-input:focus, .form-select:focus {
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.2);
-            background: white;
-            transform: translateY(-2px);
-        }
+  <!-- Contenedor de tablas -->
+  <div class="tables-container">
+    <!-- Tabla títulos/autores -->
+    <div class="table-wrapper">
+      <h3 class="table-title">Titles&nbsp;and&nbsp;Authors</h3>
 
-        /* Action buttons */
-        .action-btn {
-            padding: 1rem 2.5rem;
-            font-size: 1rem;
-            font-weight: 600;
-            color: white;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border: none;
-            border-radius: var(--border-radius);
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            box-shadow: 0 4px 15px rgba(58, 134, 255, 0.3);
-            position: relative;
-            overflow: hidden;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
+      <div id="table-titulo-autor-container" class="table-container">
+        {% include 'matching_tool_table_partial.html' with page_obj=titulo_autor_page_obj %}
+      </div>
 
-        .action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(58, 134, 255, 0.4);
-        }
-
-        .action-btn:active {
-            transform: translateY(0);
-        }
-
-        /* Tables container */
-        .tables-container {
-            display: flex;
-            flex-direction: column;
-            gap: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        /* Table wrapper */
-        .table-wrapper {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
-            overflow: hidden;
-        }
-
-        .table-title {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            font-weight: 600;
-            padding: 1rem 1.5rem;
-            font-size: 1.1rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        /* Data table */
-        .data-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            min-width: 1200px;
-        }
-
-        .data-table th {
-            position: sticky;
-            top: 0;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            font-weight: 600;
-            padding: 1rem 1.5rem;
-            text-align: left;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .data-table td {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--light-gray);
-            font-size: 0.9rem;
-            background: white;
-        }
-
-        .data-table tr:nth-child(even) td {
-            background-color: #f8f9fa;
-        }
-
-        .data-table tr:hover td {
-            transform: translateX(4px);
-            box-shadow: 4px 0 0 0 var(--primary) inset;
-        }
-
-        /* Status badges */
-        .status-badge {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 50px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .status-enviado {
-            background-color: rgba(255, 193, 7, 0.1);
-            color: #d39e00;
-        }
-
-        .status-aceptada {
-            background-color: rgba(40, 167, 69, 0.1);
-            color: var(--success);
-        }
-
-        .status-rechazada {
-            background-color: rgba(220, 53, 69, 0.1);
-            color: var(--danger);
-        }
-
-        /* Pagination */
-        .pagination-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 0.5rem;
-            margin-top: 1.5rem;
-            padding: 1.5rem;
-            flex-wrap: wrap;
-        }
-
-        .pagination-btn,
-        .pagination-info {
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            text-decoration: none;
-            transition: all 0.2s ease;
-        }
-
-        .pagination-btn {
-            background: white;
-            color: var(--primary);
-            border: 1px solid var(--light-gray);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
-
-        .pagination-btn:hover {
-            background: var(--primary);
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(58, 134, 255, 0.2);
-        }
-
-        .pagination-btn.disabled {
-            background: var(--light-gray);
-            color: var(--gray);
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-
-        .pagination-info {
-            background: var(--light-gray);
-            color: var(--gray);
-        }
-
-        /* Modal */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(8px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .modal.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 16px;
-            width: 100%;
-            max-width: 500px;
-            padding: 2rem;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            transform: translateY(20px);
-            transition: transform 0.3s ease;
-            position: relative;
-        }
-
-        .modal.active .modal-content {
-            transform: translateY(0);
-        }
-
-        .modal-content h2 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--dark);
-            margin-bottom: 1.5rem;
-            text-align: center;
-        }
-
-        .modal-select {
-            width: 100%;
-            padding: 1rem;
-            border: 1px solid var(--light-gray);
-            border-radius: 8px;
-            font-size: 0.95rem;
-            margin-bottom: 1.5rem;
-            appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 0.75rem center;
-            background-size: 1rem;
-        }
-
-        .modal-select:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.2);
-        }
-
-        .close {
-            color: var(--gray);
-            font-size: 1.75rem;
-            font-weight: bold;
-            position: absolute;
-            right: 1.5rem;
-            top: 1.5rem;
-            cursor: pointer;
-            transition: color 0.2s ease;
-        }
-
-        .close:hover {
-            color: var(--dark);
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .container {
-                padding: 0 3vw;
-            }
-
-            .section-title {
-                font-size: 1.5rem;
-            }
-
-            .search-container {
-                padding: 1.5rem;
-            }
-
-            .search-form {
-                grid-template-columns: 1fr;
-            }
-
-            .data-table th,
-            .data-table td {
-                padding: 0.75rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .section-title {
-                font-size: 1.3rem;
-            }
-
-            .modal-content {
-                padding: 1.5rem;
-                width: 90%;
-            }
-        }
-
-        /* Animation classes */
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(20px); }
-            to { transform: translateY(0); }
-        }
-
-        .animate-fade {
-            animation: fadeIn 0.3s ease forwards;
-        }
-
-        .animate-slide {
-            animation: slideUp 0.3s ease forwards;
-        }
-    </style>
-</head>
-<body>
-    <!-- Floating Particles Background -->
-    
-    {% include 'header.html' %}
-    
-    <div class="container">
-        <!-- Header Section -->
-        <div class="section-header">
-            <h1 class="section-title">MATCHING TOOL - TITLES, AUTHORS & ISRC</h1>
-        </div>
-
-        <!-- Search Container -->
-        <div class="search-container">
-            <form id="search-form" class="search-form">
-                <input type="text" id="work-title" name="work_title" class="form-input" placeholder="Work Title" value="{{ request.GET.work_title }}">
-                <input type="text" id="mlc-code" name="mlc_code" class="form-input" placeholder="MLC Code" value="{{ request.GET.mlc_code }}">
-                <input type="date" id="creation-date" name="creation_date" class="form-input" placeholder="Creation Date" value="{{ request.GET.creation_date }}">
-                <select id="status" name="status" class="form-select">
-                    <option value="" {% if request.GET.status == "" %}selected{% endif %}>All Status</option>
-                    <option value="Enviado" {% if request.GET.status == "Enviado" %}selected{% endif %}>Enviado</option>
-                    <option value="Aceptada" {% if request.GET.status == "Aceptada" %}selected{% endif %}>Aceptada</option>
-                    <option value="Rechazada" {% if request.GET.status == "Rechazada" %}selected{% endif %}>Rechazada</option>
-                </select>
-                <button type="button" class="action-btn primary" onclick="search()">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                    </svg>
-                    Search
-                </button>
-            </form>
-        </div>
-
-        <!-- Tables Container -->
-        <div class="tables-container">
-            <!-- Titles and Authors Table -->
-            <div class="table-wrapper">
-                <h3 class="table-title">Titles and Authors</h3>
-                <div class="table-container" id="table-titulo-autor-container">
-                    {% include 'matching_tool_table_partial.html' with page_obj=titulo_autor_page_obj %}
-                </div>
-                <div class="pagination-container" id="pagination-titulo-autor"></div>
-            </div>
-
-            <!-- ISRC Table -->
-            <div class="table-wrapper">
-                <h3 class="table-title">ISRC Records</h3>
-                <div class="table-container" id="table-isrc-container">
-                    {% include 'matching_tool_isrc_table_partial.html' with page_obj=isrc_page_obj %}
-                </div>
-                <div class="pagination-container" id="pagination-isrc"></div>
-            </div>
-        </div>
+      <div id="pagination-titulo-autor" class="pagination"></div>
     </div>
 
-    <!-- Modal para actualizar estado -->
-    <div id="modal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal()">&times;</span>
-            <h2>Modify Status</h2>
-            <select id="estado-select" class="modal-select">
-                <option value="Enviado">Enviado</option>
-                <option value="Aceptada">Aceptada</option>
-                <option value="Rechazada">Rechazada</option>
-            </select>
-            <button class="action-btn primary" onclick="submitEstado()">Accept</button>
-        </div>
+    <!-- Tabla ISRC -->
+    <div class="table-wrapper">
+      <h3 class="table-title">ISRC&nbsp;Records</h3>
+
+      <div id="table-isrc-container" class="table-container">
+        {% include 'matching_tool_isrc_table_partial.html' with page_obj=isrc_page_obj %}
+      </div>
+
+      <div id="pagination-isrc" class="pagination"></div>
     </div>
+  </div>
+</div>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script>
-        // Floating particles animation
-        function createParticles() {
-            const particlesContainer = document.getElementById('particles');
-            const particleCount = window.innerWidth < 768 ? 20 : 50;
-            
-            for (let i = 0; i < particleCount; i++) {
-                const particle = document.createElement('div');
-                particle.classList.add('particle');
-                
-                // Random size between 5px and 15px
-                const size = Math.random() * 10 + 5;
-                particle.style.width = `${size}px`;
-                particle.style.height = `${size}px`;
-                
-                // Random position
-                particle.style.left = `${Math.random() * 100}%`;
-                particle.style.top = `${Math.random() * 100}%`;
-                
-                // Random animation duration between 10s and 30s
-                const duration = Math.random() * 20 + 10;
-                particle.style.animationDuration = `${duration}s`;
-                
-                // Random delay
-                particle.style.animationDelay = `${Math.random() * 5}s`;
-                
-                particlesContainer.appendChild(particle);
-            }
-        }
-        
-        // Initialize particles when DOM is loaded
-        document.addEventListener('DOMContentLoaded', createParticles);
+<!-- Modal de actualización de estado -->
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <h2>Modify Status</h2>
 
-        function search() {
-            const workTitle = document.getElementById('work-title').value;
-            const mlcCode = document.getElementById('mlc-code').value;
-            const creationDate = document.getElementById('creation-date').value;
-            const status = document.getElementById('status').value;
+    <select id="estado-select" class="modal-select">
+      <option value="Enviado">Enviado</option>
+      <option value="Aceptada">Aceptada</option>
+      <option value="Rechazada">Rechazada</option>
+    </select>
 
-            // Construir queryString correctamente
-            let queryString = `work_title=${encodeURIComponent(workTitle)}&mlc_code=${encodeURIComponent(mlcCode)}`;
+    <button class="btn btn--primary" onclick="submitEstado()">Accept</button>
+  </div>
+</div>
+{% endblock %}
 
-            if (creationDate) {
-                try {
-                    // Convertir el formato de la fecha a YYYY-MM-DD
-                    const formattedDate = new Date(creationDate).toISOString().split('T')[0];
-                    queryString += `&creation_date=${encodeURIComponent(formattedDate)}`;
-                } catch (error) {
-                    console.error('Fecha no válida:', error);
-                }
-            }
+{# ────────────────────────────────  SCRIPTS  ────────────────────────────────── #}
+{% block scripts %}
+  {# variables globales que el JS externo necesita #}
+  <script>
+    window.MATCH_URL_TA   = "{% url 'matching_tool_table_titulo_autor' %}";
+    window.MATCH_URL_ISRC = "{% url 'matching_tool_table_isrc' %}";
+    window.CSRF_TOKEN     = "{{ csrf_token }}";
+  </script>
 
-            if (status) {
-                queryString += `&status=${encodeURIComponent(status)}`;
-            }
-
-            // Actualizar tabla de título-autor
-            $.get(`{% url 'matching_tool_table_titulo_autor' %}?${queryString}`, function(data) {
-                $('#table-titulo-autor-container').html(data);
-            });
-
-            // Actualizar tabla de ISRC
-            $.get(`{% url 'matching_tool_table_isrc' %}?${queryString}`, function(data) {
-                $('#table-isrc-container').html(data);
-            });
-        }
-
-        let recordId = null;
-        let tableName = null;
-
-        // Función para abrir el modal
-        function openModal(id, table) {
-            recordId = id; // Asigna el ID del registro
-            tableName = table; // Asigna la tabla correspondiente
-            document.getElementById('modal').classList.add('active'); // Muestra el modal
-        }
-
-        // Función para cerrar el modal
-        function closeModal() {
-            document.getElementById('modal').classList.remove('active'); // Oculta el modal
-        }
-
-        // Función para enviar el nuevo estado
-        function submitEstado() {
-            const estado = document.getElementById('estado-select').value;
-            const csrfToken = '{{ csrf_token }}';
-
-            console.log(`Enviando ID: ${recordId}, Tabla: ${tableName}, Estado: ${estado}`);
-
-            fetch('/update-estado-isrc/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                },
-                body: JSON.stringify({
-                    id: recordId,
-                    table: tableName,
-                    estado: estado
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    closeModal();
-                    window.location.reload(true);
-                } else {
-                    alert(data.error);
-                }
-            })
-            .catch(error => console.error('Error:', error));
-        }
-
-        // Cerrar el modal si se hace clic fuera de él
-        window.onclick = function(event) {
-            const modal = document.getElementById('modal');
-            if (event.target === modal) {
-                closeModal();
-            }
-        };
-
-        $(document).on('click', '.page-link-titulo-autor', function(event) {
-            event.preventDefault();
-            const page = $(this).data('page');
-            const workTitle = $('#work-title').val();
-            const mlcCode = $('#mlc-code').val();
-            const creationDate = $('#creation-date').val();
-            const status = $('#status').val();
-
-            const queryString = `work_title=${encodeURIComponent(workTitle)}&mlc_code=${encodeURIComponent(mlcCode)}&creation_date=${encodeURIComponent(creationDate)}&status=${encodeURIComponent(status)}&page=${page}`;
-
-            $.get(`{% url 'matching_tool_table_titulo_autor' %}?${queryString}`, function(data) {
-                $('#table-titulo-autor-container').html(data);
-            });
-        });
-
-        $(document).on('click', '.page-link-isrc', function(event) {
-            event.preventDefault();
-            const page = $(this).data('page');
-            const workTitle = $('#work-title').val();
-            const mlcCode = $('#mlc-code').val();
-            const creationDate = $('#creation-date').val();
-            const status = $('#status').val();
-
-            const queryString = `work_title=${encodeURIComponent(workTitle)}&mlc_code=${encodeURIComponent(mlcCode)}&creation_date=${encodeURIComponent(creationDate)}&status=${encodeURIComponent(status)}&page=${page}`;
-
-            $.get(`{% url 'matching_tool_table_isrc' %}?${queryString}`, function(data) {
-                $('#table-isrc-container').html(data);
-            });
-        });
-    </script>
-</body>
-</html>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js" defer></script>
+  <script src="{% static 'js/matching_tool_historial.js' %}" defer></script>
+{% endblock %}
