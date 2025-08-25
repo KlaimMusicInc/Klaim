@@ -1,0 +1,55 @@
+/* Utilidades para listas en línea con separador automático */
+.dot-list{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:.25rem .5rem;         /* espacio mínimo entre ítems para wrapping limpio */
+  line-height:1.35;         /* mejora legibilidad en celdas de tabla */
+}
+
+.dot-list .nl-item{
+  white-space:nowrap;       /* evita partir nombres por la mitad */
+}
+
+/* ========== Dot-list con soporte para 1 o varios ítems ========== */
+.dot-list{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:.25rem .5rem;
+  line-height:1.35;
+}
+
+.dot-list .nl-item{
+  white-space:nowrap;
+}
+
+/* Dot-list: punto SIEMPRE antes de cada ítem */
+.dot-list{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:.25rem .5rem;     /* espacio entre ítems */
+  line-height:1.35;
+}
+
+.dot-list .nl-item{
+  display:inline-flex;  /* alinea bien el punto con el texto */
+  align-items:center;
+  white-space:nowrap;
+}
+
+.dot-list .nl-item::before{
+  content:"•";          /* ← siempre */
+  margin-right:.5rem;
+  opacity:.65;
+}
+/* Variante opcional estilo chip (si algún día la quieres usar) */
+/*
+.chip-list .nl-item{
+  padding:.15rem .5rem;
+  border:1px solid rgba(0,0,0,.1);
+  border-radius:999px;
+}
+.chip-list .nl-item + .nl-item::before{ content:""; margin:0; }
+*/

@@ -1,4 +1,5 @@
 {% load static %}
+{% load roles %}
 
 <!-- Modern Loader -->
 <div id="loader" class="loader-container">
@@ -43,7 +44,15 @@
       <a href="{% url 'lyricfind_records' %}">LyricFind Records</a>
     </div>
   </div>
+  {# Solo Administrador o SuperStaff (grupos) #}
+  {% if request.user|has_any_group:"Administrador,SuperStaff" %}
+    <a href="{% url 'reporte_avance' %}">Progress Report</a>
+  {% endif %}
+  
+  {# Solo Administrador o SuperStaff (grupos) #}
+  {% if request.user|has_any_group:"Administrador,SuperStaff" %}
+    <a href="{% url 'cliente_statements' %}">Client Statements</a>
+  {% endif %}
 
-  <a href="{% url 'reporte_avance' %}">Progress Report</a>
   <a href="{% url 'logout' %}">Logout</a>
 </nav>

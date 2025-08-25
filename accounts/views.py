@@ -5,14 +5,17 @@ import json
 import time as _t                       # módulo estándar (`_t.time()`)
 from collections import defaultdict
 from datetime import datetime, date, timedelta, time  # clase `time` → time.min / time.max
-
+from decimal import Decimal, InvalidOperation
+import re
 # ───────────────────────────────────────────────────────────────
 # 2. Django
 # ───────────────────────────────────────────────────────────────
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import Group, Permission
+from django.views.decorators.http import require_GET
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.cache import cache
 from django.core.mail import send_mail
 from django.core.paginator import Paginator
@@ -44,14 +47,25 @@ from reportlab.platypus import (
 # 4. Modelos locales
 # ───────────────────────────────────────────────────────────────
 from .models import (
-    User, Obras, Artistas, MatchingToolTituloAutor, MatchingToolISRC,
+    Obras, Artistas, MatchingToolTituloAutor, MatchingToolISRC,
     CodigosISRC, ArtistasUnicos, Catalogos, SubidasPlataforma,
     ConflictosPlataforma, ObrasLiberadas, MovimientoUsuario, ObrasAutores,
-    AutoresUnicos, Clientes, IsrcLinksAudios, LyricfindRegistro, AudiosISRC
+    AutoresUnicos, Clientes, IsrcLinksAudios, LyricfindRegistro, AudiosISRC, ClienteAccount,
+    StatementFile, LegacyStatementExcel, RoyaltyStatement
 )
+from django.urls import reverse, NoReverseMatch
+
+from django.contrib.admin.views.decorators import staff_member_required
+from django.urls import reverse_lazy
+
+from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.contrib.auth.views import redirect_to_login
+from functools import wraps
+from django.utils.timezone import now
 
 
-@login_required(login_url="login")
+@staff_member_required(login_url=reverse_lazy('portal_cliente_home'))
 def reporte_avance_view(request):
     """Dashboard-resumen por cliente."""
     # ────── MÉTRICAS GLOBALES ──────────────────────────────────────────
@@ -108,6 +122,7 @@ def reporte_avance_view(request):
     }
     return render(request, "reporte_avance.html", context)
 
+@staff_member_required(login_url=reverse_lazy('portal_cliente_home'))
 @csrf_exempt
 def generar_reporte_pdf(request):
     # ── cabecera del PDF ────────────────────────────────────────────────
@@ -202,24 +217,65 @@ def generar_reporte_pdf(request):
     doc.build(elements)
     return response
 
-# Vista de login
+def _post_login_redirect(user, request):
+    # respeta ?next=... si venía de @login_required
+    nxt = request.GET.get('next') or request.POST.get('next')
+    if nxt:
+        return nxt
+    # clientes (no-staff) -> portal cliente
+    if user.groups.filter(name='Cliente').exists() and not user.is_staff:
+        try:
+            return reverse('portal_cliente_home')
+        except NoReverseMatch:
+            return '/portal-cliente/'   # fallback si aún no tienes la URL nombrada
+    # staff / superstaff / admin -> back-office
+    return reverse('index')
+
 def login_view(request):
     if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
-
-        # Autenticar al usuario usando el sistema de autenticación de Django
+        username = request.POST.get('username', '')
+        password = request.POST.get('password', '')
         user = authenticate(request, username=username, password=password)
-
         if user is not None:
-            login(request, user)  # Inicia sesión en Django
-            return redirect('index')  # Redirige al index después del login exitoso
+            if not user.is_active:
+                messages.error(request, 'Tu cuenta está inactiva.')
+            else:
+                login(request, user)
+                return redirect(_post_login_redirect(user, request))
         else:
             messages.error(request, 'Usuario o contraseña incorrectos.')
-
     return render(request, 'login.html')
 
-@login_required(login_url='login')
+
+@login_required
+def portal_cliente_home(request):
+    # Si por error un staff entra aquí, lo enviamos al back-office
+    if request.user.is_staff:
+        return redirect('index')
+
+    try:
+        link = (ClienteAccount.objects
+                .select_related('cliente')
+                .get(user=request.user))
+    except ClienteAccount.DoesNotExist:
+        messages.error(request, "Tu usuario no está asociado a un cliente. Contacta soporte.")
+        return redirect('logout')
+
+    # Defaults seguros
+    y = now().year
+    m = now().month
+    q_default = ((m - 1) // 3) + 1  # 1..4
+
+    context = {
+        'cliente': link.cliente,
+        'anio': int(request.GET.get('anio', y)),
+        'q': int(request.GET.get('q', q_default)),
+        'derecho': request.GET.get('derecho', 'Mecanico'),
+        'page_size': int(request.GET.get('page_size', 100)),
+    }
+    return render(request, 'portal_cliente_home.html', context)
+
+@staff_member_required(login_url=reverse_lazy('portal_cliente_home'))
 def index_view(request):
     # Obtener parámetros de búsqueda
     titulo = request.GET.get('titulo', '').strip()
@@ -285,6 +341,7 @@ def index_view(request):
     }
     return render(request, 'index.html', context)
 
+@staff_member_required(login_url=reverse_lazy('portal_cliente_home'))
 @csrf_exempt
 def update_estado(request):
     if request.method == 'POST':
@@ -359,7 +416,7 @@ def update_estado(request):
     return JsonResponse({'success': False, 'error': 'Método no permitido'})
 
 
-@login_required(login_url='login')
+@staff_member_required(login_url=reverse_lazy('portal_cliente_home'))
 def conflictos_view(request):
     # ───── Querysets base ─────────────────────────────────────────────
     qs_mlc = (
@@ -403,6 +460,7 @@ def conflictos_view(request):
     return render(request, 'conflictos.html', context)
 
 
+@staff_member_required(login_url=reverse_lazy('portal_cliente_home'))
 @csrf_exempt
 def actualizar_conflicto(request):
     if request.method != 'POST':
@@ -496,6 +554,7 @@ Estado actual: {nuevo_conflicto.estado_conflicto}
         print(f"Error al crear conflicto: {e}")
         return JsonResponse({'success': False, 'error': str(e)})
 
+@staff_member_required(login_url=reverse_lazy('portal_cliente_home'))
 @csrf_exempt
 def insertar_informacion_conflicto(request):
     """
@@ -549,6 +608,7 @@ def insertar_informacion_conflicto(request):
         return JsonResponse({'success': False, 'error': str(e)})
 
 
+@staff_member_required(login_url=reverse_lazy('portal_cliente_home'))
 @csrf_exempt
 def eliminar_conflicto(request):
     if request.method == 'POST':
@@ -577,6 +637,7 @@ def eliminar_conflicto(request):
     return JsonResponse({'success': False, 'error': 'Método no permitido'})
 
 
+@staff_member_required(login_url=reverse_lazy('portal_cliente_home'))
 @csrf_exempt
 def actualizar_estado_obra(request):
     """
@@ -674,7 +735,7 @@ def actualizar_estado_obra(request):
 
 
 
-@login_required(login_url='login')
+@staff_member_required(login_url=reverse_lazy('portal_cliente_home'))
 def liberadas_view(request):
     # Obtener los parámetros de búsqueda de la URL
     titulo = request.GET.get('titulo', '')
@@ -700,13 +761,24 @@ def liberadas_view(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    # ── NUEVO: preparar listas para la vista (autores y porcentajes) ──
+    def _split_sc(s):
+        # Solo separa por ';' para no romper decimales con coma.
+        return [x.strip() for x in (s or "").replace('\n', ';').replace('|', ';').split(';') if x.strip()]
+
+    for obra in page_obj.object_list:
+        obra.autores_list = _split_sc(getattr(obra, 'nombre_autor', ''))
+        raw_porc = getattr(obra, 'porcentaje_autor', '')
+        raw_porc = str(raw_porc) if raw_porc is not None else ''
+        obra.porcentajes_list = _split_sc(raw_porc) if ';' in raw_porc or '|' in raw_porc or '\n' in raw_porc else []
+
     context = {
         'page_obj': page_obj,
         'liberadas': page_obj.object_list,
     }
-
     return render(request, 'liberadas.html', context)
 
+@staff_member_required(login_url=reverse_lazy('portal_cliente_home'))
 @csrf_exempt
 def eliminar_liberaciones(request):
     if request.method == 'POST':
@@ -741,7 +813,7 @@ def eliminar_liberaciones(request):
 
     return JsonResponse({'success': False, 'error': 'Método no permitido'})
 
-@login_required(login_url='login')
+@staff_member_required(login_url=reverse_lazy('portal_cliente_home'))
 def matching_tool_view(request):
     start_time = _t.time()
 
@@ -776,28 +848,31 @@ def matching_tool_view(request):
     expanded_subidas = []
     for subida in page_obj.object_list:
         obra    = subida.obra
+
+        # Autores como LISTA (sin comas)
         autores = [a.autor.nombre_autor for a in obra.prefetched_autores]
 
-        artistas = [
-            {
-                'nombre_artista'   : art.nombre_artista,
-                'id_artista_unico' : getattr(art.artista_unico, 'id_artista_unico', None)
-            }
-            for art in Artistas.objects.filter(obra_id=obra.cod_klaim)
-                                       .select_related('artista_unico')
-        ]
-        artistas_nombres = ', '.join(a['nombre_artista'] for a in artistas) or "No artistas"
-        artistas_ids     = ','.join(str(a['id_artista_unico']) for a in artistas if a['id_artista_unico'])
+        # Artistas: necesitamos también ids únicos → usamos un QS con select_related
+        artists_qs = Artistas.objects.filter(obra_id=obra.cod_klaim)\
+                                     .select_related('artista_unico')
+        artistas_nombres = [a.nombre_artista for a in artists_qs]
+        artistas_ids     = ','.join(
+            str(a.artista_unico.id_artista_unico)
+            for a in artists_qs if getattr(a.artista_unico, 'id_artista_unico', None)
+        )
 
         expanded_subidas.append({
             'obra'         : obra.titulo,
             'obra_id'      : obra.cod_klaim,
             'codigo_MLC'   : subida.codigo_MLC,
             'id_subida'    : subida.id_subida,
-            'autor'        : ', '.join(autores) if autores else "No autores",
+
+            # ↓ ahora listas
+            'autores'      : autores,
             'autor_id'     : obra.prefetched_autores[0].autor.id_autor if obra.prefetched_autores else None,
             'artistas'     : artistas_nombres,
             'artistas_ids' : artistas_ids,
+
             'matching_tool': subida.matching_tool,
         })
 
@@ -809,10 +884,10 @@ def matching_tool_view(request):
         {'subidas': expanded_subidas, 'page_obj': page_obj}
     )
 
-
 # ╔════════════════════════════════════════════════════════════╗
 # ║ 2.  GUARDAR MATCH  (Título-Autor)                          ║
 # ╚════════════════════════════════════════════════════════════╝
+@staff_member_required(login_url=reverse_lazy('portal_cliente_home'))
 @csrf_exempt
 def guardar_match(request):
     if request.method != 'POST':
@@ -863,6 +938,7 @@ def guardar_match(request):
 # ╔════════════════════════════════════════════════════════════╗
 # ║ 3.  INSERTAR ISRC  (solo añade ISRC, no cierra la subida) ║
 # ╚════════════════════════════════════════════════════════════╝
+@staff_member_required(login_url=reverse_lazy('portal_cliente_home'))
 @csrf_exempt
 def insertar_isrc_view(request):
     """
@@ -924,7 +1000,8 @@ def insertar_isrc_view(request):
         return JsonResponse({'error': 'Registro duplicado.'}, status=400)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
-
+    
+@staff_member_required(login_url=reverse_lazy('portal_cliente_home'))
 @csrf_exempt
 def guardar_match_isrc(request):
     if request.method == "POST":
@@ -971,6 +1048,7 @@ def guardar_match_isrc(request):
     return JsonResponse({"message": "Método no permitido."}, status=405)
 
 
+@staff_member_required(login_url=reverse_lazy('portal_cliente_home'))
 @csrf_exempt
 def obtener_info_isrc(request, id_isrc):
     if request.method != 'GET':
@@ -997,6 +1075,8 @@ def obtener_info_isrc(request, id_isrc):
     except CodigosISRC.DoesNotExist:
         print("❌ ISRC no encontrado")  # <--- LOG
         return JsonResponse({'success': False, 'message': 'ISRC no encontrado.'}, status=404)
+    
+@staff_member_required(login_url=reverse_lazy('portal_cliente_home'))    
 @csrf_exempt
 def eliminar_isrc(request, id_isrc):
     if request.method != 'DELETE':
@@ -1009,12 +1089,12 @@ def eliminar_isrc(request, id_isrc):
     except CodigosISRC.DoesNotExist:
         return JsonResponse({'success': False, 'message': 'ISRC no encontrado.'}, status=404)
     
-@login_required(login_url='login')
+@staff_member_required(login_url=reverse_lazy('portal_cliente_home'))
 def redirect_to_matching_tool(request):
     return redirect('matching_tool')
 
 
-@login_required(login_url='login')
+@staff_member_required(login_url=reverse_lazy('portal_cliente_home'))
 def codigos_isrc_list(request):
     """
     Lista de ISRC pendientes de ‘matching tool’.
@@ -1091,7 +1171,7 @@ def codigos_isrc_list(request):
 
 
 
-@login_required(login_url='login')
+@staff_member_required(login_url=reverse_lazy('portal_cliente_home'))
 def matching_tool_list(request):
     # Datos para la tabla de Títulos y Autores
     titulo_autor_records = MatchingToolTituloAutor.objects.all()
@@ -1111,7 +1191,7 @@ def matching_tool_list(request):
     })
 
 
-
+@staff_member_required(login_url=reverse_lazy('portal_cliente_home'))
 def matching_tool_table_titulo_autor(request):
     records = MatchingToolTituloAutor.objects.select_related(
         'obra', 'autor', 'codigo_mlc'
@@ -1146,6 +1226,7 @@ def matching_tool_table_titulo_autor(request):
     return render(request, 'matching_tool_table_partial.html',
                   {'page_obj': page_obj, 'records': page_obj.object_list})
 
+@staff_member_required(login_url=reverse_lazy('portal_cliente_home'))
 def matching_tool_table_isrc(request):
     records = MatchingToolISRC.objects.select_related(
         'obra', 'codigo_mlc', 'id_isrc'
@@ -1194,6 +1275,7 @@ def matching_tool_table_isrc(request):
     })
 
 
+@staff_member_required(login_url=reverse_lazy('portal_cliente_home'))
 @csrf_exempt
 def update_estado_isrc(request):
     if request.method == 'POST':
@@ -1226,7 +1308,7 @@ def update_estado_isrc(request):
     return JsonResponse({'success': False, 'error': 'Invalid request method.'})
 
 
-
+@staff_member_required(login_url=reverse_lazy('portal_cliente_home'))
 def lyricfind_pendientes(request):
     """
     Lista audios descargados con éxito y sin letra procesada.
@@ -1299,6 +1381,7 @@ def lyricfind_guardar(request, audio_id: int):
 # ──────────────────────────────────────────────────────────────────────────────
 #  OMITIR AUDIO
 # ──────────────────────────────────────────────────────────────────────────────
+@staff_member_required(login_url=reverse_lazy('portal_cliente_home'))
 def lyricfind_omitir(request, audio_id):       # <— renombrado aquí
     audio = get_object_or_404(AudiosISRC, pk=audio_id)
     audio.activo = False
@@ -1306,6 +1389,8 @@ def lyricfind_omitir(request, audio_id):       # <— renombrado aquí
     messages.info(request, "Audio omitido.")
     return redirect('lyricfind_pendientes')
 
+
+@staff_member_required(login_url=reverse_lazy('portal_cliente_home'))
 def lyricfind_records(request):
     # ── 1) Parsear los parámetros GET ───────────────────────────────────
     def to_date(value: str | None):
@@ -1348,8 +1433,992 @@ def lyricfind_records(request):
             "to"             : d_to.isoformat()   if d_to   else "",
         },
     )
+
+
+# --- GUARD DE ACCESO ---
+def is_admin_or_superstaff(user) -> bool:
+    """Admin total o miembro de grupos privilegiados."""
+    if user.is_superuser:
+        return True
+    # grupos: 'Administrador' o 'SuperStaff'
+    try:
+        return user.groups.filter(name__in=["Administrador", "SuperStaff"]).exists()
+    except Exception:
+        return False
+
+def is_cliente(user) -> bool:
+    """Tiene vínculo con un cliente."""
+    return hasattr(user, "cliente_account") and getattr(user.cliente_account, "cliente_id", None) is not None
+
+def is_portal_authorized(user) -> bool:
+    """
+    Permitidos:
+      - is_superuser
+      - grupos 'Administrador' o 'SuperStaff'
+      - usuarios cliente (tienen cliente_account)
+    Excluidos:
+      - usuarios 'staff' comunes (is_staff=True) que no sean admin/superstaff ni cliente.
+    """
+    if not user.is_authenticated:
+        return False
+
+    if is_admin_or_superstaff(user):
+        return True
+
+    if is_cliente(user):
+        return True
+
+    # si llega aquí y es staff común → denegado
+    if getattr(user, "is_staff", False):
+        return False
+
+    return False
+
+def portal_required(view_func):
+    """Decorator: requiere login y autorización especial (excluye staff común)."""
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        user = request.user
+        if not user.is_authenticated:
+            # <<--- usa la URL nombrada 'login' que ya tienes en tus urls ('/login/')
+            return redirect_to_login(request.get_full_path(), login_url=reverse_lazy('login'))
+        if not is_portal_authorized(user):
+            # Usuario autenticado pero no autorizado (por ej., staff común) -> 403
+            raise PermissionDenied("No autorizado para el portal de clientes.")
+        return view_func(request, *args, **kwargs)
+    return _wrapped
+
+# --- VIEW PRINCIPAL (UN SOLO DIV, PAGINADA) ---
+# ====== ADMIN / SUPERSTAFF (página completa) ======
+
+# ======== VISTAS EXISTENTES: ADMIN PAGE COMPLETA (se mantiene lógica) ========
+
+# =========================
+# ======================================================
+#  VISTA ADMIN (PÁGINA FULL)
+# ======================================================
+@user_passes_test(is_admin_or_superstaff, login_url=reverse_lazy('login'))
+def cliente_statements_admin(request):
+    """
+    Página completa de statements:
+      - SOLO Admin/SuperStaff
+      - Requiere ?cliente_id=<id> para listar; si falta, muestra formulario con error.
+    """
+    from accounts.models import (
+        StatementFile, LegacyStatementExcel, RoyaltyStatement,
+        MicroSyncStatement, MicroSyncMarketShare
+    )
+    from django.db.models import F, Func  # TRIM en filtros
+    from django.utils.timezone import now
+
+    # === Lista de clientes para el desplegable (id_cliente, nombre_cliente)
+    try:
+        from accounts.models import Clientes  # ajusta si tu modelo se llama distinto
+        clientes_qs = Clientes.objects.order_by('nombre_cliente').values('id_cliente', 'nombre_cliente')
+        clientes = list(clientes_qs)
+    except Exception:
+        # Fallback: cliente_id disponibles en StatementFile
+        ids = (StatementFile.objects.values_list('cliente_id', flat=True)
+               .distinct().order_by('cliente_id'))
+        clientes = [{"id_cliente": cid, "nombre_cliente": f"Cliente {cid}"} for cid in ids]
+
+    # === Lista de AÑOS para el desplegable (2022..año actual)
+    years = list(range(2022, now().year + 1))
+
+    # Valores SEGUROS para el template (evita MultiValueDictKeyError)
+    cliente_id_value = request.GET.get("cliente_id", "")
+    page_size_value  = request.GET.get("page_size", "")
+
+    cid = request.GET.get("cliente_id")
+    if not cid:
+        # Render inicial sin cliente: deja el formulario utilizable
+        return render(request, "cliente_statements.html", {
+            "mode": None,
+            "error": "Debe seleccionar un cliente para visualizar los statements.",
+            "cliente_id_value": cliente_id_value,
+            "page_size_value": page_size_value or 100,
+            "anio": _int_or_default(request.GET.get("anio"), now().year),
+            "q": _int_or_default(request.GET.get("q"), 1),
+            "derecho": _str_or_default(request.GET.get("derecho"), "Mecanico"),
+            "columns": [],
+            "page_obj": None,
+            "paginates": True,
+            "clientes": clientes,  # para el select de clientes
+            "years": years,        # para el select de años
+        })
+
+    try:
+        cliente_id = int(cid)
+    except ValueError:
+        raise PermissionDenied("cliente_id inválido.")
+
+    # Filtros con parseo robusto
+    anio      = _int_or_default(request.GET.get("anio"), now().year)
+    q_ui      = _int_or_default(request.GET.get("q"), 1)   # visible para usuario
+    derecho   = _str_or_default(request.GET.get("derecho"), "Mecanico")
+    page      = _int_or_default(request.GET.get("page"), 1)
+    page_size = _int_or_default(request.GET.get("page_size"), 30)
+
+    # Contexto base (incluye valores seguros para el template)
+    context = {
+        "anio": anio, "q": q_ui, "derecho": derecho,
+        "mode": None, "columns": [], "page_obj": None,
+        "paginates": True, "cliente_id": cliente_id,
+        "cliente_id_value": str(cliente_id),
+        "page_size_value": page_size,
+        "clientes": clientes,  # select de clientes
+        "years": years,        # select de años
+    }
+
+    # ========== MICROSYNC (tabla dinámica) ==========
+    if derecho == "MicroSync":
+        ms_qs = (
+            StatementFile.objects
+            .filter(cliente_id=cliente_id, anio=anio, periodo_q=q_ui)
+            .annotate(
+                derecho_t=Func(F('derecho'), function='TRIM'),
+                file_type_t=Func(F('file_type'), function='TRIM'),
+            )
+            .filter(derecho_t__iexact="MicroSync", file_type_t__iexact="XLSX")
+            .order_by("-id_file")
+        )
+        ms_file = ms_qs.first()
+
+        if not ms_file:
+            ms_file = (
+                StatementFile.objects
+                .filter(cliente_id=cliente_id, anio=anio, periodo_q=0)
+                .annotate(
+                    derecho_t=Func(F('derecho'), function='TRIM'),
+                    file_type_t=Func(F('file_type'), function='TRIM'),
+                )
+                .filter(derecho_t__iexact="MicroSync", file_type_t__iexact="XLSX")
+                .order_by("-id_file")
+                .first()
+            )
+
+        if ms_file:
+            columns = [
+                ("asset_title", "Asset Title"),
+                ("asset_type", "Asset Type"),
+                ("track_code", "Track Code"),
+                ("artist", "Artist"),
+                ("type", "Type"),
+                ("country", "Country"),
+                ("ad_total_views", "Ad Total Views"),
+                ("amount_payable_usd", "Amount Payable (USD)"),
+            ]
+            qs = (MicroSyncStatement.objects
+                  .filter(id_file=ms_file.id_file)
+                  .order_by("id_ms")
+                  .values(*[c[0] for c in columns]))
+            paginator = Paginator(qs, page_size)
+            try:
+                page_obj = paginator.page(page)
+            except PageNotAnInteger:
+                page_obj = paginator.page(1)
+            except EmptyPage:
+                page_obj = paginator.page(paginator.num_pages)
+
+            context.update({"mode": "MICROSYNC", "columns": columns, "page_obj": page_obj})
+            return render(request, "cliente_statements.html", context)
+
+        return render(request, "cliente_statements.html", context)
+
+    # ========== MECÁNICO ==========
+    # TSV
+    tsv_file = (
+        StatementFile.objects
+        .filter(cliente_id=cliente_id, anio=anio, periodo_q=q_ui)
+        .annotate(
+            derecho_t=Func(F('derecho'), function='TRIM'),
+            file_type_t=Func(F('file_type'), function='TRIM'),
+        )
+        .filter(derecho_t__iexact=derecho, file_type_t__iexact="TSV")
+        .order_by("-id_file")
+        .first()
+    )
+
+    if tsv_file:
+        columns = [
+            ("work_writer_list", "Work Writer List"),
+            ("work_primary_title", "Work Primary Title"),
+            ("iswc", "ISWC"),
+            ("usage_period_start", "Usage Period Start Date"),
+            ("usage_period_end", "Usage Period End Date"),
+            ("use_type", "Use Type"),
+            ("processing_type", "Processing Type"),
+            ("dsp_name", "DSP Name"),
+            ("number_of_usages", "Number of Usages"),
+            ("distributed_amount_usd", "Distributed Amount"),
+            ("codigo_sgs", "Código SGS"),
+            ("obra_id", "cod_klaim"),
+        ]
+        qs = (RoyaltyStatement.objects
+              .filter(id_file=tsv_file.id_file)
+              .order_by("id_statement")
+              .values(*[c[0] for c in columns]))
+        paginator = Paginator(qs, page_size)
+        try:
+            page_obj = paginator.page(page)
+        except PageNotAnInteger:
+            page_obj = paginator.page(1)
+        except EmptyPage:
+            page_obj = paginator.page(paginator.num_pages)
+
+        context.update({"mode": "TSV", "columns": columns, "page_obj": page_obj})
+        return render(request, "cliente_statements.html", context)
+
+    # XLSX legado
+    xlsx_file = (
+        StatementFile.objects
+        .filter(cliente_id=cliente_id, anio=anio, periodo_q=q_ui)
+        .annotate(
+            derecho_t=Func(F('derecho'), function='TRIM'),
+            file_type_t=Func(F('file_type'), function='TRIM'),
+        )
+        .filter(derecho_t__iexact=derecho, file_type_t__iexact="XLSX")
+        .order_by("-id_file")
+        .first()
+    )
+
+    if xlsx_file:
+        columns = [
+            ("work_writer_list", "Work Writer List"),
+            ("work_primary_title", "Work Primary Title"),
+            ("iswc", "ISWC"),
+            ("usage_period_start", "Usage Period Start Date"),
+            ("usage_period_end", "Usage Period End Date"),
+            ("use_type", "Use Type"),
+            ("processing_type", "Processing Type"),
+            ("dsp_name", "DSP Name"),
+            ("number_of_usages", "Number of Usages"),
+            ("distributed_amount_usd", "Distributed Amount"),
+        ]
+        qs = (LegacyStatementExcel.objects
+              .filter(id_file=xlsx_file.id_file)
+              .order_by("id_legacy")
+              .values(*[c[0] for c in columns]))
+        paginator = Paginator(qs, page_size)
+        try:
+            page_obj = paginator.page(page)
+        except PageNotAnInteger:
+            page_obj = paginator.page(1)
+        except EmptyPage:
+            page_obj = paginator.page(paginator.num_pages)
+
+        context.update({"mode": "XLSX", "columns": columns, "page_obj": page_obj})
+        return render(request, "cliente_statements.html", context)
+
+    return render(request, "cliente_statements.html", context)
+
+
+
+# ======================================================
+#  PANEL PORTAL (FRAGMENTO CON HTMX) — SOLO CLIENTES
+# ======================================================
+@login_required
+def cliente_statements_panel(request):
+    """
+    Fragmento/página que usaremos desde el portal del cliente.
+    - Fuerza cliente_id = request.user.cliente_account.cliente_id
+    - Ignora cualquier cliente_id de la query (evita spoofing)
+    - El portal lo llama con HTMX + hx-select para extraer #results
+    """
+    if not is_cliente(request.user):
+        raise PermissionDenied("Solo clientes pueden acceder a este panel.")
+
+    from accounts.models import (
+        StatementFile, LegacyStatementExcel, RoyaltyStatement,
+        MicroSyncStatement, MicroSyncMarketShare
+    )
+    from django.db.models import F, Func  # <-- para TRIM en filtros
+
+    # Forzar cliente del usuario logueado
+    cliente_id = request.user.cliente_account.cliente_id
+
+    # Filtros con parseo robusto
+    anio      = _int_or_default(request.GET.get("anio"), now().year)
+    q_ui      = _int_or_default(request.GET.get("q"), 1)
+    derecho   = _str_or_default(request.GET.get("derecho"), "Mecanico")
+    page      = _int_or_default(request.GET.get("page"), 1)
+    page_size = 30  # Fijo a 30 por página (se elimina el filtro en el template)
+
+    # Contexto base (incluye el fallback requerido por el template)
+    context = {
+        "anio": anio,
+        "q": q_ui,
+        "derecho": derecho,
+        "mode": None,
+        "columns": [],
+        "page_obj": None,
+        "paginates": True,
+        "cliente_id": cliente_id,
+        "cliente_id_value": str(cliente_id),  # <-- necesario para el template
+    }
+
+    # ========== MICROSYNC (tabla dinámica) ==========
+    if derecho == "MicroSync":
+        # 1) Intentar con el Q elegido
+        ms_qs = (
+            StatementFile.objects
+            .filter(cliente_id=cliente_id, anio=anio, periodo_q=q_ui)
+            .annotate(
+                derecho_t=Func(F('derecho'), function='TRIM'),
+                file_type_t=Func(F('file_type'), function='TRIM'),
+            )
+            .filter(derecho_t__iexact="MicroSync", file_type_t__iexact="XLSX")
+            .order_by("-id_file")
+        )
+        ms_file = ms_qs.first()
+
+        # 2) Fallback a Q=0
+        if not ms_file:
+            ms_qs_fallback = (
+                StatementFile.objects
+                .filter(cliente_id=cliente_id, anio=anio, periodo_q=0)
+                .annotate(
+                    derecho_t=Func(F('derecho'), function='TRIM'),
+                    file_type_t=Func(F('file_type'), function='TRIM'),
+                )
+                .filter(derecho_t__iexact="MicroSync", file_type_t__iexact="XLSX")
+                .order_by("-id_file")
+            )
+            ms_file = ms_qs_fallback.first()
+
+        if ms_file:
+            columns = [
+                ("asset_title", "Asset Title"),
+                ("asset_type", "Asset Type"),
+                ("track_code", "Track Code"),
+                ("artist", "Artist"),
+                ("type", "Type"),
+                ("country", "Country"),
+                ("ad_total_views", "Ad Total Views"),
+                ("amount_payable_usd", "Amount Payable (USD)"),
+            ]
+            qs = (MicroSyncStatement.objects
+                  .filter(id_file=ms_file.id_file)
+                  .order_by("id_ms")
+                  .values(*[c[0] for c in columns]))
+            paginator = Paginator(qs, page_size)
+            try:
+                page_obj = paginator.page(page)
+            except PageNotAnInteger:
+                page_obj = paginator.page(1)
+            except EmptyPage:
+                page_obj = paginator.page(paginator.num_pages)
+
+            context.update({"mode": "MICROSYNC", "columns": columns, "page_obj": page_obj})
+            return render(request, "cliente_statements.html", context)
+
+        # Si no hay archivo MicroSync, devolvemos vacío (con el contexto base)
+        return render(request, "cliente_statements.html", context)
+
+    # ========== MECÁNICO (igual que hoy, pero con TRIM en filtros) ==========
+    # TSV primero
+    tsv_file = (
+        StatementFile.objects
+        .filter(cliente_id=cliente_id, anio=anio, periodo_q=q_ui)
+        .annotate(
+            derecho_t=Func(F('derecho'), function='TRIM'),
+            file_type_t=Func(F('file_type'), function='TRIM'),
+        )
+        .filter(derecho_t__iexact=derecho, file_type_t__iexact="TSV")
+        .order_by("-id_file")
+        .first()
+    )
+
+    if tsv_file:
+        columns = [
+            ("work_writer_list", "Work Writer List"),
+            ("work_primary_title", "Work Primary Title"),
+            ("iswc", "ISWC"),
+            ("usage_period_start", "Usage Period Start Date"),
+            ("usage_period_end", "Usage Period End Date"),
+            ("use_type", "Use Type"),
+            ("processing_type", "Processing Type"),
+            ("dsp_name", "DSP Name"),
+            ("number_of_usages", "Number of Usages"),
+            ("distributed_amount_usd", "Distributed Amount"),
+            ("codigo_sgs", "Código SGS"),
+            ("obra_id", "cod_klaim"),
+        ]
+        qs = (RoyaltyStatement.objects
+              .filter(id_file=tsv_file.id_file)
+              .order_by("id_statement")
+              .values(*[c[0] for c in columns]))
+        paginator = Paginator(qs, page_size)
+        try:
+            page_obj = paginator.page(page)
+        except PageNotAnInteger:
+            page_obj = paginator.page(1)
+        except EmptyPage:
+            page_obj = paginator.page(paginator.num_pages)
+        context.update({"mode": "TSV", "columns": columns, "page_obj": page_obj})
+        return render(request, "cliente_statements.html", context)
+
+    # XLSX legado
+    xlsx_file = (
+        StatementFile.objects
+        .filter(cliente_id=cliente_id, anio=anio, periodo_q=q_ui)
+        .annotate(
+            derecho_t=Func(F('derecho'), function='TRIM'),
+            file_type_t=Func(F('file_type'), function='TRIM'),
+        )
+        .filter(derecho_t__iexact=derecho, file_type_t__iexact="XLSX")
+        .order_by("-id_file")
+        .first()
+    )
+
+    if xlsx_file:
+        columns = [
+            ("work_writer_list", "Work Writer List"),
+            ("work_primary_title", "Work Primary Title"),
+            ("iswc", "ISWC"),
+            ("usage_period_start", "Usage Period Start Date"),
+            ("usage_period_end", "Usage Period End Date"),
+            ("use_type", "Use Type"),
+            ("processing_type", "Processing Type"),
+            ("dsp_name", "DSP Name"),
+            ("number_of_usages", "Number of Usages"),
+            ("distributed_amount_usd", "Distributed Amount"),
+        ]
+        qs = (LegacyStatementExcel.objects
+              .filter(id_file=xlsx_file.id_file)
+              .order_by("id_legacy")
+              .values(*[c[0] for c in columns]))
+        paginator = Paginator(qs, page_size)
+        try:
+            page_obj = paginator.page(page)
+        except PageNotAnInteger:
+            page_obj = paginator.page(1)
+        except EmptyPage:
+            page_obj = paginator.page(paginator.num_pages)
+        context.update({"mode": "XLSX", "columns": columns, "page_obj": page_obj})
+        return render(request, "cliente_statements.html", context)
+
+    # vacío
+    return render(request, "cliente_statements.html", context)
+
+
+
+# ======================================================
+#  Helpers de parseo seguros
+# ======================================================
+def _int_or_default(val, default):
+    try:
+        if val is None or val == "":
+            return default
+        return int(val)
+    except (ValueError, TypeError):
+        return default
+
+def _str_or_default(val, default):
+    return default if val is None or val == "" else val
+
+
+# ======================================================
+#  Utilidades para las GRÁFICAS
+# ======================================================
+def _norm(s: str) -> str:
+    return re.sub(r'[^a-z0-9]', '', (s or '').lower())
+
+def _guess_key(keys, candidates):
+    norm = { _norm(k): k for k in keys }
+    for c in candidates:
+        if c in norm:
+            return norm[c]
+    for nk, orig in norm.items():
+        if any(c in nk for c in candidates):
+            return orig
+    return None
+
+def _to_decimal(x):
+    try:
+        if x is None: return Decimal('0')
+        if isinstance(x, (int, float, Decimal)): return Decimal(str(x))
+        s = str(x).strip().replace(',', '')
+        return Decimal(s or '0')
+    except (InvalidOperation, ValueError):
+        return Decimal('0')
+
+def _topn_dict(d, n=10):
+    items = sorted(d.items(), key=lambda x: x[1], reverse=True)
+    if len(items) <= n:
+        return [{"label": k, "value": float(v)} for k, v in items]
+    head = [{"label": k, "value": float(v)} for k, v in items[:n]]
+    tail = sum(v for _, v in items[n:])
+    head.append({"label": "Otros", "value": float(tail)})
+    return head
+
+def _aggregate_for_charts(rows, kind='mecanico'):
+    """
+    Agregador para gráficas.
+    - kind='mecanico': devuelve (total, by_dsp, by_processing_type)
+    - kind='microsync': devuelve (total, by_country, by_asset_title)
+    """
+    if not rows:
+        return 0.0, [], []
+
+    keys = rows[0].keys()
+
+    if kind == 'microsync':
+        amount_key = _guess_key(keys, ['amountpayableusd', 'amount_payable_usd', 'amount', 'monto'])
+        country_key = _guess_key(keys, ['country', 'pais'])
+        asset_key = _guess_key(keys, ['assettitle', 'asset_title', 'title', 'titulo'])
+
+        total = Decimal('0')
+        by_country = defaultdict(Decimal)
+        by_asset = defaultdict(Decimal)
+
+        for r in rows:
+            v = _to_decimal(r.get(amount_key))
+            total += v
+            if country_key:
+                by_country[r.get(country_key) or 'N/D'] += v
+            if asset_key:
+                by_asset[r.get(asset_key) or 'N/D'] += v
+
+        return float(total), _topn_dict(by_country), _topn_dict(by_asset)
+
+    # kind == 'mecanico'
+    amount_key = _guess_key(keys, ['distributedamount','distribuitedamount','amountdistributed','distributedamountusd','amount','monto'])
+    dsp_key    = _guess_key(keys, ['dspname','dsp','platform','retailer','service','partner'])
+    proc_key   = _guess_key(keys, ['processingtype','processtype','processing','status'])
+
+    total = Decimal('0')
+    by_dsp = defaultdict(Decimal)
+    by_proc = defaultdict(Decimal)
+
+    for r in rows:
+        v = _to_decimal(r.get(amount_key))
+        total += v
+        if dsp_key:
+            by_dsp[r.get(dsp_key) or 'N/D'] += v
+        if proc_key:
+            by_proc[r.get(proc_key) or 'N/D'] += v
+
+    return float(total), _topn_dict(by_dsp), _topn_dict(by_proc)
+
+
+def _fetch_rows_for_filters(request, cliente_id, anio, q, derecho):
+    """
+    Devuelve filas SIN paginar para alimentar las gráficas.
+    - Si Mecánico: fields -> distributed_amount_usd, dsp_name, processing_type
+    - Si MicroSync: fields -> amount_payable_usd, country, asset_title
+    """
+    from accounts.models import (
+        StatementFile, LegacyStatementExcel, RoyaltyStatement,
+        MicroSyncStatement
+    )
+    from django.db.models import F, Func  # <-- para TRIM en filtros
+
+    # Normaliza filtros
+    anio    = _int_or_default(anio, now().year)
+    q_ui    = _int_or_default(q, 1)
+    derecho = _str_or_default(derecho, "Mecanico")
+
+    if not cliente_id:
+        return []
+    try:
+        cliente_id = int(cliente_id)
+    except (ValueError, TypeError):
+        return []
+
+    if derecho == "MicroSync":
+        # 1) Q elegido
+        ms_qs = (
+            StatementFile.objects
+            .filter(cliente_id=cliente_id, anio=anio, periodo_q=q_ui)
+            .annotate(
+                derecho_t=Func(F('derecho'), function='TRIM'),
+                file_type_t=Func(F('file_type'), function='TRIM'),
+            )
+            .filter(derecho_t__iexact="MicroSync", file_type_t__iexact="XLSX")
+            .order_by("-id_file")
+        )
+        ms_file = ms_qs.first()
+
+        # 2) Fallback Q=0
+        if not ms_file:
+            ms_qs_fallback = (
+                StatementFile.objects
+                .filter(cliente_id=cliente_id, anio=anio, periodo_q=0)
+                .annotate(
+                    derecho_t=Func(F('derecho'), function='TRIM'),
+                    file_type_t=Func(F('file_type'), function='TRIM'),
+                )
+                .filter(derecho_t__iexact="MicroSync", file_type_t__iexact="XLSX")
+                .order_by("-id_file")
+            )
+            ms_file = ms_qs_fallback.first()
+
+        if not ms_file:
+            return []
+
+        return list(
+            MicroSyncStatement.objects
+            .filter(id_file=ms_file.id_file)
+            .values("amount_payable_usd", "country", "asset_title")
+        )
+
+    # ===== MECÁNICO =====
+    # TSV
+    tsv = (
+        StatementFile.objects
+        .filter(cliente_id=cliente_id, anio=anio, periodo_q=q_ui)
+        .annotate(
+            derecho_t=Func(F('derecho'), function='TRIM'),
+            file_type_t=Func(F('file_type'), function='TRIM'),
+        )
+        .filter(derecho_t__iexact=derecho, file_type_t__iexact="TSV")
+        .order_by("-id_file")
+        .first()
+    )
+    if tsv:
+        return list(
+            RoyaltyStatement.objects
+            .filter(id_file=tsv.id_file)
+            .values("distributed_amount_usd", "dsp_name", "processing_type")
+        )
+
+    # XLSX
+    xlsx = (
+        StatementFile.objects
+        .filter(cliente_id=cliente_id, anio=anio, periodo_q=q_ui)
+        .annotate(
+            derecho_t=Func(F('derecho'), function='TRIM'),
+            file_type_t=Func(F('file_type'), function='TRIM'),
+        )
+        .filter(derecho_t__iexact=derecho, file_type_t__iexact="XLSX")
+        .order_by("-id_file")
+        .first()
+    )
+    if xlsx:
+        return list(
+            LegacyStatementExcel.objects
+            .filter(id_file=xlsx.id_file)
+            .values("distributed_amount_usd", "dsp_name", "processing_type")
+        )
+
+    return []
+
+
+# ======================================================
+#  VISTAS DE LAS GRÁFICAS
+# ======================================================
+def _safe_int(v, default=None):
+    try:
+        return int(v)
+    except (TypeError, ValueError):
+        return default
+
+@staff_member_required
+def charts_portal_cliente_admin(request):
+    """
+    Página de GRÁFICAS para ADMIN/SUPERSTAFF.
+    Toma cliente_id desde la query (?cliente_id=...) y arma el payload
+    que consume el parcial `charts_portal_cliente.html`.
+    - Mecánico: 2 donuts + tarjeta total distributed
+    - MicroSync: 2 tarjetas (amount payable + market share) + 2 donuts (country, asset title)
+    """
+    from accounts.models import (
+        StatementFile, MicroSyncStatement, MicroSyncMarketShare
+    )
+    from django.db.models import F, Func  # <-- para TRIM en filtros
+
+    cliente_id = request.GET.get('cliente_id') or None
+    anio       = _safe_int(request.GET.get('anio'), None)
+    q_ui       = _safe_int(request.GET.get('q'), None)
+    derecho    = request.GET.get('derecho') or "Mecanico"
+
+    # Filas para agregados (usa la misma lógica ya corregida)
+    rows = _fetch_rows_for_filters(request, cliente_id, anio, q_ui, derecho)
+
+    if derecho == "MicroSync":
+        # Resolver el StatementFile: primero Q elegido, luego fallback Q=0
+        ms_file = None
+        if cliente_id and anio is not None and q_ui is not None:
+            ms_qs = (
+                StatementFile.objects
+                .filter(cliente_id=int(cliente_id), anio=anio, periodo_q=q_ui)
+                .annotate(
+                    derecho_t=Func(F('derecho'), function='TRIM'),
+                    file_type_t=Func(F('file_type'), function='TRIM'),
+                )
+                .filter(derecho_t__iexact="MicroSync", file_type_t__iexact="XLSX")
+                .order_by("-id_file")
+            )
+            ms_file = ms_qs.first()
+            if not ms_file:
+                ms_qs_fb = (
+                    StatementFile.objects
+                    .filter(cliente_id=int(cliente_id), anio=anio, periodo_q=0)
+                    .annotate(
+                        derecho_t=Func(F('derecho'), function='TRIM'),
+                        file_type_t=Func(F('file_type'), function='TRIM'),
+                    )
+                    .filter(derecho_t__iexact="MicroSync", file_type_t__iexact="XLSX")
+                    .order_by("-id_file")
+                )
+                ms_file = ms_qs_fb.first()
+
+        # Donuts (country / asset title) + total detalle
+        total_det, by_country, by_asset = _aggregate_for_charts(rows, kind='microsync')
+
+        # Total Market Share (otra tabla)
+        total_share = 0.0
+        if ms_file:
+            agg_share = (MicroSyncMarketShare.objects
+                         .filter(id_file=ms_file.id_file)
+                         .aggregate(total=SumDecimal("amount_payable_usd")))
+            total_share = float(agg_share.get("total") or 0)
+
+        ctx = {
+            "cliente_id": cliente_id,
+            "anio": anio,
+            "q": q_ui,
+            "derecho": "MicroSync",
+            "payload": {
+                "derecho": "MicroSync",
+                "microsync": {
+                    "total_amount_payable": float(total_det),   # total del detalle
+                    "total_market_share": float(total_share),   # total de cuota
+                    "by_country": by_country,
+                    "by_asset_title": by_asset,
+                },
+            },
+        }
+        return render(request, "charts_portal_cliente.html", ctx)
+
+    # ===== Mecánico =====
+    total, by_dsp, by_processing = _aggregate_for_charts(rows, kind='mecanico')
+    ctx = {
+        "cliente_id": cliente_id,
+        "anio": anio,
+        "q": q_ui,
+        "derecho": "Mecanico",
+        "payload": {
+            "derecho": "Mecanico",
+            "mecanico": {
+                "total_distributed_amount": total,
+                "by_dsp": by_dsp,
+                "by_processing_type": by_processing,
+            },
+        },
+    }
+    return render(request, "charts_portal_cliente.html", ctx)
+
+
+@login_required
+def charts_portal_cliente_panel(request):
+    """
+    Fragmento HTMX de GRÁFICAS para el PORTAL DEL CLIENTE.
+    Fuerza cliente_id desde la sesión.
+    - Mecánico: 2 donuts + tarjeta total distributed
+    - MicroSync: 2 tarjetas (amount payable + market share) + 2 donuts (country, asset title)
+    """
+    from accounts.models import (
+        StatementFile, MicroSyncMarketShare
+    )
+    from django.db.models import F, Func  # <-- para TRIM en filtros
+
+    # Forzar cliente_id desde el usuario autenticado
+    try:
+        cliente_id = request.user.cliente_account.cliente_id
+    except Exception:
+        raise PermissionDenied("No se pudo determinar el cliente de la sesión.")
+
+    anio    = _safe_int(request.GET.get('anio'), None)
+    q_ui    = _safe_int(request.GET.get('q'), None)
+    derecho = request.GET.get('derecho') or "Mecanico"
+
+    rows = _fetch_rows_for_filters(request, cliente_id, anio, q_ui, derecho)
+
+    if derecho == "MicroSync":
+        # Resolver StatementFile para cuota de mercado (Q elegido -> fallback Q0)
+        ms_file = None
+        if cliente_id and anio is not None and q_ui is not None:
+            ms_qs = (
+                StatementFile.objects
+                .filter(cliente_id=int(cliente_id), anio=anio, periodo_q=q_ui)
+                .annotate(
+                    derecho_t=Func(F('derecho'), function='TRIM'),
+                    file_type_t=Func(F('file_type'), function='TRIM'),
+                )
+                .filter(derecho_t__iexact="MicroSync", file_type_t__iexact="XLSX")
+                .order_by("-id_file")
+            )
+            ms_file = ms_qs.first()
+            if not ms_file:
+                ms_qs_fb = (
+                    StatementFile.objects
+                    .filter(cliente_id=int(cliente_id), anio=anio, periodo_q=0)
+                    .annotate(
+                        derecho_t=Func(F('derecho'), function='TRIM'),
+                        file_type_t=Func(F('file_type'), function='TRIM'),
+                    )
+                    .filter(derecho_t__iexact="MicroSync", file_type_t__iexact="XLSX")
+                    .order_by("-id_file")
+                )
+                ms_file = ms_qs_fb.first()
+
+        total_det, by_country, by_asset = _aggregate_for_charts(rows, kind='microsync')
+
+        total_share = 0.0
+        if ms_file:
+            agg_share = (MicroSyncMarketShare.objects
+                         .filter(id_file=ms_file.id_file)
+                         .aggregate(total=SumDecimal("amount_payable_usd")))
+            total_share = float(agg_share.get("total") or 0)
+
+        payload = {
+            "derecho": "MicroSync",
+            "microsync": {
+                "total_amount_payable": float(total_det),
+                "total_market_share": float(total_share),
+                "by_country": by_country,
+                "by_asset_title": by_asset,
+            },
+        }
+        return render(request, "charts_portal_cliente.html", {"payload": payload})
+
+    # Mecánico
+    total, by_dsp, by_processing = _aggregate_for_charts(rows, kind='mecanico')
+    payload = {
+        "derecho": "Mecanico",
+        "mecanico": {
+            "total_distributed_amount": total,
+            "by_dsp": by_dsp,
+            "by_processing_type": by_processing,
+        },
+    }
+    return render(request, "charts_portal_cliente.html", {"payload": payload})
+
+
+# ======================================================
+#  Utilidades específicas (aggregations)
+# ======================================================
+from django.db.models import Sum, F, Value, DecimalField
+from django.db.models.functions import Coalesce
+
+def SumDecimal(field_name, max_digits=18, decimal_places=10):
+    """
+    SUM seguro para campos monetarios (Decimal) con fallback a 0 en Decimal.
+    Evita 'Expression contains mixed types: DecimalField, IntegerField'.
+    """
+    dec_field = DecimalField(max_digits=max_digits, decimal_places=decimal_places)
+    return Coalesce(
+        Sum(field_name, output_field=dec_field),
+        Value(Decimal('0'), output_field=dec_field),
+        output_field=dec_field,
+    )
+
+
+
+#DESCARGA DE ARCHIVOS
+from django.http import Http404, HttpResponse
+from zipfile import ZipFile, ZIP_DEFLATED
+from pathlib import Path
+import logging
+from io import BytesIO
+
+logger = logging.getLogger(__name__)
+
+# ====== constantes y helpers ======
+DERECHO_MAP = {"Mecanico": "MECANICO", "MicroSync": "MICROSINC"}
+DATA_ROOT = Path(getattr(
+    settings, "STATEMENTS_DATA_ROOT", Path(settings.BASE_DIR) / "static" / "data"
+))
+
+def _folder_name(q:int, cliente:str, derecho_ui:str, anio:int) -> str:
+    return f"Q{int(q)}_{cliente.upper()}_{DERECHO_MAP.get(derecho_ui, derecho_ui).upper()}_{int(anio)}"
+
+def _folder_path(q:int, cliente:str, derecho_ui:str, anio:int) -> Path:
+    return DATA_ROOT / _folder_name(q, cliente, derecho_ui, anio)
+
+def _zip_folder(folder: Path, zip_name: str) -> HttpResponse:
+    if not folder.exists() or not folder.is_dir():
+        raise Http404("No se encontró la carpeta del período seleccionado.")
+    buf = BytesIO()
+    with ZipFile(buf, "w", ZIP_DEFLATED) as zf:
+        for f in sorted(folder.glob("*")):
+            if f.is_file():
+                zf.write(f, arcname=f.name)
+    buf.seek(0)
+    resp = HttpResponse(buf.getvalue(), content_type="application/zip")
+    resp["Content-Disposition"] = f'attachment; filename="{zip_name}.zip"'
+    return resp
+
+# ====== vistas ======
+
+# Solo CLIENTES (si prefieres, puedes dejar @login_required y el check interno)
+@user_passes_test(is_cliente, login_url='login')
+def cliente_download_statements(request):
+    try:
+        anio = int(request.GET.get("anio"))
+        q = int(request.GET.get("q"))
+        derecho_ui = (request.GET.get("derecho") or "Mecanico").strip()
+    except (TypeError, ValueError):
+        raise Http404("Parámetros inválidos.")
+
+    cliente_nombre = request.user.cliente_account.cliente.nombre_cliente.strip().upper()
+    folder = _folder_path(q, cliente_nombre, derecho_ui, anio)
+
+    if not folder.exists():
+        folder0 = _folder_path(0, cliente_nombre, derecho_ui, anio)  # fallback Q0
+        if not folder0.exists():
+            logger.info("Folder no encontrado (cliente=%s, q=%s, anio=%s, derecho=%s). DATA_ROOT=%s",
+                        cliente_nombre, q, anio, derecho_ui, DATA_ROOT)
+            raise Http404("No hay carpeta de descarga para los filtros seleccionados (ni Q ni consolidado anual).")
+        folder = folder0
+
+    zip_name = folder.name
+    logger.info("Descarga CLIENTE: user=%s, folder=%s", request.user.username, folder)
+    return _zip_folder(folder, zip_name)
+
+
+# Solo ADMIN/SUPERSTAFF
+@user_passes_test(is_admin_or_superstaff, login_url='login')
+def admin_download_statements(request):
+    cliente = (request.GET.get("cliente") or "").strip().upper()
+    cliente_id = request.GET.get("cliente_id")
+
+    if not cliente and cliente_id:
+        from accounts.models import Clientes
+        try:
+            obj = Clientes.objects.only("nombre_cliente").get(id_cliente=int(cliente_id))
+            cliente = (obj.nombre_cliente or "").strip().upper()
+        except Exception:
+            raise Http404("cliente_id inválido o no encontrado.")
+
+    if not cliente:
+        raise Http404("Debe indicar cliente o cliente_id.")
+
+    try:
+        anio = int(request.GET.get("anio"))
+        q = int(request.GET.get("q"))
+        derecho_ui = (request.GET.get("derecho") or "Mecanico").strip()
+    except (TypeError, ValueError):
+        raise Http404("Parámetros inválidos.")
+
+    folder = _folder_path(q, cliente, derecho_ui, anio)
+    if not folder.exists():
+        folder0 = _folder_path(0, cliente, derecho_ui, anio)  # fallback Q0
+        if not folder0.exists():
+            logger.info("Folder no encontrado (ADMIN): cliente=%s q=%s anio=%s derecho=%s. DATA_ROOT=%s",
+                        cliente, q, anio, derecho_ui, DATA_ROOT)
+            raise Http404("No hay carpeta de descarga para esos filtros (ni Q ni consolidado anual).")
+        folder = folder0
+
+    zip_name = folder.name
+    logger.info("Descarga ADMIN: user=%s, folder=%s", request.user.username, folder)
+    return _zip_folder(folder, zip_name)
+
 # Cerrar sesión
 def logout_view(request):
     logout(request)
     print("Sesión cerrada, redirigiendo a login")
     return redirect('login')
+

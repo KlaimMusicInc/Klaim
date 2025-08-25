@@ -1,4 +1,3 @@
-
 <!--HTML PARA MATCHING TOOL POR ISRC-->
 {# templates/matching_tool_isrc.html #}
 {% extends 'base.html' %}
@@ -14,7 +13,6 @@
 
 {# ---------- CONTENIDO ---------- #}
 {% block content %}
-
 
 <div class="container">
   <!-- Encabezado -->
@@ -68,16 +66,38 @@
           <td>{{ codigo.codigo_isrc }}</td>
           <td>{{ codigo.codigo_mlc }}</td>
           <td>{{ codigo.obra.titulo }}</td>
-          <td>{% if codigo.id_artista_unico %}{{ codigo.id_artista_unico.nombre_artista }}{% else %}-{% endif %}</td>
+
+          {# -------- ARTISTS con puntico -------- #}
+          <td>
+            {% if codigo.id_artista_unico %}
+              <div class="dot-list">
+                <span class="nl-item" title="{{ codigo.id_artista_unico.nombre_artista }}">
+                  {{ codigo.id_artista_unico.nombre_artista }}
+                </span>
+              </div>
+            {% else %}
+              <span class="muted">-</span>
+            {% endif %}
+          </td>
+
           <td>{{ codigo.name_artista_alternativo|default:"-" }}</td>
           <td>{{ codigo.titulo_alternativo|default:"-" }}</td>
+
+          {# -------- AUTHORS con puntico -------- #}
           <td>
-            <ul style="margin:0;padding-left:1rem;">
-              {% for oa in codigo.obra.obrasautores_set.all %}
-                <li>{{ oa.autor.nombre_autor }}</li>
-              {% endfor %}
-            </ul>
+            {% if codigo.obra.obrasautores_set.all %}
+              <div class="dot-list">
+                {% for oa in codigo.obra.obrasautores_set.all %}
+                  <span class="nl-item" title="{{ oa.autor.nombre_autor }}">
+                    {{ oa.autor.nombre_autor }}
+                  </span>
+                {% endfor %}
+              </div>
+            {% else %}
+              <span class="muted">-</span>
+            {% endif %}
           </td>
+
           <td>
             <span class="status-badge {% if codigo.matching_tool_isrc %}true{% else %}false{% endif %}">
               {{ codigo.matching_tool_isrc|yesno:"Sí,No" }}
@@ -121,7 +141,7 @@
 
       {% if page_obj.has_next %}
         <a href="?page={{ page_obj.next_page_number }}">Siguiente</a>
-        <a href="?page={{ page_obj.paginator.num_pages }}">Última &raquo;</a>
+        <a href="?page={{ page_obj.paginator_num_pages }}">Última &raquo;</a>
       {% else %}
         <span class="disabled">Siguiente</span>
         <span class="disabled">Última &raquo;</span>

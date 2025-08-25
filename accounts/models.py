@@ -386,65 +386,162 @@ class UserManager(BaseUserManager):
         return self.create_user(username, password, **extra_fields)
 
 
-class User(AbstractBaseUser, PermissionsMixin):
+class LegacyAccountUser(models.Model):
     """
-    Modelo único de usuario para toda la app.
-    Mapea a la tabla `accounts_user` existente. 
-    Campos heredados de archivos de volcado:
-      - id
-      - username
-      - password
-      - last_login
-      - name
-      - is_active
-      - is_admin (se renombrará internamente a is_staff)
-    Campos nuevos (para compatibilidad con el auth de Django):
-      - is_staff
-      - is_superuser
-      - date_joined
+    Tabla LEGADA (no gestionada por Django) que apunta a accounts_user.
+    Útil para consultar/migrar datos históricos.
     """
     id = models.AutoField(primary_key=True)
     username = models.CharField(max_length=150, unique=True)
     name = models.CharField(max_length=150, null=True, blank=True)
-
-    # Para AbstractBaseUser
     password = models.CharField(max_length=128)
     last_login = models.DateTimeField(null=True, blank=True)
-
-    # Volcado legados
     is_active = models.BooleanField(default=True)
-
-    # Se renombra el campo legadado `is_admin` a `is_staff`
-    is_admin = models.BooleanField(
-        default=False,
-        db_column='is_admin',
-        help_text='Indica si este usuario tiene permisos de administrador (staff).'
-    )
-
-    # Campos nuevos requeridos por PermissionsMixin y admin
-    is_staff = models.BooleanField(
-        default=False,
-        help_text='Puede acceder al sitio de administración.'
-    )
-    is_superuser = models.BooleanField(
-        default=False,
-        help_text='Para permisos totales, ignorando restricciones de grupos.'
-    )
-    date_joined = models.DateTimeField(
-        default=timezone.now,
-        help_text='Fecha en que se creó esta cuenta.'
-    )
-
-    objects = UserManager()
-
-    USERNAME_FIELD = 'username'
-    REQUIRED_FIELDS = []  # sólo username es obligatorio
+    is_admin = models.BooleanField(default=False, db_column='is_admin')
+    is_staff = models.BooleanField(default=False)
+    is_superuser = models.BooleanField(default=False)
+    date_joined = models.DateTimeField()
 
     class Meta:
         db_table = 'accounts_user'
-        verbose_name = 'Usuario'
-        verbose_name_plural = 'Usuarios'
+        managed = False
+        verbose_name = 'Usuario legado'
+        verbose_name_plural = 'Usuarios legados'
 
     def __str__(self):
         return self.username
-    # Modelo de usuario
+    
+class ClienteAccount(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='cliente_account'
+    )
+    cliente = models.ForeignKey(
+        'Clientes', on_delete=models.PROTECT, related_name='cuentas'
+    )
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'cliente_account'
+        verbose_name = 'Cuenta de cliente'
+        verbose_name_plural = 'Cuentas de cliente'
+
+    def __str__(self):
+        # ajusta el campo real de nombre según tu modelo Clientes
+        return f'{self.user.username} → {self.cliente.nombre_cliente}'
+    
+class User(models.Model):
+    """
+    Placeholder NO gestionado que mapea la tabla legada accounts_user.
+    Mantener este nombre evita que makemigrations genere DeleteModel('User').
+    """
+    id = models.AutoField(primary_key=True)
+    username = models.CharField(max_length=150, unique=True)
+
+    class Meta:
+        db_table = 'accounts_user'
+        managed = False
+        verbose_name = 'Usuario legado'
+        verbose_name_plural = 'Usuarios legados'
+
+    def __str__(self):
+        return self.username
+    
+
+class StatementFile(models.Model):
+    id_file = models.AutoField(primary_key=True)
+    cliente = models.ForeignKey('Clientes', on_delete=models.CASCADE, db_column='cliente_id')
+    derecho = models.CharField(max_length=16, choices=[('Mecanico','Mecanico'), ('MicroSync','MicroSync')])
+    anio = models.SmallIntegerField()
+    periodo_q = models.PositiveSmallIntegerField()  # 1..4
+    file_type = models.CharField(max_length=8, choices=[('XLSX','XLSX'), ('TSV','TSV')])
+    nombre_archivo = models.CharField(max_length=255)
+    filas_cargadas = models.IntegerField(default=0)
+    fecha_carga = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'statement_files'
+        indexes = [models.Index(fields=['cliente','anio','periodo_q'])]
+
+class LegacyStatementExcel(models.Model):
+    id_legacy = models.BigAutoField(primary_key=True)
+    id_file = models.IntegerField()  # FK lógico a statement_files
+    work_primary_title = models.TextField(null=True, blank=True)
+    work_writer_list   = models.TextField(null=True, blank=True)
+    iswc = models.CharField(max_length=100, null=True)
+    usage_period_start = models.DateField(null=True)
+    usage_period_end = models.DateField(null=True)
+    use_type = models.CharField(max_length=100, null=True)
+    processing_type = models.CharField(max_length=100, null=True)
+    dsp_name = models.CharField(max_length=200, null=True)
+    number_of_usages = models.IntegerField(null=True)
+    distributed_amount_usd = models.DecimalField(max_digits=18, decimal_places=8, null=True)
+    row_idx = models.IntegerField(null=True)
+
+    class Meta:
+        db_table = 'legacy_statements_excel'
+        indexes = [models.Index(fields=['id_file'])]
+
+class RoyaltyStatement(models.Model):
+    id_statement = models.BigAutoField(primary_key=True)
+    id_file = models.IntegerField()
+    derecho = models.CharField(max_length=16, choices=[('Mecanico','Mecanico'), ('MicroSync','MicroSync')])
+    anio = models.SmallIntegerField()
+    periodo_q = models.PositiveSmallIntegerField()
+    obra_id = models.IntegerField()         # = obras.cod_klaim
+    codigo_sgs = models.CharField(max_length=100)
+    codigo_mlc = models.CharField(max_length=100)
+    work_primary_title = models.CharField(max_length=500, null=True)
+    work_writer_list = models.CharField(max_length=1000, null=True)
+    iswc = models.CharField(max_length=100, null=True)
+    usage_period_start = models.DateField(null=True)
+    usage_period_end = models.DateField(null=True)
+    use_type = models.CharField(max_length=100, null=True)
+    processing_type = models.CharField(max_length=100, null=True)
+    dsp_name = models.CharField(max_length=200, null=True)
+    number_of_usages = models.IntegerField(null=True)
+    distributed_amount_usd = models.DecimalField(max_digits=18, decimal_places=8, null=True)
+    artist_name = models.CharField(max_length=255, null=True)
+    isrc = models.CharField(max_length=50, null=True)
+
+    class Meta:
+        db_table = 'royalty_statements'
+        indexes = [
+            models.Index(fields=['anio','periodo_q']),
+            models.Index(fields=['obra_id']),
+            models.Index(fields=['codigo_mlc']),
+        ]
+
+
+
+# --- MICROSYNC: DETALLE ---
+class MicroSyncStatement(models.Model):
+    id_ms = models.BigAutoField(primary_key=True)
+    id_file = models.IntegerField()  # FK lógico a statement_files
+    asset_title = models.TextField(null=True, blank=True)
+    asset_type  = models.CharField(max_length=100, null=True, blank=True)
+    track_code  = models.CharField(max_length=100, null=True, blank=True)
+    artist      = models.TextField(null=True, blank=True)
+    type        = models.CharField(max_length=100, null=True, blank=True)
+    country     = models.CharField(max_length=100, null=True, blank=True)
+    ad_total_views = models.BigIntegerField(null=True)
+    amount_payable_usd = models.DecimalField(max_digits=18, decimal_places=10, null=True)
+
+    class Meta:
+        db_table = 'microsync_statements'
+        indexes = [models.Index(fields=['id_file'])]
+        verbose_name = "MicroSync Statement (detalle)"
+        verbose_name_plural = "MicroSync Statements (detalle)"
+
+
+# --- MICROSYNC: CUOTA DE MERCADO ---
+class MicroSyncMarketShare(models.Model):
+    id_ms_share = models.BigAutoField(primary_key=True)
+    id_file = models.IntegerField()  # FK lógico a statement_files
+    description = models.TextField(null=True, blank=True)
+    amount_payable_usd = models.DecimalField(max_digits=18, decimal_places=10, null=True)
+
+    class Meta:
+        db_table = 'microsync_market_share'
+        indexes = [models.Index(fields=['id_file'])]
+        verbose_name = "MicroSync Market Share"
+        verbose_name_plural = "MicroSync Market Share"

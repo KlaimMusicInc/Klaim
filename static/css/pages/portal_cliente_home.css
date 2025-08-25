@@ -1,0 +1,174 @@
+/* ============================================================================
+   PORTAL CLIENTE – Estilos específicos
+   Mantiene la línea visual + arregla contrastes y layout del portal
+============================================================================ */
+
+/* 1) Contexto general del portal */
+.portal-wrap {
+  padding: 1rem;
+  max-width: 1400px;     /* evita que el contenido se pegue a los bordes en pantallas muy anchas */
+  margin: 0 auto;        /* centra el portal */
+}
+
+.section-header {
+  margin-bottom: 1rem;
+}
+
+.section-title {
+  color: var(--dark);
+  letter-spacing: .3px;
+}
+
+/* 2) Filtros del portal */
+.filter-form {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  margin-bottom: 1rem;
+}
+
+.filter-form .form-group label {
+  display: block;
+  font-size: .9rem;
+  font-weight: 600;
+  color: var(--dark);
+  margin-bottom: .35rem;
+}
+
+.filter-form .form-actions {
+  display: flex;
+  gap: .75rem;
+}
+
+/* 3) Paneles y contenedores */
+.table-section {
+  background: var(--white);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 1.5rem;       /* ← espacio interior para que el texto no arranque pegado */
+  margin-bottom: 2rem;   /* separación vertical entre secciones */
+}
+
+.table-container {
+  background: var(--white);
+  border-radius: 12px;
+  padding: 1rem;         /* ← espacio interno alrededor de tabla/estados */
+}
+
+/* Tarjetas de gráficas */
+.pc-chart-card {
+  background: var(--white);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 1.25rem;      /* ← aire interno */
+  min-height: 200px;
+}
+
+/* 4) Estados vacíos / info */
+.info-box,
+.empty-state {
+  padding: 1rem;
+  border: 1px dashed #d9e1f2;
+  border-radius: 10px;
+  background: #fafcff;
+  color: var(--dark);
+}
+
+/* 5) Tabla – asegurar contraste para encabezados */
+.data-table thead th {
+  background: linear-gradient(135deg, var(--primary), var(--secondary)) !important;
+  color: var(--white) !important;
+}
+
+/* 6) Badges/resúmenes encima de la tabla */
+.pc-badges {
+  display: flex;
+  gap: .5rem;
+  flex-wrap: wrap;
+  margin-bottom: .75rem;
+}
+
+.pc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .25rem .6rem;
+  font-size: .85rem;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,.06);
+  background: var(--white);
+  color: var(--dark);
+  box-shadow: 0 2px 6px rgba(0,0,0,.04);
+}
+
+.pc-badge--mode   { background: rgba(17,47,109,.06); color: var(--primary); }
+.pc-badge--period { background: rgba(79,195,247,.08); color: #0b72a1; }
+
+/* 7) Paginación – afinamos tipografía */
+.table-pagination .current {
+  font-weight: 700;
+}
+
+/* 8) Hover filas tabla (suave) */
+.data-table tbody tr:hover {
+  background-image: linear-gradient(to right, rgba(17,47,109,.03), transparent);
+}
+
+/* 9) Botones – asegurar contraste */
+.btn--primary,
+.btn--danger {
+  color: var(--white);
+}
+
+/* 10) Responsive fino */
+@media (max-width: 768px) {
+  .portal-wrap {
+    padding: .75rem;
+  }
+  .filter-form {
+    gap: .75rem;
+  }
+  .section-title {
+    font-size: 1.4rem;
+  }
+  .table-section {
+    padding: 1rem;
+  }
+  .table-container {
+    padding: .75rem;
+  }
+  .pc-chart-card {
+    padding: 1rem;
+  }
+}
+
+
+/* Grid de gráficas ya está inline, pero si prefieres clase: */
+.pc-charts-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1rem; }
+#metric-total { letter-spacing:.2px; }
+/* --- Scroll horizontal elegante para el panel de gráficas --- */
+.charts-scroll{
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: .5rem;              /* deja espacio al scrollbar */
+}
+.charts-scroll::-webkit-scrollbar{ height: 8px; }
+.charts-scroll::-webkit-scrollbar-track{
+  background: rgba(0,0,0,.06); border-radius: 999px;
+}
+.charts-scroll::-webkit-scrollbar-thumb{
+  background: var(--primary-light); border-radius: 999px;
+}
+
+/* --- Grid ancho: métrica compacta + 2 donuts anchos --- */
+.pc-charts-grid--wide{
+  display: grid;
+  grid-template-columns: 280px 640px 640px; /* ancho deseado de cada tarjeta */
+  gap: 1rem;
+  min-width: 1600px;                        /* fuerza scroll si el contenedor es menor */
+}
+
+/* --- Alto de las gráficas (el canvas se adapta por maintainAspectRatio:false) --- */
+.chart-box{ position: relative; height: 360px; }  /* ajusta 320–420px a gusto */

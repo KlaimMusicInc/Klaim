@@ -101,10 +101,17 @@
             <td>{{ obra.codigo_sgs }}</td>
             <td>{{ obra.codigo_iswc }}</td>
             <td>
-              {% for autor in obra.autores_prefetched %}
-                {{ autor.autor.nombre_autor }}<br>
-              {% endfor %}
+              {% if obra.autores_prefetched %}
+                <div class="dot-list">
+                  {% for autor in obra.autores_prefetched %}
+                    <span class="nl-item" title="{{ autor.autor.nombre_autor }}">
+                      {{ autor.autor.nombre_autor }}
+                    </span>
+                  {% endfor %}
+                </div>
+              {% else %}-{% endif %}
             </td>
+
             <td>
               {% for autor in obra.autores_prefetched %}
                 {{ autor.porcentaje_autor }}%<br>

@@ -35,8 +35,19 @@ CORREGIR_*.py
 INSERTAR_*.py
 OBTENER_*.py
 REVISAR_*.py
+CONFIRMAR_*.py
+GENERAR_*.py
+GUARDAR_*.py
+REGISTRAR_*.py
+migrate_legacy_users.py
+estructura.txt
 backups/
 *.log
 
 log_*.txt
 actualizar_catalogo_existente.py
+# --- Permitir data de statements en el repo (anula *.xlsx global) ---
+!static/data/
+!static/data/**
+!static/data/**/*.xlsx
+!static/data/**/*.pbix

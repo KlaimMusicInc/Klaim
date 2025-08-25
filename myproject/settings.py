@@ -6,12 +6,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+STATEMENTS_DATA_ROOT = Path(
+    os.getenv("STATEMENTS_DATA_ROOT", Path(BASE_DIR) / "static" / "data")
+).resolve()
 SECRET_KEY = config('SECRET_KEY')
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.0.220', 'localhost', '127.0.0.1', '190.25.45.47', '186.31.4.192']
+ALLOWED_HOSTS = ['192.168.0.220', 'localhost', '127.0.0.1', '186.31.4.192']
 
 # Configuración de CSRF para aceptar HTTPS en localhost
 CSRF_TRUSTED_ORIGINS = ['https://localhost', 'https://127.0.0.1']
@@ -82,7 +84,7 @@ else:  # Modo desarrollo (usa una base de datos separada)
         }
     }
 AUTHENTICATION_BACKENDS = [
-    'accounts.auth_backends.LegacyBackend',
+    'django.contrib.auth.backends.ModelBackend',
 ]
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -106,7 +108,7 @@ TIME_ZONE = 'America/Bogota'
 USE_TZ = True 
 
 USE_I18N = True
-AUTH_USER_MODEL = 'accounts.User'  # Usar el modelo personalizado LegacyUser
+#AUTH_USER_MODEL = 'accounts.User'  # Usar el modelo personalizado LegacyUser
 
 PASSWORD_HASHERS = [
     # bcrypt con SHA256 (recomendado)
@@ -139,3 +141,5 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'klaimmusicsoporte2@gmail.com'
 EMAIL_HOST_PASSWORD = 'q j n u s o f i b e w m z e c l'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/login/'

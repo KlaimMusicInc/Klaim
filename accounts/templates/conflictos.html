@@ -99,10 +99,17 @@
               <td>{{ obra.codigo_sgs }}</td>
               <td>{{ obra.codigo_iswc }}</td>
               <td>
-                {% for oa in obra.obrasautores_set.all %}
-                  {{ oa.autor.nombre_autor }}<br>
-                {% endfor %}
+                {% if obra.obrasautores_set.all %}
+                  <div class="dot-list">
+                    {% for oa in obra.obrasautores_set.all %}
+                      <span class="nl-item" title="{{ oa.autor.nombre_autor }}">
+                        {{ oa.autor.nombre_autor }}
+                      </span>
+                    {% endfor %}
+                  </div>
+                {% else %}-{% endif %}
               </td>
+
               <td>
                 {% for oa in obra.obrasautores_set.all %}
                   {{ oa.porcentaje_autor }}%<br>
@@ -172,10 +179,17 @@
               <td>{{ obra.codigo_sgs }}</td>
               <td>{{ obra.codigo_iswc }}</td>
               <td>
-                {% for oa in obra.obrasautores_set.all %}
-                  {{ oa.autor.nombre_autor }}<br>
-                {% endfor %}
+                {% if obra.obrasautores_set.all %}
+                  <div class="dot-list">
+                    {% for oa in obra.obrasautores_set.all %}
+                      <span class="nl-item" title="{{ oa.autor.nombre_autor }}">
+                        {{ oa.autor.nombre_autor }}
+                      </span>
+                    {% endfor %}
+                  </div>
+                {% else %}-{% endif %}
               </td>
+
               <td>
                 {% for oa in obra.obrasautores_set.all %}
                   {{ oa.porcentaje_autor }}%<br>

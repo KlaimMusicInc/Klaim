@@ -1,0 +1,161 @@
+{% load static %}
+
+{% include "header_clientes.html" %}
+{% now "Y" as current_year %}
+
+<!-- ====== CSS (components primero, luego pages) ====== -->
+<link rel="stylesheet" href="{% static 'css/base.css' %}">
+<link rel="stylesheet" href="{% static 'css/components/header.css' %}">
+<link rel="stylesheet" href="{% static 'css/components/burger.css' %}">
+<link rel="stylesheet" href="{% static 'css/components/dropdown.css' %}">
+<link rel="stylesheet" href="{% static 'css/components/button.css' %}">
+<link rel="stylesheet" href="{% static 'css/components/tables.css' %}">
+<link rel="stylesheet" href="{% static 'css/components/forms.css' %}">
+<link rel="stylesheet" href="{% static 'css/components/lists.css' %}">
+<link rel="stylesheet" href="{% static 'css/components/logo.css' %}">
+<link rel="stylesheet" href="{% static 'css/components/loader.css' %}">
+<link rel="stylesheet" href="{% static 'css/components/nav-items.css' %}">
+<link rel="stylesheet" href="{% static 'css/components/navigation.css' %}">
+<link rel="stylesheet" href="{% static 'css/components/responsive.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/portal_cliente_home.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/portal_cliente_microsync.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/portal_cliente_mecanico.css' %}">
+
+<!-- Fallback rápido para la barra azul si tu header.css no la define -->
+
+
+<!-- ====== Scripts (al final del <head> o antes de cerrar <body>) ====== -->
+<script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2" defer></script>
+<script src="{% static 'js/portal_cliente_charts_panel.js' %}" defer></script>
+
+<!-- Si no tienes un header.js con toggleMenu(), añade este helper mínimo -->
+<script>
+  function toggleMenu() {
+    var nav = document.getElementById('sideNav');
+    if (!nav) return;
+    nav.classList.toggle('open'); // tu burger.css/side-nav debería manejar .open
+    // Cambia icono del burger si lo usas:
+    var burger = document.getElementById('burger');
+    if (burger) burger.classList.toggle('is-active');
+  }
+</script>
+
+<section class="portal-wrap">
+  <!-- 1) Bienvenida + Filtros -->
+  <div class="table-section" aria-labelledby="section-filtros">
+    <div class="section-header">
+      <h2 id="section-filtros" class="section-title">Mis statements</h2>
+      <p style="margin-top:.25rem;color:var(--gray);font-weight:500;">
+        Bienvenido,
+        <span style="color:var(--primary);">
+          {{ cliente_nombre|default:request.user.get_full_name|default:request.user.username }}
+        </span>
+      </p>
+    </div>
+
+    <form id="statements-filters"
+          method="get"
+          hx-get="{% url 'cliente_statements_panel' %}"
+          hx-target="#statements-panel"
+          hx-select="#results"
+          hx-swap="innerHTML"
+          class="filter-form"
+          aria-describedby="filtros-ayuda">
+
+      <span id="filtros-ayuda" style="position:absolute;left:-9999px;">
+        Use los filtros para seleccionar año, trimestre y derecho.
+      </span>
+
+      <div class="form-group">
+        <label for="anio">Año</label>
+        <select id="anio"
+                name="anio"
+                class="form-control"
+                data-current-year="{{ current_year }}"
+                data-selected-year="{{ anio|default:current_year }}">
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="q">Trimestre (Q)</label>
+        <select id="q" name="q" class="form-control">
+          <option value="1" {% if q|default:1 == 1 %}selected{% endif %}>Q1</option>
+          <option value="2" {% if q|default:1 == 2 %}selected{% endif %}>Q2</option>
+          <option value="3" {% if q|default:1 == 3 %}selected{% endif %}>Q3</option>
+          <option value="4" {% if q|default:1 == 4 %}selected{% endif %}>Q4</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="derecho">Derecho</label>
+        <select id="derecho" name="derecho" class="form-control">
+          <option value="Mecanico"  {% if derecho|default:'Mecanico' == 'Mecanico' %}selected{% endif %}>Mecánico</option>
+          <option value="MicroSync" {% if derecho == 'MicroSync' %}selected{% endif %}>Micro-Sync</option>
+        </select>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn--primary">Aplicar</button>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn--primary" id="btn-descargar">Descargar statements</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- 2) Panel de Gráficas -->
+  <div id="charts-panel"
+       class="table-section"
+       aria-labelledby="section-graficas"
+       data-charts-panel-url="{% url 'charts_portal_cliente_panel' %}">
+    <div class="section-header">
+      <h2 id="section-graficas" class="section-title">Resumen visual</h2>
+    </div>
+    <div class="table-container">
+      <div class="info-box">
+        Aplica filtros para ver las gráficas.
+      </div>
+    </div>
+  </div>
+
+  <!-- 3) Panel de Tabla -->
+  <div id="statements-panel" class="table-section" aria-labelledby="section-tabla" hx-boost="true">
+    <div class="section-header">
+      <h2 id="section-tabla" class="section-title">Detalle de statements</h2>
+    </div>
+    <div class="table-container">
+      <div class="info-box">
+        Selecciona filtros y presiona <b>Aplicar</b> para ver tus statements del período.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Poblado dinámico del select de años -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var sel = document.getElementById('anio');
+    if (!sel) return;
+    var start = 2022;
+    var current = parseInt(sel.dataset.currentYear, 10) || new Date().getFullYear();
+    var selected = parseInt(sel.dataset.selectedYear, 10) || current;
+    for (var y = current; y >= start; y--) {
+      var opt = document.createElement('option');
+      opt.value = y;
+      opt.textContent = y;
+      if (y === selected) opt.selected = true;
+      sel.appendChild(opt);
+    }
+  });
+</script>
+<script>
+  document.getElementById('btn-descargar').addEventListener('click', function () {
+    const anio = document.getElementById('anio')?.value || '';
+    const q    = document.getElementById('q')?.value || '';
+    const der  = document.getElementById('derecho')?.value || '';
+    const url  = "{% url 'cliente_download_statements' %}";
+    const qs   = new URLSearchParams({ anio, q, derecho: der });
+    window.location.href = url + "?" + qs.toString();
+  });
+</script>

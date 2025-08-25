@@ -1,0 +1,90 @@
+/* components/bg-video.css */
+
+/* Contenedor del video a pantalla completa */
+.bg-video {
+  position: absolute;
+  inset: 0;
+  z-index: 0;                /* al fondo */
+  overflow: hidden;
+  pointer-events: none;      /* no bloquea clics */
+}
+
+/* Capa base y capa overlay comparten reglas */
+.bg-video video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;         /* cubrir manteniendo proporción */
+  object-position: center;
+}
+
+/* Orden de apilado (z-index):
+   base: 0  | overlay: 1 | oscurecido: 2  | formulario: 1+ (en login.css) */
+.bg-video__base {
+  z-index: 0;
+}
+
+.bg-video__overlay {
+  z-index: 1;
+  opacity: 0.35;             /* ajusta transparencia del segundo video */
+  /* Opcional: mezcla para efectos creativos (prueba uno a la vez) */
+  /* mix-blend-mode: screen; */
+  /* mix-blend-mode: lighten; */
+  /* mix-blend-mode: overlay; */
+}
+
+/* Filtro de oscurecido para mejorar contraste del formulario */
+.bg-video::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;                /* sobre ambos videos, bajo el formulario */
+  background: rgba(10, 10, 10, 0.25); /* ajusta opacidad según tu UI */
+  backdrop-filter: saturate(120%) blur(0.5px);
+}
+
+/* ===== Fallbacks y variantes de rendimiento ===== */
+
+/* 1) Fallback sin JS (noscript): poster como imagen de fondo */
+.bg-video__poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 2) Modo imagen (activado por JS): usa background-image en el contenedor
+   y oculta completamente los <video> para ahorrar recursos */
+.bg-video.bg-video--image {
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.bg-video.bg-video--image video {
+  display: none !important;
+}
+
+/* 3) Variante sin blur (para equipos modestos o navegadores sin soporte) */
+.bg-video.bg-video--no-blur::after {
+  backdrop-filter: none;
+}
+
+/* 4) Ajustes rápidos de contraste (puedes alternar estas clases desde JS si quieres) */
+.bg-video.bg-video--darker::after { background: rgba(10, 10, 10, 0.45); }
+.bg-video.bg-video--lighter::after { background: rgba(10, 10, 10, 0.15); }
+
+/* 5) Si el navegador no soporta backdrop-filter, quítalo automáticamente */
+@supports not ((backdrop-filter: blur(0.5px)) or (-webkit-backdrop-filter: blur(0.5px))) {
+  .bg-video::after { backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+
+/* ===== Accesibilidad / rendimiento =====
+   Desactiva la segunda capa en ahorro de datos, movimiento reducido o pantallas pequeñas */
+@media (max-width: 480px), (prefers-reduced-data: reduce), (prefers-reduced-motion: reduce) {
+  .bg-video__overlay {
+    display: none !important;
+  }
+}

@@ -3,7 +3,7 @@ Carga un catálogo **solo de obras nuevas** y las añade al catálogo ACTIVO del
 cliente indicado sin tocar las obras que ya están en la base.
 
 – Python 3.10+  
-– pandas, SQLAlchemy, mysql-connector-python, tkinter
+– pandas, SQLAlchemy, mysql-connector-python, tkinter, unidecode
 
 Columnas esperadas en el Excel  
 --------------------------------------------------------
@@ -16,6 +16,7 @@ from datetime import date
 from tkinter import Tk, filedialog
 
 import pandas as pd
+from unidecode import unidecode                  # ← necesario para validar duplicados
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Connection
 
@@ -26,7 +27,7 @@ from sqlalchemy.engine import Connection
 def connect() -> Connection:
     """Devuelve una conexión SQLAlchemy."""
     engine = create_engine(
-        "mysql+mysqlconnector://ADMINISTRADOR:97072201144Ss.@localhost/base_datos_klaim",
+        "mysql+mysqlconnector://ADMINISTRADOR:97072201144Ss.@localhost/base_datos_klaim_dev",
         pool_pre_ping=True,
     )
     return engine.connect()
@@ -78,9 +79,15 @@ def pick_excel() -> pd.DataFrame:
     )
     if not path:
         raise SystemExit("🚫  No se seleccionó archivo.")
+
     df = pd.read_excel(path).fillna("")
+
     # Normalizar tipos
-    df["Código SGS"] = df["Código SGS"].astype(int)
+    df["Código SGS"] = pd.to_numeric(df["Código SGS"], errors="coerce").astype(int)
+    df["Porcentaje Reclamado de Autor"] = pd.to_numeric(
+        df["Porcentaje Reclamado de Autor"], errors="coerce"
+    )
+
     return df
 
 
@@ -121,9 +128,6 @@ def get_or_create_artista_unico(conn, nombre: str) -> int:
     return conn.execute(text("SELECT LAST_INSERT_ID()")).scalar()
 
 
-# --------------------------------------------------------------------------- #
-# ACTUALIZADO: inserción en Artistas
-# --------------------------------------------------------------------------- #
 def insert_artista(conn, nombre_artista: str, obra_id: int):
     """Inserta el artista y su vínculo con la obra."""
     artista_unico_id = get_or_create_artista_unico(conn, nombre_artista.strip())
@@ -139,6 +143,7 @@ def insert_artista(conn, nombre_artista: str, obra_id: int):
          "obra": obra_id,
          "unico": artista_unico_id},
     )
+
 
 def get_or_create_autor(conn, nombre, ipi, tipo) -> int:
     row = conn.execute(
@@ -209,6 +214,42 @@ def main():
         for sgs in nuevos_sgs:
             obra_rows = df[df["Código SGS"] == sgs]
 
+            # ── VALIDACIONES PREVIAS ───────────────────────────────────────
+            nombres_norm = set()
+            autores_filtrados = []
+            suma_pct = 0.0
+
+            for _, fila in obra_rows.iterrows():
+                n_autor = str(fila["Nombre Autor"]).strip()
+                pct     = fila["Porcentaje Reclamado de Autor"]
+                t_autor = str(fila["Tipo de Autor"]).strip()
+
+                if not n_autor or pd.isna(pct) or not t_autor:
+                    # fila incompleta -> se ignora
+                    continue
+
+                nombre_norm = unidecode(n_autor.lower())
+
+                # Autor duplicado en la misma obra
+                if nombre_norm in nombres_norm:
+                    print(
+                        f"Autor duplicado '{n_autor}' en SGS {sgs} – se ignora el duplicado."
+                    )
+                    continue
+
+                nombres_norm.add(nombre_norm)
+                suma_pct += float(pct)
+                autores_filtrados.append(fila)
+
+            # exceso de porcentaje
+            if suma_pct > 100.0 + 1e-6:
+                print(
+                    f"⚠️  Porcentajes ({suma_pct:.2f} %) > 100 % en SGS {sgs}. "
+                    f"Obra NO registrada."
+                )
+                continue
+            # ── FIN VALIDACIONES ───────────────────────────────────────────
+
             # --- inserta obra -------------------------------------------------
             first = obra_rows.iloc[0]
             obra_id = insert_obra(
@@ -225,18 +266,18 @@ def main():
                     insert_artista(conn, art, obra_id)
 
             # --- inserta autores + vínculo -----------------------------------
-            for _, row in obra_rows.iterrows():
+            for fila in autores_filtrados:
                 autor_id = get_or_create_autor(
                     conn,
-                    row["Nombre Autor"].strip(),
-                    row["Número IP Autor"] or None,
-                    row["Tipo de Autor"].strip(),
+                    str(fila["Nombre Autor"]).strip(),
+                    fila["Número IP Autor"] or None,
+                    str(fila["Tipo de Autor"]).strip(),
                 )
                 insert_obra_autor(
                     conn,
                     obra_id,
                     autor_id,
-                    float(row["Porcentaje Reclamado de Autor"]),
+                    float(fila["Porcentaje Reclamado de Autor"]),
                 )
 
         print(f"🎉  Obras nuevas insertadas: {len(nuevos_sgs)}")

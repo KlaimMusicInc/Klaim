@@ -1,0 +1,31 @@
+{% load static %}
+<script src="{% static 'js/loader.js' %}" defer></script>
+<script src="{% static 'js/header.js' %}" defer></script>
+
+<!-- Loader (mismo markup/clases) -->
+<div id="loader" class="loader-container">
+  <img src="{% static 'images/K.gif' %}" alt="Loading…" class="loader-image">
+  <div class="loader-text">LOADING...</div>
+</div>
+
+<!-- Barra azul superior (usa tu header.css si ya define color de la barra) -->
+<div class="topbar blue-bar"></div>
+
+<header class="header">
+  <!-- Burger (mismas clases/estructura para reutilizar burger.css) -->
+  <button id="burger" class="burger" onclick="toggleMenu()" aria-label="Toggle menu">
+    <span></span><span></span><span></span>
+  </button>
+
+  <!-- Logo centrado (linkea al portal del cliente) -->
+  <a href="{% url 'portal_cliente_home' %}" class="logo-link">
+    <img src="{% static 'images/Logo_Blanco.png' %}" alt="Logo" class="logo">
+  </a>
+</header>
+
+<!-- Side Nav (mismas clases; solo 3 opciones) -->
+<nav id="sideNav" class="side-nav">
+  <a href="{% url 'portal_cliente_home' %}">Statements</a>
+  <a href="#" onclick="event.preventDefault();">Home</a>
+  <a href="{% url 'logout' %}">Logout</a>
+</nav>

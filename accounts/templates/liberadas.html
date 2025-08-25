@@ -92,8 +92,32 @@
           <td>{{ obra.codigo_sgs }}</td>
           <td>{{ obra.codigo_iswc }}</td>
           <td>{{ obra.id_cliente.nombre_cliente }}</td>
-          <td>{{ obra.nombre_autor }}</td>
-          <td>{{ obra.porcentaje_autor }}%</td>
+          <td>
+            {% if obra.autores_list %}
+              <div class="dot-list">
+                {% for nombre in obra.autores_list %}
+                  <span class="nl-item" title="{{ nombre }}">{{ nombre }}</span>
+                {% endfor %}
+              </div>
+            {% else %}
+              {% if obra.nombre_autor %}{{ obra.nombre_autor }}{% else %}-{% endif %}
+            {% endif %}
+          </td>
+
+          <td>
+            {% if obra.porcentajes_list %}
+              <div class="dot-list">
+                {% for p in obra.porcentajes_list %}
+                  <span class="nl-item">
+                    {{ p }}{% if '%' not in p %}%{% endif %}
+                  </span>
+                {% endfor %}
+              </div>
+            {% else %}
+              {% if obra.porcentaje_autor %}{{ obra.porcentaje_autor }}{% if '%' not in obra.porcentaje_autor|stringformat:"s" %}%{% endif %}{% else %}-{% endif %}
+            {% endif %}
+          </td>
+
           <td>{{ obra.fecha_creacion }}</td>
           <td>
             <span class="status-badge

@@ -33,10 +33,29 @@
         <tr>
           <td class="obra"        data-id="{{ subida.obra_id }}">{{ subida.obra }}</td>
           <td class="codigo-mlc"  data-id="{{ subida.id_subida }}">{{ subida.codigo_MLC }}</td>
-          <td class="autor"       data-id="{{ subida.autor_id }}">{{ subida.autor }}</td>
-          <td class="artistas"    data-ids="{{ subida.artistas_ids|default:'' }}">
-            {{ subida.artistas|default:'No artistas' }}
+          <td class="autor" data-id="{{ subida.autor_id }}">
+            {% if subida.autores %}
+              <div class="dot-list">
+                {% for nombre in subida.autores %}
+                  <span class="nl-item" title="{{ nombre }}">{{ nombre }}</span>
+                {% endfor %}
+              </div>
+            {% else %}
+              <span class="muted">No autores</span>
+            {% endif %}
           </td>
+          <td class="artistas" data-ids="{{ subida.artistas_ids|default:'' }}">
+            {% if subida.artistas %}
+              <div class="dot-list">
+                {% for nombre in subida.artistas %}
+                  <span class="nl-item" title="{{ nombre }}">{{ nombre }}</span>
+                {% endfor %}
+              </div>
+            {% else %}
+              <span class="muted">No artistas</span>
+            {% endif %}
+          </td>
+
           <td>
             <span class="status-badge {{ subida.matching_tool|yesno:'true,false' }}">
               {{ subida.matching_tool|yesno:"Sí,No" }}

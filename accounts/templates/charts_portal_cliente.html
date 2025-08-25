@@ -1,0 +1,96 @@
+{# templates/charts_portal_cliente.html — PARCIAL reutilizable #}
+{% load static %}
+
+{# Cargar la hoja correcta según el derecho #}
+{% with derecho=payload.derecho|default:"Mecanico" %}
+  {% if derecho == "Mecanico" %}
+    <link rel="stylesheet" href="{% static 'css/pages/portal_cliente_mecanico.css' %}">
+  {% elif derecho == "MicroSync" %}
+    <link rel="stylesheet" href="{% static 'css/pages/portal_cliente_microsync.css' %}">
+    <script src="{% static 'js/portal_cliente_microsync.js' %}" defer></script>
+  {% endif %}
+{% endwith %}
+
+
+<div class="table-container">
+  <div class="pc-charts-grid">
+    {% with derecho=payload.derecho|default:"Mecanico" %}
+      {% if derecho == "Mecanico" %}
+        {# Fuerza grid de 3 columnas en línea #}
+        <div class="pc-charts-track"
+             style="display:grid;grid-template-columns:minmax(300px,340px) 1fr 1fr;gap:1.5rem;align-items:stretch;">
+          {# COLUMNA IZQUIERDA: una sola tarjeta métrica #}
+          <div class="pc-metric-stack" style="min-width:300px;">
+            <div class="pc-chart-card metric-card" aria-labelledby="metric-title-mec">
+              <div id="metric-title-mec" class="metric-title">Total Distributed Amount</div>
+              <div id="metric-total" class="metric-amount" aria-live="polite">$0</div>
+              <div class="metric-hint"></div>
+            </div>
+          </div>
+
+          {# COLUMNA CENTRAL: Donut por DSP #}
+          <div class="pc-chart-card" aria-labelledby="chart-dsp-title">
+            <div id="chart-dsp-title" class="chart-title">Distribución por DSP</div>
+            <div class="chart-box">
+              <canvas id="chartByDSP" aria-label="Distribución por DSP" role="img"></canvas>
+            </div>
+          </div>
+
+          {# COLUMNA DERECHA: Donut por Processing Type #}
+          <div class="pc-chart-card" aria-labelledby="chart-proc-title">
+            <div id="chart-proc-title" class="chart-title">Por Processing Type</div>
+            <div class="chart-box">
+              <canvas id="chartByProcessing" aria-label="Distribución por tipo de procesamiento" role="img"></canvas>
+            </div>
+          </div>
+        </div>
+
+      {% elif derecho == "MicroSync" %}
+        {# Fuerza grid de 3 columnas en línea #}
+        <div class="pc-charts-track"
+             style="display:grid;grid-template-columns:minmax(300px,340px) 1fr 1fr;gap:1.5rem;align-items:stretch;">
+          {# COLUMNA IZQUIERDA: **dos** tarjetas apiladas #}
+          <div class="pc-metric-stack"
+               style="display:grid;grid-template-rows:1fr 1fr;gap:1.5rem;min-width:300px;">
+            <!-- Tarjeta 1: Total Amount Payable -->
+            <div class="pc-chart-card metric-card" aria-labelledby="metric-ms-total-title">
+              <div id="metric-ms-total-title" class="metric-title">Total Amount Payable</div>
+              <div id="metric-ms-total" class="metric-amount" aria-live="polite">$0</div>
+              <div class="metric-hint"></div>
+            </div>
+
+            <!-- Tarjeta 2: Total Market Share -->
+            <div class="pc-chart-card metric-card" aria-labelledby="metric-ms-share-title">
+              <div id="metric-ms-share-title" class="metric-title">Total Market Share</div>
+              <div id="metric-ms-marketshare" class="metric-amount" aria-live="polite">$0</div>
+              <div class="metric-hint"></div>
+            </div>
+          </div>
+
+          {# COLUMNA CENTRAL: Donut Country × Amount Payable #}
+          <div class="pc-chart-card" aria-labelledby="chart-ms-country-title">
+            <div id="chart-ms-country-title" class="chart-title">Por país (Amount Payable)</div>
+            <div class="chart-box">
+              <canvas id="chartMsByCountry" aria-label="Distribución por país (Amount Payable)" role="img"></canvas>
+            </div>
+          </div>
+
+          {# COLUMNA DERECHA: Donut Asset Title × Amount Payable #}
+          <div class="pc-chart-card" aria-labelledby="chart-ms-asset-title">
+            <div id="chart-ms-asset-title" class="chart-title">Por Asset Title (Amount Payable)</div>
+            <div class="chart-box">
+              <canvas id="chartMsByAssetTitle" aria-label="Distribución por Asset Title (Amount Payable)" role="img"></canvas>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  <div id="charts-empty" class="empty-state" style="display:none;margin-top:1.5rem;">
+    No hay datos para los filtros seleccionados.
+  </div>
+</div>
+
+{# JSON embebido para Chart.js — siempre válido #}
+{{ payload|json_script:"charts-data" }}

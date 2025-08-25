@@ -20,17 +20,55 @@
   <link rel="stylesheet" href="{% static 'css/components/button.css' %}">
   <link rel="stylesheet" href="{% static 'css/components/alert.css' %}">
   <link rel="stylesheet" href="{% static 'css/components/logo.css' %}">
-  <link rel="stylesheet" href="{% static 'css/components/particles.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/bg-video.css' %}">
 {% endblock %}
 
 {% block content %}
-  <!-- ENVOLVENTE: flex para centrar + partículas -->
+  <!-- ENVOLVENTE: flex para centrar -->
   <div class="login-wrapper">
 
-    <!-- 1. Partículas: fuera del login-container para ocupar todo -->
-    <div id="particles" class="particles"></div>
+    <!-- Fondo de video con fallback adaptativo -->
+    <div class="bg-video"
+         aria-hidden="true"
+         data-fallback-image="{% static 'images/login_poster.jpg' %}"
+         data-fallback-anim="{% static 'images/KMOscura2_720p15.webp' %}">
+      <!-- Video base -->
+      <video
+        id="bgVideoBase"
+        class="bg-video__base"
+        autoplay
+        muted
+        loop
+        playsinline
+        preload="metadata"
+        poster="{% static 'images/login_poster.jpg' %}"
+      >
+        <source src="{% static 'videos/KM_Banner.webm' %}" type="video/webm">
+        <source src="{% static 'videos/KM_Banner.mp4' %}" type="video/mp4">
+      </video>
 
-    <!-- 2. Login centrado -->
+      <!-- Video superpuesto (semi-transparente, opcional) -->
+      <video
+        id="bgVideoOverlay"
+        class="bg-video__overlay"
+        autoplay
+        muted
+        loop
+        playsinline
+        preload="metadata"
+        data-optional="true"
+      >
+        <source src="{% static 'videos/KMOscura2.webm' %}" type="video/webm">
+        <source src="{% static 'videos/KMOscura2.mp4' %}" type="video/mp4">
+      </video>
+
+      {# Fallback sin JS: imagen estática #}
+      <noscript>
+        <img src="{% static 'images/login_poster.jpg' %}" alt="" class="bg-video__poster" />
+      </noscript>
+    </div>
+
+    <!-- Login centrado -->
     <div class="login-container animate__animated animate__fadeIn">
       <div class="card">
         <div class="logo-container">
@@ -87,6 +125,5 @@
 {% endblock %}
 
 {% block scripts %}
-  <!-- Solo se carga login.js, sin librerías externas -->
-  <script src="{% static 'js/login.js' %}"></script>
+  <script src="{% static 'js/login_adaptive_fallback.js' %}"></script>
 {% endblock %}

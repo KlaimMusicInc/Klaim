@@ -1,0 +1,125 @@
+
+
+/* Contenedor central con respiración */
+.cs-wrap {
+  max-width: var(--cs-max);
+  margin-inline: auto;
+  padding: 24px;
+}
+
+@media (max-width: 640px) {
+  .cs-wrap { padding: 16px; }
+}
+
+/* Tarjetas */
+.cs-card {
+  background: var(--cs-card-bg);
+  border: 1px solid var(--cs-border);
+  border-radius: 16px;
+  box-shadow: var(--cs-shadow);
+  padding: 20px;
+}
+
+.cs-card + .cs-card { margin-top: 20px; }
+
+/* Encabezado de página */
+.cs-titlebar {
+  margin: 6px 0 16px 0;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cs-titlebar h2 {
+  font-size: clamp(20px, 2.5vw, 28px);
+  line-height: 1.2;
+  margin: 0;
+}
+
+.cs-muted {
+  color: var(--muted-foreground, #6b7280);
+  font-size: 0.95rem;
+}
+
+/* Formulario en grilla responsiva */
+.cs-filters {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 12px;
+}
+.cs-filters .form-group { grid-column: span 3; }
+.cs-filters .form-actions { grid-column: span 12; display: flex; gap: 10px; flex-wrap: wrap; }
+
+@media (max-width: 1024px) {
+  .cs-filters .form-group { grid-column: span 6; }
+}
+@media (max-width: 640px) {
+  .cs-filters .form-group { grid-column: span 12; }
+}
+
+/* Evita desbordes en tablas y charts */
+.cs-card .table-container { overflow-x: auto; }
+#charts-panel.cs-card { padding-top: 16px; }
+
+/* Pequeños detalles */
+.status-badge {
+  background: rgba(59,130,246,.08);
+  color: var(--primary, #2563eb);
+  border: 1px solid rgba(59,130,246,.2);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+/* ===== Selects y inputs dentro de las cards de este template ===== */
+.cs-card .form-group label {
+  font-weight: 600;
+  color: var(--dark);
+}
+
+.cs-card .form-control {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--cs-border);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--dark);
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+}
+
+/* Hover sutil */
+.cs-card .form-control:hover {
+  border-color: rgba(17,47,109,.35); /* var(--primary) suavizado */
+}
+
+/* Enfocado: “focus ring” azul acorde a tu paleta */
+.cs-card .form-control:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(17, 47, 109, .15); /* usa --primary */
+}
+
+/* Deshabilitado */
+.cs-card .form-control:disabled {
+  background: #f7f8fb;
+  color: #9aa3b2;
+  cursor: not-allowed;
+}
+
+/* ---------- Solo para <select> ---------- */
+.cs-card select.form-control {
+  /* quita la flecha nativa y pone una consistente */
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 18px 18px;
+  padding-right: 36px; /* espacio para la flecha */
+}
+
+/* Opcional: color de las opciones en el desplegable */
+.cs-card select.form-control option {
+  color: var(--dark);
+}

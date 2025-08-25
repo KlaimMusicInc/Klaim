@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load dict_extras %}
+{% block title %}Statements | Portal{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/base.css' %}">
+<link rel="stylesheet" href="{% static 'css/components/tables.css' %}">
+<link rel="stylesheet" href="{% static 'css/components/button.css' %}">
+<link rel="stylesheet" href="{% static 'css/components/forms.css' %}">
+<link rel="stylesheet" href="{% static 'css/components/lists.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/portal_cliente_microsync.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/portal_cliente_mecanico.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages/cliente_statements.css' %}"> {# <-- NUEVO #}
+
+<div class="cs-wrap">
+  <div class="cs-titlebar">
+    <h2>Statements</h2>
+    <span class="cs-muted">Admin / SuperStaff</span>
+  </div>
+
+  <!-- Card: Filtros -->
+  <section class="cs-card">
+    <form id="statements-filters"
+          method="get"
+          class="filter-form cs-filters"
+          hx-boost="true"
+          hx-target="#results"
+          hx-select="#results"
+          hx-push-url="true">
+
+      <!-- Cliente -->
+      <div class="form-group">
+        <label for="cliente_id">Cliente</label>
+        {% if clientes %}
+          <select id="cliente_id" name="cliente_id" class="form-control">
+            {% for c in clientes %}
+              <option value="{{ c.id_cliente }}"
+                {% if c.id_cliente == cliente_id or c.id_cliente|stringformat:"s" == cliente_id_value %}selected{% endif %}>
+                {{ c.nombre_cliente }}
+              </option>
+            {% endfor %}
+          </select>
+        {% else %}
+          <input id="cliente_id" type="number" name="cliente_id" min="1"
+                 value="{{ cliente_id|default:cliente_id_value }}" class="form-control">
+        {% endif %}
+      </div>
+
+      <!-- Año -->
+      <div class="form-group">
+        <label for="anio">Año</label>
+        <select id="anio" name="anio" class="form-control">
+          {% for y in years %}
+            <option value="{{ y }}" {% if y == anio %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Q -->
+      <div class="form-group">
+        <label for="q">Q</label>
+        <select id="q" name="q" class="form-control">
+          <option value="1" {% if q == 1 %}selected{% endif %}>Q1</option>
+          <option value="2" {% if q == 2 %}selected{% endif %}>Q2</option>
+          <option value="3" {% if q == 3 %}selected{% endif %}>Q3</option>
+          <option value="4" {% if q == 4 %}selected{% endif %}>Q4</option>
+        </select>
+      </div>
+
+      <!-- Derecho -->
+      <div class="form-group">
+        <label for="derecho">Derecho</label>
+        <select id="derecho" name="derecho" class="form-control">
+          <option value="Mecanico"  {% if derecho == 'Mecanico'  %}selected{% endif %}>Mecánico</option>
+          <option value="MicroSync" {% if derecho == 'MicroSync' %}selected{% endif %}>Micro-Sync</option>
+        </select>
+      </div>
+
+      <!-- Acciones -->
+      <div class="form-actions">
+        <button type="submit" class="btn btn--primary">Aplicar</button>
+        <button type="button" class="btn btn--primary" id="btn-admin-descargar">Descargar statements</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Card: Gráficas -->
+  <section id="charts-panel"
+           class="cs-card"
+           aria-labelledby="section-graficas"
+           data-charts-panel-url="{% url 'charts_portal_cliente_admin' %}">
+    <div class="section-header">
+      <h2 id="section-graficas" class="section-title">Resumen visual</h2>
+    </div>
+    <div class="table-container">
+      <div class="info-box">Aplica filtros para ver las gráficas.</div>
+    </div>
+  </section>
+
+  <!-- Card: Resultados -->
+  <section class="cs-card">
+    {% if error %}
+      <div class="table-container" style="border:1px dashed #f0ad4e;background:#fffbe6;">
+        {{ error }}
+      </div>
+    {% endif %}
+
+    <div id="results">
+      {% if mode == 'TSV' or mode == 'XLSX' or mode == 'MICROSYNC' %}
+        <div class="table-container">
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem;">
+            <span class="status-badge">{{ mode }}</span>
+            <span class="status-badge">Año {{ anio }} · Q{{ q }} · {{ derecho }}</span>
+            <span style="opacity:.7;">Páginas: {{ page_obj.paginator.num_pages }}</span>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                {% for key, label in columns %}
+                  <th>{{ label }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in page_obj.object_list %}
+                <tr>
+                  {% for key, label in columns %}
+                    <td>{{ row|get_item:key|default_if_none:"" }}</td>
+                  {% endfor %}
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="{{ columns|length }}" style="text-align:center;opacity:.75;padding:1rem;">
+                    Sin registros para este período.
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+          <div class="table-pagination"
+               hx-boost="true"
+               hx-target="#results"
+               hx-select="#results"
+               hx-push-url="true">
+            {% if page_obj.has_previous %}
+              <a href="?anio={{ anio }}&q={{ q }}&derecho={{ derecho }}{% if cliente_id %}&cliente_id={{ cliente_id }}{% else %}&cliente_id={{ cliente_id_value }}{% endif %}&page={{ page_obj.previous_page_number }}">« Anterior</a>
+            {% endif %}
+            <span class="current">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+              <a href="?anio={{ anio }}&q={{ q }}&derecho={{ derecho }}{% if cliente_id %}&cliente_id={{ cliente_id }}{% else %}&cliente_id={{ cliente_id_value }}{% endif %}&page={{ page_obj.next_page_number }}">Siguiente »</a>
+            {% endif %}
+          </div>
+        </div>
+      {% else %}
+        <div class="table-container" style="border:1px dashed #ddd;">
+          No hay archivos para el período seleccionado.
+        </div>
+      {% endif %}
+    </div>
+  </section>
+</div>
+
+<!-- Scripts -->
+<script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2" defer></script>
+<script src="{% static 'js/portal_cliente_charts_panel.js' %}" defer></script>
+
+<script>
+  document.addEventListener('htmx:afterSwap', function (e) {
+    if (e.target && e.target.id === 'results') {
+      var panel = document.getElementById('charts-panel');
+      if (!panel) return;
+      var base = panel.dataset.chartsPanelUrl || '';
+      var qs = window.location.search || '';
+      htmx.ajax('GET', base + qs, { target: '#charts-panel' });
+    }
+  });
+
+  document.getElementById('btn-admin-descargar').addEventListener('click', function () {
+    const anio = document.getElementById('anio')?.value || '';
+    const q    = document.getElementById('q')?.value || '';
+    const der  = document.getElementById('derecho')?.value || '';
+    const cid  = document.getElementById('cliente_id')?.value || '';
+    const url  = "{% url 'admin_download_statements' %}";
+    const qs   = new URLSearchParams({ anio, q, derecho: der, cliente_id: cid });
+    window.location.href = url + "?" + qs.toString();
+  });
+</script>
+{% endblock %}
