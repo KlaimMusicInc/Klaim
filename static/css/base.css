@@ -34,7 +34,7 @@
   --border-radius: 16px;
   --border-radius-sm: 8px;
   --transition: all 0.3s ease;
-  --cs-max: 1200px;
+  --cs-max: 1400px;
   --cs-card-bg: var(--surface, #fff);
   --cs-border: var(--border, #e5e7eb);
   --cs-shadow: 0 8px 28px rgba(16, 24, 40, 0.08);
