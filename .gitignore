@@ -51,3 +51,5 @@ actualizar_catalogo_existente.py
 !static/data/**
 !static/data/**/*.xlsx
 !static/data/**/*.pbix
+accounts/management/commands/recover_lfs_excels.py
+accounts/management/commands/seed_usuarios.py
