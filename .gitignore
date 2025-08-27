@@ -5,51 +5,70 @@ venv/
 KLAIM/
 
 #################################
-# Archivos Python compilados
+# Variables de entorno (NO subir secretos)
+#################################
+.env
+.env.*
+!.env.example
+
+#################################
+# Python: compilados / builds
 #################################
 __pycache__/
 *.py[cod]
 *.pyo
+*.pyd
+*.egg-info/
+*.egg
+build/
+dist/
+pip-wheel-metadata/
 
 #################################
-# Ficheros de datos locales
+# Django: estáticos generados
+#################################
+staticfiles/
+
+#################################
+# Bases de datos / dumps locales
 #################################
 db.sqlite3
+*.sqlite3
+*.sql
+*.dump
+*.bak
+
+#################################
+# Excel y temporales
+#################################
 *.xlsx
-~$*.xlsx        # temporales de Excel
-
-#################################
-# Configuración sensible
-#################################
-*.env           # cualquier .env (incluye myproject/.env)
-
-#################################
-# Otros
-#################################
-.DS_Store
-Thumbs.db
-staticfiles/
-# util-scripts y logs
-ARREGLAR_*.py
-CORREGIR_*.py
-INSERTAR_*.py
-OBTENER_*.py
-REVISAR_*.py
-CONFIRMAR_*.py
-GENERAR_*.py
-GUARDAR_*.py
-REGISTRAR_*.py
-migrate_legacy_users.py
-estructura.txt
-backups/
-*.log
-
-log_*.txt
-actualizar_catalogo_existente.py
+~$*
 # --- Permitir data de statements en el repo (anula *.xlsx global) ---
 !static/data/
 !static/data/**
 !static/data/**/*.xlsx
 !static/data/**/*.pbix
-accounts/management/commands/recover_lfs_excels.py
-accounts/management/commands/seed_usuarios.py
+
+#################################
+# Configuración sensible
+#################################
+# (cubierto por reglas de .env arriba)
+
+#################################
+# Logs y backups
+#################################
+*.log
+log_*.txt
+logs/
+backups/
+
+#################################
+# SO / IDE
+#################################
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+############################
+.env*

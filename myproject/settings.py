@@ -258,7 +258,8 @@ LOGGING = {
 }
 
 # ADMIN SITE
-ADMIN_URL = env.str("KLAIM_ADMIN_SITE", default="admin")
+ADMIN_URL = env.str("KLAIM_ADMIN_SITE", default="admin").strip("/")
+KLAIM_ADMIN_SITE = ADMIN_URL  # alias para inspección y consistencia
 
 def _parse_admins(raw: str):
     items = []

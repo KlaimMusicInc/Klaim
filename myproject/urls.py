@@ -37,7 +37,7 @@ urlpatterns = [
     ),
 
     # ========= Admin site y auth =========
-    path(f"{settings.ADMIN_URL.strip('/')}/", admin.site.urls),
+    path(f"{settings.ADMIN_URL}/", admin.site.urls),
     path('login/', login_view, name='login'),
     path('logout/', logout_view, name='logout'),
     path('', login_view, name='home'),
