@@ -238,24 +238,83 @@ if env.bool("USE_SECURE_PROXY_SSL_HEADER", default=False):
 USE_X_FORWARDED_HOST = env.bool("USE_X_FORWARDED_HOST", default=False)
 
 # --------------------------------------------------------------------------------------
-# LOGGING: seguridad y auth a consola
+# LOGGING: archivo con rotación diaria + consola
 # --------------------------------------------------------------------------------------
 LOG_LEVEL = env.str("LOG_LEVEL", default="INFO")
+
+# Directorio de logs desde .env (DEV: .\logs | PROD: C:\Klaim\logs)
+LOG_DIR = env("LOG_DIR", default=str(BASE_DIR / "logs"))
+os.makedirs(LOG_DIR, exist_ok=True)
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
-        "verbose": {"format": "%(asctime)s %(levelname)s %(name)s: %(message)s"},
+        "verbose": {"format": "%(asctime)s %(levelname)s [%(name)s] %(message)s"},
+        "simple": {"format": "%(asctime)s %(levelname)s %(message)s"},
     },
     "handlers": {
-        "console": {"class": "logging.StreamHandler", "formatter": "verbose"},
+        "console": {
+            "class": "logging.StreamHandler",
+            "level": LOG_LEVEL,
+            "formatter": "simple",
+        },
+        "app_file": {
+            "class": "logging.handlers.TimedRotatingFileHandler",
+            "level": LOG_LEVEL,
+            "formatter": "verbose",
+            "filename": os.path.join(LOG_DIR, "app.log"),
+            "when": "midnight",
+            "backupCount": 30,
+            "encoding": "utf-8",
+        },
+        "security_file": {
+            "class": "logging.handlers.TimedRotatingFileHandler",
+            "level": "WARNING",
+            "formatter": "verbose",
+            "filename": os.path.join(LOG_DIR, "security.log"),
+            "when": "midnight",
+            "backupCount": 30,
+            "encoding": "utf-8",
+        },
+        "axes_file": {
+            "class": "logging.handlers.TimedRotatingFileHandler",
+            "level": "INFO",
+            "formatter": "verbose",
+            "filename": os.path.join(LOG_DIR, "axes.log"),
+            "when": "midnight",
+            "backupCount": 30,
+            "encoding": "utf-8",
+        },
     },
     "loggers": {
-        "django.security": {"handlers": ["console"], "level": LOG_LEVEL},
-        "django.request":  {"handlers": ["console"], "level": "WARNING"},
-        "axes":            {"handlers": ["console"], "level": "INFO"},
+        # Django general
+        "django": {
+            "handlers": ["console", "app_file"],
+            "level": LOG_LEVEL,
+            "propagate": True,
+        },
+        # Errores de petición (4xx/5xx)
+        "django.request": {
+            "handlers": ["console", "app_file"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+        # Eventos de seguridad (severidad alta)
+        "django.security": {
+            "handlers": ["security_file", "console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+        # django-axes (intentos, bloqueos, etc.)
+        "axes": {
+            "handlers": ["axes_file", "console"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
 }
+
 
 # ADMIN SITE
 ADMIN_URL = env.str("KLAIM_ADMIN_SITE", default="admin").strip("/")
