@@ -256,3 +256,23 @@ LOGGING = {
         "axes":            {"handlers": ["console"], "level": "INFO"},
     },
 }
+
+# ADMIN SITE
+ADMIN_URL = env.str("KLAIM_ADMIN_SITE", default="admin")
+
+def _parse_admins(raw: str):
+    items = []
+    for part in (raw or "").split(","):
+        s = part.strip()
+        if not s:
+            continue
+        if "<" in s and ">" in s:
+            name = s[: s.find("<")].strip()
+            email = s[s.find("<") + 1 : s.rfind(">")].strip()
+        else:
+            name, email = "", s
+        items.append((name, email))
+    return items
+
+ADMINS = _parse_admins(env("ADMINS", default=""))
+MANAGERS = _parse_admins(env("MANAGERS", default=""))

@@ -2,6 +2,8 @@ from django.contrib import admin
 from django.urls import path, reverse_lazy
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import user_passes_test
+from django.conf import settings
+
 
 from accounts.views import (
     portal_cliente_home, reporte_avance_view, lyricfind_records, lyricfind_pendientes,
@@ -35,7 +37,7 @@ urlpatterns = [
     ),
 
     # ========= Admin site y auth =========
-    path('admin/', admin.site.urls),
+    path(f"{settings.ADMIN_URL.strip('/')}/", admin.site.urls),
     path('login/', login_view, name='login'),
     path('logout/', logout_view, name='logout'),
     path('', login_view, name='home'),
