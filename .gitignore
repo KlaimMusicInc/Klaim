@@ -8,7 +8,7 @@ gitleaks-report.json
 *.xlsx
 *.csv
 *.log
-*.txt
+
 
 # === bytecode / cachés ===
 __pycache__/
@@ -23,13 +23,22 @@ logs/
 
 
 
+# DB y entornos
+/db.sqlite3
+/.env*
+/myproject/.env
 
+# estáticos generados
+/staticfiles/
+
+# backups y binarios pesados
+/backups/
 
 # === artefactos de trabajo / data dumps ===
 *.xlsx
 *.csv
 *.log
-*.txt
+
 
 # === base de datos y anexos locales ===
 db/**
