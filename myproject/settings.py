@@ -1,7 +1,8 @@
 # settings.py — ÚNICO para DEV y PROD (carga auto según .env)
 import os
-from pathlib import Path
 from datetime import timedelta
+from pathlib import Path
+
 import environ
 
 # --------------------------------------------------------------------------------------
@@ -49,9 +50,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
     "accounts",
-
     # Seguridad
     "axes",
 ]
@@ -143,8 +142,13 @@ PASSWORD_HASHERS = [
 PWNED_FAIL_SAFE = env.bool("PWNED_FAIL_SAFE", default=DEBUG)
 
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 12}},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {"min_length": 12},
+    },
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
     {
@@ -152,7 +156,6 @@ AUTH_PASSWORD_VALIDATORS = [
         # Sin OPTIONS: usamos la configuración por defecto del paquete
     },
 ]
-
 
 
 PASSWORD_RESET_TIMEOUT = 60 * 60  # 1 hora
@@ -182,14 +185,18 @@ SESSION_SAVE_EVERY_REQUEST = True
 # --------------------------------------------------------------------------------------
 # EMAIL (SMTP) — desde .env
 # --------------------------------------------------------------------------------------
-EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend")
+EMAIL_BACKEND = env(
+    "EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend"
+)
 EMAIL_HOST = env("EMAIL_HOST", default="smtp.gmail.com")
 EMAIL_PORT = env.int("EMAIL_PORT", default=587)
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
 EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
 EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT", default=10)  # NEW
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default=EMAIL_HOST_USER or "webmaster@localhost")  # NEW
+DEFAULT_FROM_EMAIL = env(
+    "DEFAULT_FROM_EMAIL", default=EMAIL_HOST_USER or "webmaster@localhost"
+)  # NEW
 SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)  # NEW
 
 LOGIN_REDIRECT_URL = "/"
@@ -210,11 +217,11 @@ AXES_RESET_ON_SUCCESS = True
 # --------------------------------------------------------------------------------------
 # Cookies seguras: por defecto False en DEBUG, True en PROD (cuando tengas HTTPS)
 SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=not DEBUG)
-CSRF_COOKIE_SECURE    = env.bool("CSRF_COOKIE_SECURE",   default=not DEBUG)
+CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=not DEBUG)
 
 # Samesite protege contra CSRF entre sitios
 SESSION_COOKIE_SAMESITE = env.str("SESSION_COOKIE_SAMESITE", default="Lax")
-CSRF_COOKIE_SAMESITE    = env.str("CSRF_COOKIE_SAMESITE",    default="Lax")
+CSRF_COOKIE_SAMESITE = env.str("CSRF_COOKIE_SAMESITE", default="Lax")
 
 # Si tus formularios son 100% server-rendered puedes poner True en PROD;
 # si usas JS para leer la cookie CSRF, déjalo False.
@@ -228,7 +235,9 @@ X_FRAME_OPTIONS = "DENY"  # evita clickjacking
 # HTTPS / HSTS (actívalo en PROD cuando tengas TLS)
 SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=False)
 SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", default=0)  # ej. 31536000 en PROD
-SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", default=False)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool(
+    "SECURE_HSTS_INCLUDE_SUBDOMAINS", default=False
+)
 SECURE_HSTS_PRELOAD = env.bool("SECURE_HSTS_PRELOAD", default=False)
 
 # Detrás de proxy que termina TLS (Nginx/Caddy/Traefik)
@@ -320,6 +329,7 @@ LOGGING = {
 ADMIN_URL = env.str("KLAIM_ADMIN_SITE", default="admin").strip("/")
 KLAIM_ADMIN_SITE = ADMIN_URL  # alias para inspección y consistencia
 
+
 def _parse_admins(raw: str):
     items = []
     for part in (raw or "").split(","):
@@ -333,6 +343,7 @@ def _parse_admins(raw: str):
             name, email = "", s
         items.append((name, email))
     return items
+
 
 ADMINS = _parse_admins(env("ADMINS", default=""))
 MANAGERS = _parse_admins(env("MANAGERS", default=""))

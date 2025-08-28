@@ -6,18 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0004_legacystatementexcel_royaltystatement_statementfile'),
+        ("accounts", "0004_legacystatementexcel_royaltystatement_statementfile"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='legacystatementexcel',
-            name='work_primary_title',
+            model_name="legacystatementexcel",
+            name="work_primary_title",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='legacystatementexcel',
-            name='work_writer_list',
+            model_name="legacystatementexcel",
+            name="work_writer_list",
             field=models.TextField(blank=True, null=True),
         ),
     ]

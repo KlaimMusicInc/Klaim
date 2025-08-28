@@ -2,23 +2,23 @@
 Carga un catálogo **solo de obras nuevas** y las añade al catálogo ACTIVO del
 cliente indicado sin tocar las obras que ya están en la base.
 
-– Python 3.10+  
+– Python 3.10+
 – pandas, SQLAlchemy, mysql-connector-python, tkinter, unidecode
 
-Columnas esperadas en el Excel  
+Columnas esperadas en el Excel
 --------------------------------------------------------
 Título | Código ISWC | Código SGS | Número IP Autor | Nombre Autor
 Tipo de Autor | Porcentaje Reclamado de Autor | Artistas
 """
 
-from pathlib import Path
 from datetime import date
+from pathlib import Path
 from tkinter import Tk, filedialog
 
 import pandas as pd
-from unidecode import unidecode                  # ← necesario para validar duplicados
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Connection
+from unidecode import unidecode  # ← necesario para validar duplicados
 
 
 # --------------------------------------------------------------------------- #
@@ -61,9 +61,7 @@ def get_catalogo_activo(conn: Connection, id_cliente: int) -> int:
         {"id": id_cliente},
     ).fetchone()
     if not row:
-        raise RuntimeError(
-            f"⚠️  El cliente {id_cliente} no tiene un catálogo activo."
-        )
+        raise RuntimeError(f"⚠️  El cliente {id_cliente} no tiene un catálogo activo.")
     return row[0]
 
 
@@ -111,8 +109,7 @@ def get_or_create_artista_unico(conn, nombre: str) -> int:
     """Devuelve el id_artista_unico; lo crea si no existe."""
     row = conn.execute(
         text(
-            "SELECT id_artista_unico "
-            "FROM artistas_unicos WHERE nombre_artista = :n"
+            "SELECT id_artista_unico " "FROM artistas_unicos WHERE nombre_artista = :n"
         ),
         {"n": nombre},
     ).fetchone()
@@ -120,9 +117,7 @@ def get_or_create_artista_unico(conn, nombre: str) -> int:
         return row[0]
 
     conn.execute(
-        text(
-            "INSERT INTO artistas_unicos (nombre_artista) VALUES (:n)"
-        ),
+        text("INSERT INTO artistas_unicos (nombre_artista) VALUES (:n)"),
         {"n": nombre},
     )
     return conn.execute(text("SELECT LAST_INSERT_ID()")).scalar()
@@ -139,9 +134,7 @@ def insert_artista(conn, nombre_artista: str, obra_id: int):
             VALUES (:nombre, :obra, :unico)
             """
         ),
-        {"nombre": nombre_artista.strip(),
-         "obra": obra_id,
-         "unico": artista_unico_id},
+        {"nombre": nombre_artista.strip(), "obra": obra_id, "unico": artista_unico_id},
     )
 
 
@@ -221,7 +214,7 @@ def main():
 
             for _, fila in obra_rows.iterrows():
                 n_autor = str(fila["Nombre Autor"]).strip()
-                pct     = fila["Porcentaje Reclamado de Autor"]
+                pct = fila["Porcentaje Reclamado de Autor"]
                 t_autor = str(fila["Tipo de Autor"]).strip()
 
                 if not n_autor or pd.isna(pct) or not t_autor:

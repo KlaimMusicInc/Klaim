@@ -1,0 +1,13 @@
+[flake8]
+max-line-length = 120
+extend-ignore = E203, W503
+exclude =
+    .git,
+    __pycache__,
+    .venv, venv, env, KLAIM, KLAIM/Lib, KLAIM/Lib/site-packages,
+    node_modules,
+    static, staticfiles, templates, logs, backups, db,
+    migrations
+per-file-ignores =
+    accounts/migrations/*: E501
+    accounts/views.py: E501,E402,F811

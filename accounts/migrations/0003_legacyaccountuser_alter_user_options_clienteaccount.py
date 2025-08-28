@@ -8,48 +8,74 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0002_alter_user_is_admin_alter_user_is_superuser'),
+        ("accounts", "0002_alter_user_is_admin_alter_user_is_superuser"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='LegacyAccountUser',
+            name="LegacyAccountUser",
             fields=[
-                ('id', models.AutoField(primary_key=True, serialize=False)),
-                ('username', models.CharField(max_length=150, unique=True)),
-                ('name', models.CharField(blank=True, max_length=150, null=True)),
-                ('password', models.CharField(max_length=128)),
-                ('last_login', models.DateTimeField(blank=True, null=True)),
-                ('is_active', models.BooleanField(default=True)),
-                ('is_admin', models.BooleanField(db_column='is_admin', default=False)),
-                ('is_staff', models.BooleanField(default=False)),
-                ('is_superuser', models.BooleanField(default=False)),
-                ('date_joined', models.DateTimeField()),
+                ("id", models.AutoField(primary_key=True, serialize=False)),
+                ("username", models.CharField(max_length=150, unique=True)),
+                ("name", models.CharField(blank=True, max_length=150, null=True)),
+                ("password", models.CharField(max_length=128)),
+                ("last_login", models.DateTimeField(blank=True, null=True)),
+                ("is_active", models.BooleanField(default=True)),
+                ("is_admin", models.BooleanField(db_column="is_admin", default=False)),
+                ("is_staff", models.BooleanField(default=False)),
+                ("is_superuser", models.BooleanField(default=False)),
+                ("date_joined", models.DateTimeField()),
             ],
             options={
-                'verbose_name': 'Usuario legado',
-                'verbose_name_plural': 'Usuarios legados',
-                'db_table': 'accounts_user',
-                'managed': False,
+                "verbose_name": "Usuario legado",
+                "verbose_name_plural": "Usuarios legados",
+                "db_table": "accounts_user",
+                "managed": False,
             },
         ),
         migrations.AlterModelOptions(
-            name='user',
-            options={'managed': False, 'verbose_name': 'Usuario legado', 'verbose_name_plural': 'Usuarios legados'},
+            name="user",
+            options={
+                "managed": False,
+                "verbose_name": "Usuario legado",
+                "verbose_name_plural": "Usuarios legados",
+            },
         ),
         migrations.CreateModel(
-            name='ClienteAccount',
+            name="ClienteAccount",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('creado', models.DateTimeField(auto_now_add=True)),
-                ('cliente', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='cuentas', to='accounts.clientes')),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='cliente_account', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("creado", models.DateTimeField(auto_now_add=True)),
+                (
+                    "cliente",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="cuentas",
+                        to="accounts.clientes",
+                    ),
+                ),
+                (
+                    "user",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="cliente_account",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Cuenta de cliente',
-                'verbose_name_plural': 'Cuentas de cliente',
-                'db_table': 'cliente_account',
+                "verbose_name": "Cuenta de cliente",
+                "verbose_name_plural": "Cuentas de cliente",
+                "db_table": "cliente_account",
             },
         ),
     ]

@@ -1,14 +1,13 @@
 import math
 from decimal import Decimal, InvalidOperation
-from typing import Tuple, Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd  # opcional: útil para futuras utilidades, no se usa para leer
 from dateutil import parser as dateparser
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
-from accounts.models import StatementFile, LegacyStatementExcel
-
+from accounts.models import LegacyStatementExcel, StatementFile
 
 # ======== Constantes / mapeos ========
 REQUIRED_COLUMNS = [
@@ -51,6 +50,7 @@ def to_none_if_nan(v):
     except Exception:
         return v
 
+
 def parse_date(val):
     val = to_none_if_nan(val)
     if val is None:
@@ -61,6 +61,7 @@ def parse_date(val):
         return dateparser.parse(str(val), dayfirst=True, fuzzy=True).date()
     except Exception:
         return None
+
 
 def parse_int(val):
     val = to_none_if_nan(val)
@@ -73,6 +74,7 @@ def parse_int(val):
             return int(float(val))
         except Exception:
             return None
+
 
 def parse_decimal(val):
     val = to_none_if_nan(val)
@@ -94,9 +96,11 @@ def parse_decimal(val):
 # ======== Detección de encabezados (tolerante) ========
 def _norm(s: str) -> str:
     import re
+
     s = (s or "").strip().lower()
     s = re.sub(r"\s+", " ", s)
     return s
+
 
 def detect_header_and_sheet(xlsx_path: str) -> Tuple[str, int]:
     """
@@ -105,17 +109,23 @@ def detect_header_and_sheet(xlsx_path: str) -> Tuple[str, int]:
     Retorna: (sheet_name, header_row_index)  [header_row_index es 0-based]
     """
     import openpyxl
+
     wb = openpyxl.load_workbook(xlsx_path, read_only=True, data_only=True)
     key_title = _norm("Work Primary Title")
     key_writer = _norm("Work Writer List")
     for sheet in wb.sheetnames:
         ws = wb[sheet]
-        for i, row in enumerate(ws.iter_rows(min_row=1, max_row=200, values_only=True), start=1):
+        for i, row in enumerate(
+            ws.iter_rows(min_row=1, max_row=200, values_only=True), start=1
+        ):
             values = [_norm(str(v)) if v is not None else "" for v in row]
             vals_set = set(values)
             if key_title in vals_set and key_writer in vals_set:
                 return sheet, i - 1
-    raise CommandError("No pude detectar encabezados (se requieren 'Work Primary Title' y 'Work Writer List').")
+    raise CommandError(
+        "No pude detectar encabezados (se requieren 'Work Primary Title' y 'Work Writer List')."
+    )
+
 
 def detect_header_row_in_sheet(ws) -> Optional[int]:
     """
@@ -124,7 +134,9 @@ def detect_header_row_in_sheet(ws) -> Optional[int]:
     """
     key_title = _norm("Work Primary Title")
     key_writer = _norm("Work Writer List")
-    for i, row in enumerate(ws.iter_rows(min_row=1, max_row=200, values_only=True), start=1):
+    for i, row in enumerate(
+        ws.iter_rows(min_row=1, max_row=200, values_only=True), start=1
+    ):
         values = [_norm(str(v)) if v is not None else "" for v in row]
         vals = set(values)
         if key_title in vals and key_writer in vals:
@@ -149,7 +161,10 @@ def get_header_positions(header_row: List[Any]) -> Dict[str, int]:
         raise CommandError(f"Faltan columnas en el encabezado: {missing}")
     return pos
 
-def build_obj_from_row(row: List[Any], pos: Dict[str, int], id_file: int) -> LegacyStatementExcel:
+
+def build_obj_from_row(
+    row: List[Any], pos: Dict[str, int], id_file: int
+) -> LegacyStatementExcel:
     # Extrae y parsea cada campo
     get = lambda col: row[pos[col]] if pos[col] < len(row) else None
 
@@ -185,24 +200,92 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("xlsx_path", type=str, help="Ruta al archivo XLSX (legado)")
-        parser.add_argument("--cliente-id", dest="cliente_id", type=int, required=True, help="ID del cliente (FK a clientes)")
-        parser.add_argument("--derecho", dest="derecho", type=str, required=True, choices=["Mecanico", "MicroSync"], help="Tipo de derecho")
-        parser.add_argument("--anio", dest="anio", type=int, required=True, help="Año del período (ej. 2024)")
-        parser.add_argument("--q", dest="q", type=int, required=True, choices=[1, 2, 3, 4], help="Quarter (1..4)")
-        parser.add_argument("--nombre-archivo", dest="nombre_archivo", type=str, default=None, help="Nombre lógico a guardar (opcional)")
-        parser.add_argument("--dry-run", dest="dry_run", action="store_true", help="No escribe en BD; solo valida y muestra resumen")
-        parser.add_argument("--batch-size", dest="batch_size", type=int, default=5000, help="Tamaño de lote para bulk_create")
+        parser.add_argument(
+            "--cliente-id",
+            dest="cliente_id",
+            type=int,
+            required=True,
+            help="ID del cliente (FK a clientes)",
+        )
+        parser.add_argument(
+            "--derecho",
+            dest="derecho",
+            type=str,
+            required=True,
+            choices=["Mecanico", "MicroSync"],
+            help="Tipo de derecho",
+        )
+        parser.add_argument(
+            "--anio",
+            dest="anio",
+            type=int,
+            required=True,
+            help="Año del período (ej. 2024)",
+        )
+        parser.add_argument(
+            "--q",
+            dest="q",
+            type=int,
+            required=True,
+            choices=[1, 2, 3, 4],
+            help="Quarter (1..4)",
+        )
+        parser.add_argument(
+            "--nombre-archivo",
+            dest="nombre_archivo",
+            type=str,
+            default=None,
+            help="Nombre lógico a guardar (opcional)",
+        )
+        parser.add_argument(
+            "--dry-run",
+            dest="dry_run",
+            action="store_true",
+            help="No escribe en BD; solo valida y muestra resumen",
+        )
+        parser.add_argument(
+            "--batch-size",
+            dest="batch_size",
+            type=int,
+            default=5000,
+            help="Tamaño de lote para bulk_create",
+        )
 
         # Overrides de UNA sola hoja (opcional)
-        parser.add_argument("--sheet-name", dest="sheet_name", type=str, help="Nombre de la hoja (override)")
-        parser.add_argument("--header-row", dest="header_row", type=int, help="Fila de encabezado 1-based (override)")
+        parser.add_argument(
+            "--sheet-name",
+            dest="sheet_name",
+            type=str,
+            help="Nombre de la hoja (override)",
+        )
+        parser.add_argument(
+            "--header-row",
+            dest="header_row",
+            type=int,
+            help="Fila de encabezado 1-based (override)",
+        )
 
         # Multi-hoja
-        parser.add_argument("--sheet-names", dest="sheet_names", type=str, help="Lista de hojas separadas por coma a importar (en orden).")
-        parser.add_argument("--all-sheets", dest="all_sheets", action="store_true", help="Importar todas las hojas que contengan las columnas requeridas.")
+        parser.add_argument(
+            "--sheet-names",
+            dest="sheet_names",
+            type=str,
+            help="Lista de hojas separadas por coma a importar (en orden).",
+        )
+        parser.add_argument(
+            "--all-sheets",
+            dest="all_sheets",
+            action="store_true",
+            help="Importar todas las hojas que contengan las columnas requeridas.",
+        )
 
         # Append a un StatementFile existente
-        parser.add_argument("--append-to", dest="append_to_id_file", type=int, help="ID de statement_files al que se añadirán filas (no crea uno nuevo).")
+        parser.add_argument(
+            "--append-to",
+            dest="append_to_id_file",
+            type=int,
+            help="ID de statement_files al que se añadirán filas (no crea uno nuevo).",
+        )
 
     def handle(self, *args, **opts):
         xlsx_path = opts["xlsx_path"]
@@ -210,7 +293,9 @@ class Command(BaseCommand):
         derecho = opts["derecho"]
         anio = opts["anio"]
         periodo_q = opts["q"]
-        nombre_archivo = opts.get("nombre_archivo") or xlsx_path.split("\\")[-1].split("/")[-1]
+        nombre_archivo = (
+            opts.get("nombre_archivo") or xlsx_path.split("\\")[-1].split("/")[-1]
+        )
         dry_run = opts.get("dry_run", False)
         batch_size = int(opts.get("batch_size") or 5000)
 
@@ -221,11 +306,14 @@ class Command(BaseCommand):
         append_to_id_file = opts.get("append_to_id_file")
 
         import openpyxl
+
         wb = openpyxl.load_workbook(xlsx_path, read_only=True, data_only=True)
 
         # --- 1) Determinar qué hojas procesar ---
         if sheet_names_arg:
-            sheets_to_process = [s.strip() for s in sheet_names_arg.split(",") if s.strip()]
+            sheets_to_process = [
+                s.strip() for s in sheet_names_arg.split(",") if s.strip()
+            ]
         elif all_sheets:
             sheets_to_process = list(wb.sheetnames)
         else:
@@ -259,7 +347,11 @@ class Command(BaseCommand):
         # --- 3) Procesar cada hoja ---
         for sheet_name in sheets_to_process:
             if sheet_name not in wb.sheetnames:
-                self.stdout.write(self.style.WARNING(f"Ignorando '{sheet_name}': no existe en el workbook."))
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"Ignorando '{sheet_name}': no existe en el workbook."
+                    )
+                )
                 continue
 
             ws = wb[sheet_name]
@@ -272,13 +364,19 @@ class Command(BaseCommand):
 
             if header_idx is None:
                 # Si la hoja no contiene las columnas requeridas, la saltamos
-                self.stdout.write(self.style.WARNING(
-                    f"Saltando hoja '{sheet_name}': no encontré encabezado con las columnas requeridas."
-                ))
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"Saltando hoja '{sheet_name}': no encontré encabezado con las columnas requeridas."
+                    )
+                )
                 continue
 
             # Leer cabecera y posiciones
-            header_row_cells = next(ws.iter_rows(min_row=header_idx + 1, max_row=header_idx + 1, values_only=True))
+            header_row_cells = next(
+                ws.iter_rows(
+                    min_row=header_idx + 1, max_row=header_idx + 1, values_only=True
+                )
+            )
             pos = get_header_positions(list(header_row_cells))
 
             if dry_run:
@@ -291,21 +389,25 @@ class Command(BaseCommand):
                     total += 1
                     if len(samples) < 5:
                         obj = build_obj_from_row(list(row), pos, id_file=-1)
-                        samples.append({
-                            "Work Primary Title": obj.work_primary_title,
-                            "Work Writer List": obj.work_writer_list,
-                            "ISWC": obj.iswc,
-                            "Usage Period Start Date": obj.usage_period_start,
-                            "Usage Period End Date": obj.usage_period_end,
-                            "Use Type": obj.use_type,
-                            "Processing Type": obj.processing_type,
-                            "DSP Name": obj.dsp_name,
-                            "Number of Usages": obj.number_of_usages,
-                            "Distributed Amount": obj.distributed_amount_usd,
-                        })
-                self.stdout.write(self.style.NOTICE(
-                    f"[{sheet_name}] Encabezado en fila: {header_idx+1} | Filas: {total}"
-                ))
+                        samples.append(
+                            {
+                                "Work Primary Title": obj.work_primary_title,
+                                "Work Writer List": obj.work_writer_list,
+                                "ISWC": obj.iswc,
+                                "Usage Period Start Date": obj.usage_period_start,
+                                "Usage Period End Date": obj.usage_period_end,
+                                "Use Type": obj.use_type,
+                                "Processing Type": obj.processing_type,
+                                "DSP Name": obj.dsp_name,
+                                "Number of Usages": obj.number_of_usages,
+                                "Distributed Amount": obj.distributed_amount_usd,
+                            }
+                        )
+                self.stdout.write(
+                    self.style.NOTICE(
+                        f"[{sheet_name}] Encabezado en fila: {header_idx+1} | Filas: {total}"
+                    )
+                )
                 for i, row in enumerate(samples, start=1):
                     self.stdout.write(f"  {i}. {row}")
                 # sigue con la próxima hoja
@@ -319,13 +421,17 @@ class Command(BaseCommand):
                 batch.append(build_obj_from_row(list(row), pos, id_file=sf.id_file))
                 if len(batch) >= batch_size:
                     with transaction.atomic():
-                        LegacyStatementExcel.objects.bulk_create(batch, batch_size=batch_size)
+                        LegacyStatementExcel.objects.bulk_create(
+                            batch, batch_size=batch_size
+                        )
                     inserted_total += len(batch)
                     batch.clear()
 
             if batch:
                 with transaction.atomic():
-                    LegacyStatementExcel.objects.bulk_create(batch, batch_size=batch_size)
+                    LegacyStatementExcel.objects.bulk_create(
+                        batch, batch_size=batch_size
+                    )
                 inserted_total += len(batch)
                 batch.clear()
 
@@ -341,6 +447,8 @@ class Command(BaseCommand):
             sf.filas_cargadas = inserted_total
         sf.save(update_fields=["filas_cargadas"])
 
-        self.stdout.write(self.style.SUCCESS(
-            f"Importación completada: id_file={sf.id_file}, filas_cargadas={sf.filas_cargadas}"
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Importación completada: id_file={sf.id_file}, filas_cargadas={sf.filas_cargadas}"
+            )
+        )

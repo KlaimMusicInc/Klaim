@@ -29,7 +29,7 @@
   max-width: 420px;
   width: 90%;
   padding: 2rem;
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.18),
     inset 0 0 0 1px rgba(255, 255, 255, 0.3);
   backdrop-filter: blur(16px);
@@ -93,7 +93,7 @@
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.7);
-  box-shadow: 
+  box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.05),
     inset 0 0 0 1px rgba(255, 255, 255, 0.8);
   transition: all 0.2s ease;
@@ -107,7 +107,7 @@
 .modal-select:focus {
   outline: none;
   border-color: #667eea;
-  box-shadow: 
+  box-shadow:
     0 0 0 3px rgba(102, 126, 234, 0.2),
     inset 0 0 0 1px rgba(255, 255, 255, 0.8);
 }
@@ -123,7 +123,7 @@
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 
+  box-shadow:
     0 4px 6px rgba(0, 0, 0, 0.1),
     0 1px 3px rgba(0, 0, 0, 0.08);
   position: relative;
@@ -134,14 +134,14 @@
 
 .modal-button:hover {
   transform: translateY(-2px);
-  box-shadow: 
+  box-shadow:
     0 7px 14px rgba(0, 0, 0, 0.1),
     0 3px 6px rgba(0, 0, 0, 0.08);
 }
 
 .modal-button:active {
   transform: translateY(0);
-  box-shadow: 
+  box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.1),
     0 1px 2px rgba(0, 0, 0, 0.08);
 }
@@ -173,7 +173,7 @@
     padding: 1.5rem;
     border-radius: 20px;
   }
-  
+
   .modal-title {
     font-size: 1.3rem;
   }

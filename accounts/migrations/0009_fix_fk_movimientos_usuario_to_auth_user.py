@@ -1,9 +1,10 @@
 from django.db import migrations
 
+
 class Migration(migrations.Migration):
     # ⚠️ Usa la ÚLTIMA migración real que listaste
     dependencies = [
-        ('accounts', '0008_alter_microsyncmarketshare_amount_payable_usd_and_more'),
+        ("accounts", "0008_alter_microsyncmarketshare_amount_payable_usd_and_more"),
     ]
 
     operations = [
@@ -38,7 +39,6 @@ class Migration(migrations.Migration):
                 PREPARE stmt FROM @add_old; EXECUTE stmt; DEALLOCATE PREPARE stmt;
             """,
         ),
-
         # 2) ADD FK nueva hacia `auth_user(id)` (si no existe)
         migrations.RunSQL(
             sql=r"""

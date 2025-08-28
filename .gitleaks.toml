@@ -1,0 +1,16 @@
+title = "klaim gitleaks config"
+
+[allowlist]
+description = "Ignorar venv, dependencias y artefactos"
+paths = [
+  '(?i)(^|[\/\\])KLAIM([\/\\])Lib([\/\\])site-packages([\/\\])',
+  '(?i)(^|[\/\\])\.venv([\/\\]|$)',
+  '(?i)(^|[\/\\])venv([\/\\]|$)',
+  '(?i)(^|[\/\\])\.git([\/\\]|$)',
+  '(?i)(^|[\/\\])node_modules([\/\\]|$)',
+  '(?i)(^|[\/\\])static([\/\\]|$)',
+  '(?i)(^|[\/\\])staticfiles([\/\\]|$)',
+  '(?i)(^|[\/\\])migrations([\/\\]|$)',
+  '(?i)(^|[\/\\])tests?([\/\\]|$)',
+  '(?i)(^|[\/\\])test_.*'
+]

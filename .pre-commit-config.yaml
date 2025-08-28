@@ -1,0 +1,108 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: mixed-line-ending
+      - id: detect-private-key
+
+  - repo: https://github.com/psf/black
+    rev: 24.4.2
+    hooks:
+      - id: black
+        args: [--safe]
+        language_version: python3
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: ["--profile", "black"]
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.1.0
+    hooks:
+      - id: flake8
+
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.9
+    hooks:
+      - id: bandit
+        name: bandit (security audit)
+        args: ["-c", "bandit.yaml", "-r", ".", "-f", "html", "-o", ".git/bandit-report.html", "--quiet"]
+        pass_filenames: false
+        stages: [manual]
+
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.1
+    hooks:
+      - id: gitleaks
+        args:
+          [
+            "protect",
+            "--source", ".",
+            "--redact=100",
+            "--report-format", "json",
+            "--report-path", "gitleaks-report.json"
+          ]
+
+
+exclude: |
+  (?x)^(
+    # === entornos virtuales en Windows ===
+    KLAIM/|
+    KLAIM/Lib/|
+    KLAIM/Lib/site-packages/|
+
+    # === management scripts ===
+    accounts/management/commands/|
+
+    # === directorios varios ===
+    backups/|
+    logs/|
+    staticfiles/|
+    static/|
+    db/|
+    myproject/__pycache__/|
+    accounts/.*/__pycache__/|
+    .*__pycache__/|
+    migrations/|
+    # === extensiones de archivos que no se revisan ===
+    .*\.xlsx$|
+    .*\.csv$|
+    .*\.log$|
+    .*\.txt$|
+
+    # === reportes de auditoría ===
+    gitleaks-report\.json$|
+    bandit-report\.html$|
+    db\.sqlite3$
+  )|
+  (ARREGLAR_CONTRAPARTE_CONFLICTOS_ADREV\.py|
+   CONFIRMAR_CATALOGO_MLC_POR_CLIENTE\.py|
+   CORREGIR_.*\.py|
+   INSERTAR_.*\.py|
+   Identificar_cod_mlc_no_registrado_klaim\.py|
+   OBTENER_.*\.py|
+   REGISTRAR_.*\.py|
+   REVISAR_.*\.py|
+   LEER_.*\.py|
+   leer_.*\.py|
+   GENERAR_.*\.py|
+   CATALOGO_.*\.py|
+   actualizar_.*\.py|
+   GUARDAR_.*\.py|
+   insertar_cod_mlc_catalogo_mlc_general_simple\.py|
+   migrate_legacy_users\.py|
+   accounts/management/commands/recover_lfs_excels\.py|
+   INSERTAR_CODIGOS_ADREV_COD_KLAIM\.py|
+   GENERAR_BULK_MLC_BASE_KLAIM\.py|
+   GENERAR_BILK_ADREEV_POR_CLIENTE\.py|
+   INSERTAR_COD_MLC_CATALOGO_MLC_MEJORADO\.py|
+   CORREGIR_PORCENTAJES_AUTORES_OBRAS\.py
+  )$

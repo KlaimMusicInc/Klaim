@@ -6,7 +6,7 @@
 # -------------------------------------------------------------------------------------------
 # Este script en Python sirve para identificar los códigos MLC (de la columna "MLC SONG CODE")
 # presentes en un archivo Excel que aún no han sido cargados a la base de datos `subidas_plataforma`.
-# 
+#
 # La idea principal es detectar qué canciones todavía no tienen su código MLC registrado en la base
 # de datos, para poder hacer una carga posterior o analizarlas manualmente.
 #
@@ -62,13 +62,13 @@
 # -------------------------------------------------------------------------------------------
 
 
-
-import pandas as pd
 import mysql.connector
+import pandas as pd
 from mysql.connector import Error
 
-EXCEL_IN   = "catalogo_sayce_mlc_julio.xlsx"
-EXCEL_OUT  = "codigos_mlc_no_encontrados_sayce.xlsx"
+EXCEL_IN = "catalogo_sayce_mlc_julio.xlsx"
+EXCEL_OUT = "codigos_mlc_no_encontrados_sayce.xlsx"
+
 
 def obtener_diccionario_iswc(connection):
     """
@@ -82,6 +82,7 @@ def obtener_diccionario_iswc(connection):
         cur.execute(sql)
         return {codigo.strip(): klaim for codigo, klaim in cur}
 
+
 def main():
     # ---------- 1. Cargar Excel ----------
     df = pd.read_excel(EXCEL_IN)
@@ -90,10 +91,10 @@ def main():
     # ---------- 2. Conexión ----------
     try:
         conn = mysql.connector.connect(
-            host     = "localhost",
-            database = "base_datos_klaim_dev",
-            user     = "root",
-            password = "97072201144Ss."
+            host="localhost",
+            database="base_datos_klaim_dev",
+            user="root",
+            password="97072201144Ss.",
         )
 
         # ---------- 3. Códigos MLC ya cargados ----------
@@ -123,6 +124,7 @@ def main():
     finally:
         if "conn" in locals() and conn.is_connected():
             conn.close()
+
 
 if __name__ == "__main__":
     main()

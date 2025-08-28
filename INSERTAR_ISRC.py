@@ -1,6 +1,8 @@
-from sqlalchemy import create_engine, text
+from tkinter import Tk, filedialog  # ← añadido
+
 import pandas as pd
-from tkinter import Tk, filedialog          # ← añadido
+from sqlalchemy import create_engine, text
+
 
 # ════════════════ 1) CONEXIÓN ════════════════
 def create_connection():
@@ -10,7 +12,7 @@ def create_connection():
     try:
         engine = create_engine(
             "mysql+mysqlconnector://ADMINISTRADOR:97072201144Ss.@localhost/base_datos_klaim",
-            pool_pre_ping=True,         # evita conexiones muertas
+            pool_pre_ping=True,  # evita conexiones muertas
         )
         conn = engine.connect()
         print("Conexión exitosa a la base de datos")
@@ -35,7 +37,7 @@ def normalize_sgs(value):
     if isinstance(value, float) and value.is_integer():
         value = int(value)
     s = str(value).strip()
-    if s.endswith(".0"):           # seguridad adicional
+    if s.endswith(".0"):  # seguridad adicional
         s = s[:-2]
     return s
 
@@ -45,12 +47,14 @@ def get_obras_by_catalogo(connection, id_catalogo):
     Devuelve un dict {codigo_sgs(str) → cod_klaim(int)}
     para todas las obras del catálogo indicado, con SGS normalizado.
     """
-    query = text("""
+    query = text(
+        """
         SELECT cod_klaim  AS obra_id,
                codigo_sgs AS codigo_sgs
         FROM   obras
         WHERE  catalogo_id = :id_catalogo
-    """)
+    """
+    )
     rows = connection.execute(query, {"id_catalogo": id_catalogo}).fetchall()
     return {normalize_sgs(r.codigo_sgs): r.obra_id for r in rows}
 
@@ -61,10 +65,12 @@ def get_or_create_artista_unico(connection, nombre_artista):
     Si no existe lo crea y devuelve su id.
     """
     row = connection.execute(
-        text("""SELECT id_artista_unico
+        text(
+            """SELECT id_artista_unico
                 FROM   artistas_unicos
                 WHERE  LOWER(nombre_artista) = LOWER(:name)
-                LIMIT  1"""),
+                LIMIT  1"""
+        ),
         {"name": nombre_artista},
     ).fetchone()
 
@@ -129,18 +135,18 @@ def process_row(row, obras_dict, connection):
     Procesa una fila del DataFrame.
     Devuelve la fila original si el SGS no está en el catálogo.
     """
-    codigo_sgs_raw  = row["CODIGO_SGS"]
-    codigo_sgs      = normalize_sgs(codigo_sgs_raw)          # ← normalizado
-    codigo_isrc     = str(row["ISRC"]).strip()
+    codigo_sgs_raw = row["CODIGO_SGS"]
+    codigo_sgs = normalize_sgs(codigo_sgs_raw)  # ← normalizado
+    codigo_isrc = str(row["ISRC"]).strip()
 
     # Campos de texto con valores por defecto
-    nombre_artista  = row.get("Nombre_artista",  pd.NA)
-    artista_real    = row.get("Artista_REAL",    pd.NA)
-    cancion_real    = row.get("Cancion_REAL",    pd.NA)
+    nombre_artista = row.get("Nombre_artista", pd.NA)
+    artista_real = row.get("Artista_REAL", pd.NA)
+    cancion_real = row.get("Cancion_REAL", pd.NA)
 
-    nombre_artista  = nombre_artista if pd.notna(nombre_artista) else "NO IDENTIFICADO"
-    artista_real    = artista_real   if pd.notna(artista_real)   else "NO IDENTIFICADO"
-    cancion_real    = cancion_real   if pd.notna(cancion_real)   else "NO IDENTIFICADO"
+    nombre_artista = nombre_artista if pd.notna(nombre_artista) else "NO IDENTIFICADO"
+    artista_real = artista_real if pd.notna(artista_real) else "NO IDENTIFICADO"
+    cancion_real = cancion_real if pd.notna(cancion_real) else "NO IDENTIFICADO"
 
     # RATE
     rating = None
@@ -176,8 +182,10 @@ def process_row(row, obras_dict, connection):
 def process_isrc_file(connection, id_catalogo, excel_path):
     obras_dict = get_obras_by_catalogo(connection, id_catalogo)
 
-    df = pd.read_excel(excel_path, dtype=str)   # ← lee todo como STR para conservar ceros
-    df = df.fillna("")                          # evita NaN
+    df = pd.read_excel(
+        excel_path, dtype=str
+    )  # ← lee todo como STR para conservar ceros
+    df = df.fillna("")  # evita NaN
 
     total = len(df)
     no_encontrados = []
@@ -207,10 +215,10 @@ if __name__ == "__main__":
     try:
         # ── Selección del archivo Excel ──
         root = Tk()
-        root.withdraw()                        # Oculta la ventana principal de Tkinter
+        root.withdraw()  # Oculta la ventana principal de Tkinter
         excel_path = filedialog.askopenfilename(
             title="Seleccionar archivo de Excel",
-            filetypes=[("Archivos Excel", "*.xlsx *.xls")]
+            filetypes=[("Archivos Excel", "*.xlsx *.xls")],
         )
         if not excel_path:
             raise SystemExit("No se seleccionó ningún archivo de Excel.")
