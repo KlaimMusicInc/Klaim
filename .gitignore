@@ -25,59 +25,16 @@ logs/
 
 
 
-# === Artefactos específicos ===
-work_report_2025-06-09-08-36-52.xlsx
-work_report_2025-08-06-09-00-18.xlsx
-resultado_actualizacion_catalogo.xlsx
-resultado_saycE_filas_filtradas.xlsx
-resultado_sayco_filas_filtradas.xlsx
-sgs_clasificados.xlsx
-obras_cliente2_sin_adrev.xlsx
-obras_cliente2_sin_adrev_sin_isrc.xlsx
-obras_liberadas_SAYCO_JULIO.xlsx
-prueba_actualizar_catalogo.xlsx
-registrar.xlsx
-reporte_cambios.xlsx
-reporte_no_encontrados.xlsx
-depuracion_autor_obras_20250702_1435.log
-diag_SACVEN_20250702.xlsx
-diag_SAYCE_20250702.xlsx
-diag_SAYCO_20250702.xlsx
-estructura.txt
-insertar_cod_mlc_catalogo_mlc_general_simple.py
-isrc_afectados_SACVEN_20250702.xlsx
-isrc_afectados_SAYCE_20250702.xlsx
-isrc_afectados_SAYCO_20250702.xlsx
-leer_catalogos_crear_clientes.py
-leer_catalogos_guardar_con_cod_mlc_adrev.py
-liberar.xlsx
-log_correccion_SAYCE_20250702.txt
-db/CATALOGO_BUGMUSIC.xlsx
-db/CATALOGO_KLAIM.xlsx
-bulk_adrev_2.xlsx
-bulk_mlc_1.xlsx
-bulk_mlc_2.xlsx
-catalogo_mlc.xlsx
-catalogo_para_pruebas.xlsx
-catalogo_sayce_mlc_julio.xlsx
-codigos_mlc_sayco.xlsx
-codigos_mlc_sayco2.xlsx
-conflictos_existentes.xlsx
-continuan.xlsx
-actualizar_catalogo_existente.py
-actualizar_codigos_mlc_cod_klaim.py
-custom_id_no_encontrados.xlsx
-LISTADO_CONFLICTOS.xlsx
-LISTADO_CONFLICTOS_ADREV.xlsx
-OBRAS_SAYCE_ACTUALIZACIÓN_ARBIL_JUNIO_2025.xlsx
-OBRAS_SAYCE_ACTUALIZACIÓN_ENERO_MARZO_2025.xlsx
-OBRAS_SAYCE_ACTUALIZACIÓN_ENERO_MARZO_2025_2.xlsx
-OBRAS_SAYCO_ACTUALIZACIÓN_JULIO_2025.xlsx
-OBTENER_SGS_ARTISTAS_SIN_REGISTRAR.py
-OBTENER_SGS_NUEVOS_PARA_BUSQUEDA_ISRC.py
-REGISTRAR_ISRC_NORMALIZADOS_POR_CLIENTE.py
-REVISAR_EXCELS_PORCENTAJES_CATALOGOS.py
-SACVEN_ISRC_OK_NORMALIZADOS.xlsx
-SAYCO_ISRC_OK_NORMALIZADOS_JULIO.xlsx
-SGS_no_encontrados_cliente_1_202508061144.xlsx
-SGS_no_encontrados_cliente_1_202508061555.xlsx
+# === artefactos de trabajo / data dumps ===
+*.xlsx
+*.csv
+*.log
+*.txt
+
+# === base de datos y anexos locales ===
+db/**
+
+# === bytecode / cachés ===
+__pycache__/
+**/__pycache__/
+*.py[cod]
