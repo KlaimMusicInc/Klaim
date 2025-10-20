@@ -3,13 +3,16 @@
 import bcrypt
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.hashers import check_password as django_check_password
+
 from .models import User
+
 
 class LegacyBackend(ModelBackend):
     """
-    Primero prueba con el sistema de hash de Django. 
+    Primero prueba con el sistema de hash de Django.
     Si falla, prueba directamente bcrypt contra tu hash legado.
     """
+
     def authenticate(self, request, username=None, password=None, **kwargs):
         if username is None or password is None:
             return None
@@ -25,8 +28,8 @@ class LegacyBackend(ModelBackend):
         # 2) Fallback a bcrypt puro
         stored = user.password
         # aseguramos bytes
-        stored_bytes = stored.encode('utf-8') if isinstance(stored, str) else stored
-        if bcrypt.checkpw(password.encode('utf-8'), stored_bytes):
+        stored_bytes = stored.encode("utf-8") if isinstance(stored, str) else stored
+        if bcrypt.checkpw(password.encode("utf-8"), stored_bytes):
             return user
 
         return None

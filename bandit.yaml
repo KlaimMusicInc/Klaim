@@ -1,0 +1,58 @@
+# Config extendida para Bandit (baseline ISO-friendly)
+
+exclude_dirs:
+  # === entornos virtuales / librerías externas ===
+  - .venv
+  - venv
+  - env
+  - Lib
+  - lib
+  - site-packages
+  - node_modules
+
+  # === migraciones y cachés de Django/Python ===
+  - migrations
+  - __pycache__
+
+  # === assets y estáticos ===
+  - static
+  - staticfiles
+  - templates
+  - logs
+  - backups
+  - db
+
+  # === scripts de management (operativos, carga masiva, etc.) ===
+  - accounts/management/commands
+
+  # === archivos operativos que no queremos analizar individualmente ===
+  - ARREGLAR_CONTRAPARTE_CONFLICTOS_ADREV.py
+  - CONFIRMAR_CATALOGO_MLC_POR_CLIENTE.py
+  - CORREGIR_.*\.py
+  - INSERTAR_.*\.py
+  - Identificar_cod_mlc_no_registrado_klaim.py
+  - OBTENER_.*\.py
+  - REGISTRAR_.*\.py
+  - REVISAR_.*\.py
+  - LEER_.*\.py
+  - GENERAR_.*\.py
+  - OBTENER_SGS_ARTISTAS_SIN_REGISTRAR.py
+  - INSERTAR_COD_MLC_CATALOGO_MLC_MEJORADO.py
+  - CATALOGO_.*\.py
+  - GUARDAR_.*\.py|
+  - INSERTAR_CODIGOS_ADREV_COD_KLAIM.py
+  - GENERAR_BULK_MLC_BASE_KLAIM.py
+  - GENERAR_BILK_ADREEV_POR_CLIENTE.py
+  - accounts/management/commands/recover_lfs_excels.py
+  - recover_lfs_excels.py
+  - leer_.*\.py|
+  - CORREGIR_PORCENTAJES_AUTORES_OBRAS.py
+  - actualizar_.*\.py
+  - insertar_cod_mlc_catalogo_mlc_general_simple.py
+  - migrate_legacy_users.py
+
+# Opcional: límites de severidad (puedes activar si lo deseas)
+# severity: MEDIUM
+# confidence: MEDIUM
+
+skips: []

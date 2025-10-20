@@ -48,7 +48,7 @@
   {% if request.user|has_any_group:"Administrador,SuperStaff" %}
     <a href="{% url 'reporte_avance' %}">Progress Report</a>
   {% endif %}
-  
+
   {# Solo Administrador o SuperStaff (grupos) #}
   {% if request.user|has_any_group:"Administrador,SuperStaff" %}
     <a href="{% url 'cliente_statements' %}">Client Statements</a>

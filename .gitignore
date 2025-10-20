@@ -1,55 +1,49 @@
-#################################
-# Entornos virtuales
-#################################
-venv/
-KLAIM/
-
-#################################
-# Archivos Python compilados
-#################################
-__pycache__/
-*.py[cod]
-*.pyo
-
-#################################
-# Ficheros de datos locales
-#################################
-db.sqlite3
+# === security / certs ===
+*.key
+*.crt
+*.pem
+*.pfx
+gitleaks-report.json
+# === data / artefactos de trabajo ===
 *.xlsx
-~$*.xlsx        # temporales de Excel
-
-#################################
-# Configuración sensible
-#################################
-*.env           # cualquier .env (incluye myproject/.env)
-
-#################################
-# Otros
-#################################
-.DS_Store
-Thumbs.db
-staticfiles/
-# util-scripts y logs
-ARREGLAR_*.py
-CORREGIR_*.py
-INSERTAR_*.py
-OBTENER_*.py
-REVISAR_*.py
-CONFIRMAR_*.py
-GENERAR_*.py
-GUARDAR_*.py
-REGISTRAR_*.py
-migrate_legacy_users.py
-estructura.txt
-backups/
+*.csv
 *.log
 
-log_*.txt
-actualizar_catalogo_existente.py
-# --- Permitir data de statements en el repo (anula *.xlsx global) ---
-!static/data/
-!static/data/**
-!static/data/**/*.xlsx
-!static/data/**/*.pbix
-accounts/management/commands/recover_lfs_excels.py
-accounts/management/commands/seed_usuarios.py
+
+# === bytecode / cachés ===
+__pycache__/
+**/__pycache__/
+*.py[cod]
+
+
+
+# virtualenv y logs
+KLAIM/
+logs/
+
+
+
+# DB y entornos
+/db.sqlite3
+/.env*
+/myproject/.env
+
+# estáticos generados
+/staticfiles/
+
+# backups y binarios pesados
+/backups/
+
+# === artefactos de trabajo / data dumps ===
+*.xlsx
+*.csv
+*.log
+
+
+# === base de datos y anexos locales ===
+db/**
+
+# === bytecode / cachés ===
+__pycache__/
+**/__pycache__/
+*.py[cod]

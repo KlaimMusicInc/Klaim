@@ -6,53 +6,61 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0006_legacymicrosyncexcel_microsyncmarketshare'),
+        ("accounts", "0006_legacymicrosyncexcel_microsyncmarketshare"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='MicroSyncStatement',
+            name="MicroSyncStatement",
             fields=[
-                ('id_ms', models.BigAutoField(primary_key=True, serialize=False)),
-                ('id_file', models.IntegerField()),
-                ('asset_title', models.TextField(blank=True, null=True)),
-                ('asset_type', models.CharField(blank=True, max_length=64, null=True)),
-                ('track_code', models.CharField(blank=True, max_length=100, null=True)),
-                ('artist', models.TextField(blank=True, null=True)),
-                ('type', models.CharField(blank=True, max_length=64, null=True)),
-                ('country', models.CharField(blank=True, max_length=16, null=True)),
-                ('ad_total_views', models.BigIntegerField(null=True)),
-                ('amount_payable_usd', models.DecimalField(decimal_places=8, max_digits=18, null=True)),
+                ("id_ms", models.BigAutoField(primary_key=True, serialize=False)),
+                ("id_file", models.IntegerField()),
+                ("asset_title", models.TextField(blank=True, null=True)),
+                ("asset_type", models.CharField(blank=True, max_length=64, null=True)),
+                ("track_code", models.CharField(blank=True, max_length=100, null=True)),
+                ("artist", models.TextField(blank=True, null=True)),
+                ("type", models.CharField(blank=True, max_length=64, null=True)),
+                ("country", models.CharField(blank=True, max_length=16, null=True)),
+                ("ad_total_views", models.BigIntegerField(null=True)),
+                (
+                    "amount_payable_usd",
+                    models.DecimalField(decimal_places=8, max_digits=18, null=True),
+                ),
             ],
             options={
-                'verbose_name': 'MicroSync Statement (detalle)',
-                'verbose_name_plural': 'MicroSync Statements (detalle)',
-                'db_table': 'microsync_statements',
+                "verbose_name": "MicroSync Statement (detalle)",
+                "verbose_name_plural": "MicroSync Statements (detalle)",
+                "db_table": "microsync_statements",
             },
         ),
         migrations.DeleteModel(
-            name='LegacyMicroSyncExcel',
+            name="LegacyMicroSyncExcel",
         ),
         migrations.AlterModelOptions(
-            name='microsyncmarketshare',
-            options={'verbose_name': 'MicroSync Market Share', 'verbose_name_plural': 'MicroSync Market Share'},
+            name="microsyncmarketshare",
+            options={
+                "verbose_name": "MicroSync Market Share",
+                "verbose_name_plural": "MicroSync Market Share",
+            },
         ),
         migrations.RenameField(
-            model_name='microsyncmarketshare',
-            old_name='id_row',
-            new_name='id_ms_share',
+            model_name="microsyncmarketshare",
+            old_name="id_row",
+            new_name="id_ms_share",
         ),
         migrations.RemoveField(
-            model_name='microsyncmarketshare',
-            name='row_idx',
+            model_name="microsyncmarketshare",
+            name="row_idx",
         ),
         migrations.AlterField(
-            model_name='microsyncmarketshare',
-            name='description',
+            model_name="microsyncmarketshare",
+            name="description",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AddIndex(
-            model_name='microsyncstatement',
-            index=models.Index(fields=['id_file'], name='microsync_s_id_file_ebcf22_idx'),
+            model_name="microsyncstatement",
+            index=models.Index(
+                fields=["id_file"], name="microsync_s_id_file_ebcf22_idx"
+            ),
         ),
     ]

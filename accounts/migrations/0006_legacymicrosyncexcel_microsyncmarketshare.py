@@ -6,42 +6,56 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0005_alter_legacystatementexcel_work_primary_title_and_more'),
+        ("accounts", "0005_alter_legacystatementexcel_work_primary_title_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='LegacyMicroSyncExcel',
+            name="LegacyMicroSyncExcel",
             fields=[
-                ('id_legacy', models.BigAutoField(primary_key=True, serialize=False)),
-                ('id_file', models.IntegerField()),
-                ('asset_title', models.TextField(null=True)),
-                ('asset_type', models.CharField(max_length=100, null=True)),
-                ('track_code', models.CharField(max_length=120, null=True)),
-                ('artist_name', models.TextField(null=True)),
-                ('yt_type', models.CharField(max_length=100, null=True)),
-                ('country', models.CharField(max_length=100, null=True)),
-                ('ad_total_views', models.BigIntegerField(null=True)),
-                ('amount_payable_usd', models.DecimalField(decimal_places=8, max_digits=18, null=True)),
-                ('row_idx', models.IntegerField(null=True)),
+                ("id_legacy", models.BigAutoField(primary_key=True, serialize=False)),
+                ("id_file", models.IntegerField()),
+                ("asset_title", models.TextField(null=True)),
+                ("asset_type", models.CharField(max_length=100, null=True)),
+                ("track_code", models.CharField(max_length=120, null=True)),
+                ("artist_name", models.TextField(null=True)),
+                ("yt_type", models.CharField(max_length=100, null=True)),
+                ("country", models.CharField(max_length=100, null=True)),
+                ("ad_total_views", models.BigIntegerField(null=True)),
+                (
+                    "amount_payable_usd",
+                    models.DecimalField(decimal_places=8, max_digits=18, null=True),
+                ),
+                ("row_idx", models.IntegerField(null=True)),
             ],
             options={
-                'db_table': 'legacy_microsync_excel',
-                'indexes': [models.Index(fields=['id_file'], name='legacy_micr_id_file_2aaf98_idx')],
+                "db_table": "legacy_microsync_excel",
+                "indexes": [
+                    models.Index(
+                        fields=["id_file"], name="legacy_micr_id_file_2aaf98_idx"
+                    )
+                ],
             },
         ),
         migrations.CreateModel(
-            name='MicroSyncMarketShare',
+            name="MicroSyncMarketShare",
             fields=[
-                ('id_row', models.BigAutoField(primary_key=True, serialize=False)),
-                ('id_file', models.IntegerField()),
-                ('description', models.TextField(null=True)),
-                ('amount_payable_usd', models.DecimalField(decimal_places=8, max_digits=18, null=True)),
-                ('row_idx', models.IntegerField(null=True)),
+                ("id_row", models.BigAutoField(primary_key=True, serialize=False)),
+                ("id_file", models.IntegerField()),
+                ("description", models.TextField(null=True)),
+                (
+                    "amount_payable_usd",
+                    models.DecimalField(decimal_places=8, max_digits=18, null=True),
+                ),
+                ("row_idx", models.IntegerField(null=True)),
             ],
             options={
-                'db_table': 'microsync_market_share',
-                'indexes': [models.Index(fields=['id_file'], name='microsync_m_id_file_e7deb4_idx')],
+                "db_table": "microsync_market_share",
+                "indexes": [
+                    models.Index(
+                        fields=["id_file"], name="microsync_m_id_file_e7deb4_idx"
+                    )
+                ],
             },
         ),
     ]

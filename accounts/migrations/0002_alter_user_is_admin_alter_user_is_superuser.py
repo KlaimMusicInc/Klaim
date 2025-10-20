@@ -6,18 +6,25 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0001_initial'),
+        ("accounts", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='user',
-            name='is_admin',
-            field=models.BooleanField(db_column='is_admin', default=False, help_text='Campo legado. Se sincroniza con is_staff automáticamente.'),
+            model_name="user",
+            name="is_admin",
+            field=models.BooleanField(
+                db_column="is_admin",
+                default=False,
+                help_text="Campo legado. Se sincroniza con is_staff automáticamente.",
+            ),
         ),
         migrations.AlterField(
-            model_name='user',
-            name='is_superuser',
-            field=models.BooleanField(default=False, help_text='Permisos totales, ignorando restricciones de grupos.'),
+            model_name="user",
+            name="is_superuser",
+            field=models.BooleanField(
+                default=False,
+                help_text="Permisos totales, ignorando restricciones de grupos.",
+            ),
         ),
     ]

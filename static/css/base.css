@@ -19,7 +19,7 @@
   --gray: #6c757d;
   --success: #058b2d;
   --danger: #7e0404ad;
-  
+
   /* Nuevos colores para el diseño moderno */
   --glass: rgba(255, 255, 255, 0.55);
   --glass-border: rgba(255, 255, 255, 0.4);
@@ -29,7 +29,7 @@
   --gradient-card: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(240, 245, 255, 0.9) 100%);
   --glass-dark: rgba(10, 26, 58, 0.75);
   --glass-dark-border: rgba(10, 26, 58, 0.5);
-  
+
   /* Efectos y bordes */
   --border-radius: 16px;
   --border-radius-sm: 8px;
@@ -58,12 +58,3 @@ body {
   color: var(--dark);
 }
 
-/* INDEX */
-/* CONFLICTOS */
-/* LIBERADAS */
-/* MATCHINGTOOL_TITULO */
-/* MATCHINGTOOL_ISRC */
-/* HISTORIAL_MATCHINGTOOL */
-/* LYRICFIND_PENDIENTES */
-/* LYRICFIND_HISTORIAL */
-/* REPORTE */

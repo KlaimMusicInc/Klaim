@@ -2,10 +2,10 @@
 function toggleMenu() {
   const burger = document.getElementById('burger');
   const nav    = document.getElementById('sideNav');
-  
+
   burger.classList.toggle('open');
   nav.classList.toggle('open');
-  
+
   // Ripple effect on burger
   if (burger.classList.contains('open')) {
     const ripple = document.createElement('span');
@@ -33,14 +33,14 @@ function toggleDropdown(e) {
   e.stopPropagation();
   const dropdown = e.currentTarget.parentElement;
   const isOpen   = dropdown.classList.contains('open');
-  
+
   // Close others
   document.querySelectorAll('.dropdown.open').forEach(d => {
     if (d !== dropdown) d.classList.remove('open');
   });
-  
+
   dropdown.classList.toggle('open');
-  
+
   if (!isOpen) {
     const menu = dropdown.querySelector('.dropdown-menu');
     menu.style.opacity   = '0';

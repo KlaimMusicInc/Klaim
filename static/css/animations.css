@@ -14,7 +14,7 @@
 }
 
 @keyframes neonPulse {
-  from { 
+  from {
     opacity: 0.6;
     box-shadow: 0 0 5px var(--accent), 0 0 10px var(--accent);
   }

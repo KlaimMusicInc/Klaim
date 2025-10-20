@@ -42,15 +42,15 @@
   opacity: 1;
 }
 
-.burger.open span:nth-child(1) { 
+.burger.open span:nth-child(1) {
   transform: translateY(10px) rotate(45deg);
   background: var(--accent);
 }
-.burger.open span:nth-child(2) { 
-  opacity: 0; 
+.burger.open span:nth-child(2) {
+  opacity: 0;
   transform: translateX(-20px);
 }
-.burger.open span:nth-child(3) { 
+.burger.open span:nth-child(3) {
   transform: translateY(-10px) rotate(-45deg);
   background: var(--accent);
 }
