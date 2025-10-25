@@ -47,3 +47,7 @@ db/**
 __pycache__/
 **/__pycache__/
 *.py[cod]
+
+# macOS & venv
+.DS_Store
+venv/
