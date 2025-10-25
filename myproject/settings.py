@@ -5,30 +5,25 @@ from pathlib import Path
 
 import environ
 
-# --------------------------------------------------------------------------------------
-# RUTAS BASE
-# --------------------------------------------------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# --------------------------------------------------------------------------------------
-# ENV: autoselección .env ( .env.<DJANGO_ENV> -> .env )
-# --------------------------------------------------------------------------------------
+# 1) Inicializa env con tipos
 env = environ.Env(DEBUG=(bool, False))
-DJANGO_ENV = os.environ.get("DJANGO_ENV", "development").lower()
 
-for candidate in (
-    os.path.join(BASE_DIR, f".env.{DJANGO_ENV}"),
-    os.path.join(BASE_DIR, ".env"),
-):
-    if os.path.exists(candidate):
-        environ.Env.read_env(candidate)
-        break
+# 2) SOLO en local lee .env si existe.
+#    En producción/staging NO debe existir archivo .env en disco.
+env_path = BASE_DIR / ".env"
+if env_path.exists():
+    environ.Env.read_env(str(env_path))
 
-# --------------------------------------------------------------------------------------
-# CORE DJANGO
-# --------------------------------------------------------------------------------------
+# 3) Lee DJANGO_ENV (si no viene, asumimos development en local)
+DJANGO_ENV = env("DJANGO_ENV", default="development").lower()
+
+# 4) DEBUG: en prod siempre False; en dev respeta lo que diga .env (o False si no está)
+DEBUG = env.bool("DEBUG", default=(DJANGO_ENV == "development" and True))
+
+# 5) SECRET_KEY: siempre desde entorno/.env (sin default en prod)
 SECRET_KEY = env("SECRET_KEY")
-DEBUG = env.bool("DEBUG", default=False)
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["127.0.0.1", "localhost"])
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
